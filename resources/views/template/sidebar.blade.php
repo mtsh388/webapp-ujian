@@ -1,0 +1,209 @@
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+
+    <div class="app-brand demo">
+        <a href="{{ route('dashboard') }}" class="app-brand-link">
+            <span class="app-brand-text demo menu-text fw-bold ms-2">
+                BIMBEL
+            </span>
+        </a>
+
+        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+            <i class="icon-base bx bx-chevron-left"></i>
+        </a>
+    </div>
+
+    <div class="menu-divider mt-0"></div>
+
+    <ul class="menu-inner py-1">
+
+        @can('dashboard.view')
+            <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-home"></i>
+                    <div>Dashboard</div>
+                </a>
+            </li>
+        @endcan
+
+        @if(
+            auth()->user()->can('class.view') ||
+            auth()->user()->can('subject.view') ||
+            auth()->user()->can('student.view') ||
+            auth()->user()->can('parent.view')
+        )
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Master Data</span>
+            </li>
+
+            <li class="menu-item
+                {{
+                    request()->routeIs('classes.*') ||
+                    request()->routeIs('subjects.*') ||
+                    request()->routeIs('students.*') ||
+                    request()->routeIs('parents.*')
+                        ? 'active open'
+                        : ''
+                }}">
+
+                <a href="javascript:void(0)" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-data"></i>
+                    <div>Master Data</div>
+                </a>
+
+                <ul class="menu-sub">
+
+                    @can('class.view')
+                        <li class="menu-item {{ request()->routeIs('classes.*') ? 'active' : '' }}">
+                            <a href="{{ route('classes.index') }}" class="menu-link">
+                                <div>Kelas</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('subject.view')
+                        <li class="menu-item {{ request()->routeIs('subjects.*') ? 'active' : '' }}">
+                            <a href="{{ route('subjects.index') }}" class="menu-link">
+                                <div>Mata Pelajaran</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('student.view')
+                        <li class="menu-item {{ request()->routeIs('students.*') ? 'active' : '' }}">
+                            <a href="{{ route('students.index') }}" class="menu-link">
+                                <div>Siswa</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('parent.view')
+                        <li class="menu-item {{ request()->routeIs('parents.*') ? 'active' : '' }}">
+                            <a href="{{ route('parents.index') }}" class="menu-link">
+                                <div>Orang Tua</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                </ul>
+            </li>
+        @endif
+
+        @if(
+            auth()->user()->can('question.view') ||
+            auth()->user()->can('question.create') ||
+            auth()->user()->can('question.update') ||
+            auth()->user()->can('question.delete')
+        )
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Bank Soal</span>
+            </li>
+
+            <li class="menu-item {{ request()->routeIs('questions.*') ? 'active' : '' }}">
+                <a href="{{ route('questions.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-book-open"></i>
+                    <div>Bank Soal</div>
+                </a>
+            </li>
+        @endif
+
+        @if(
+            auth()->user()->can('exam.view') ||
+            auth()->user()->can('exam.create') ||
+            auth()->user()->can('exam.update') ||
+            auth()->user()->can('exam.delete') ||
+            auth()->user()->can('exam.take')
+        )
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Ujian</span>
+            </li>
+
+            <li class="menu-item {{ request()->routeIs('exams.*') ? 'active open' : '' }}">
+
+                <a href="javascript:void(0)" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-edit"></i>
+                    <div>Ujian</div>
+                </a>
+
+                <ul class="menu-sub">
+
+                    @can('exam.view')
+                        <li class="menu-item {{ request()->routeIs('exams.index') ? 'active' : '' }}">
+                            <a href="{{ route('exams.index') }}" class="menu-link">
+                                <div>Daftar Ujian</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('exam.create')
+                        <li class="menu-item {{ request()->routeIs('exams.create') ? 'active' : '' }}">
+                            <a href="{{ route('exams.create') }}" class="menu-link">
+                                <div>Buat Ujian</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('exam.take')
+                        <li class="menu-item {{ request()->routeIs('exams.available') ? 'active' : '' }}">
+                            <a href="{{ route('exams.available') }}" class="menu-link">
+                                <div>Ujian Saya</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                </ul>
+            </li>
+        @endif
+
+        @if(
+            auth()->user()->can('result.view') ||
+            auth()->user()->can('result.view_own') ||
+            auth()->user()->can('result.view_child')
+        )
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Hasil Ujian</span>
+            </li>
+
+            <li class="menu-item {{ request()->routeIs('results.*') ? 'active' : '' }}">
+                @can('result.view')
+                    <a href="{{ route('results.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                        <div>Hasil Ujian</div>
+                    </a>
+                @elsecan('result.view_own')
+                    <a href="{{ route('results.my') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                        <div>Hasil Saya</div>
+                    </a>
+                @elsecan('result.view_child')
+                    <a href="{{ route('results.children') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
+                        <div>Hasil Anak</div>
+                    </a>
+                @endcan
+            </li>
+        @endif
+
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Akun</span>
+        </li>
+
+        <li class="menu-item {{ request()->routeIs('profile') ? 'active' : '' }}">
+            <a href="{{ route('profile') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user"></i>
+                <div>Profil Saya</div>
+            </a>
+        </li>
+        <li class="menu-item">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+
+                <button type="submit"
+                        class="menu-link border-0 bg-transparent w-100 text-start">
+                    <i class="menu-icon tf-icons bx bx-log-out"></i>
+                    <div>Logout</div>
+                </button>
+            </form>
+        </li>
+
+    </ul>
+</aside>
