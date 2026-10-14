@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Exam;
+use App\Models\ExamAttempt;
 use App\Models\ExamQuestion;
 use App\Models\QuestionBank;
 use App\Models\Student;
@@ -261,7 +262,7 @@ class ExamService
             $questionBankIds
         ) {
             if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
                 );
             }
@@ -391,7 +392,7 @@ class ExamService
             $exam = $this->repository->findById($examId);
 
             if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
                 );
             }
