@@ -307,6 +307,7 @@
 <body>
 
 @php
+    $showCorrectAnswers = (bool) ($attempt->exam?->show_correct_answers ?? false);
     $duration = (int) $attempt->duration_seconds;
     $hours = floor($duration / 3600);
     $minutes = floor(($duration % 3600) / 60);
@@ -571,8 +572,8 @@
                     <div
                         class="option
                             {{ $isSelected ? 'option-selected' : '' }}
-                            {{ $isCorrectOption ? 'option-correct' : '' }}
-                            {{ $isWrongSelected ? 'option-wrong' : '' }}">
+                            {{ $showCorrectAnswers && $isCorrectOption ? 'option-correct' : '' }}
+                            {{ $showCorrectAnswers && $isWrongSelected ? 'option-wrong' : '' }}">
 
                             <span class="option-key">
                                 {{ $option->option_key }}.
