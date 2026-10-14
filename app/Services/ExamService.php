@@ -260,6 +260,12 @@ class ExamService
             $exam,
             $questionBankIds
         ) {
+            if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
+                throw new \\RuntimeException(
+                    'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
+                );
+            }
+
             $lastSortOrder = ExamQuestion::query()
                 ->where(
                     'exam_id',
@@ -378,14 +384,25 @@ class ExamService
     }
 
     public function removeQuestionFromExam(
+        int $examId,
         int $examQuestionId
-    ): bool
-    {
-        return $this
-            ->repository
-            ->deleteExamQuestion(
-                $examQuestionId
-            );
+    ): bool {
+        return DB::transaction(function () use ($examId, $examQuestionId) {
+            $exam = $this->repository->findById($examId);
+
+            if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
+                throw new \\RuntimeException(
+                    'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
+                );
+            }
+
+            $question = ExamQuestion::query()
+                ->where('exam_id', $exam->id)
+                ->whereKey($examQuestionId)
+                ->firstOrFail();
+
+            return (bool) $question->delete();
+        }, 3);
     }
 
     public function getExamParticipants(
