@@ -51,7 +51,7 @@ class ExamAttemptController extends Controller
         Request     $request,
         Exam        $exam,
         ExamAttempt $attempt
-    ): View|RedirectResponse
+    ): View|RedirectResponse|JsonResponse
     {
         try {
             $this->authorizeAttempt(
