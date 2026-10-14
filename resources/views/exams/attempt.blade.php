@@ -327,7 +327,21 @@
                             title: data.warning.title,
                             text: data.warning.message,
                             confirmButtonText: 'Saya Mengerti',
-                            allowOutsideClick: true
+                            allowOutsideClick: true,
+                            didOpen: () => {
+                                const confirmButton = Swal.getConfirmButton();
+
+                                if (confirmButton) {
+                                    confirmButton.addEventListener('click', function () {
+                                        if (
+                                            !document.fullscreenElement &&
+                                            document.documentElement.requestFullscreen
+                                        ) {
+                                            document.documentElement.requestFullscreen().catch(() => {});
+                                        }
+                                    }, { once: true });
+                                }
+                            }
                         });
                     }
                 } catch (error) {
