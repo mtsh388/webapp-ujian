@@ -103,6 +103,26 @@ class ExamAttemptController extends Controller
                     $questionNumber
                 );
 
+            if ($request->expectsJson()) {
+                $answeredQuestionIds = $data['answers']
+                    ->filter(fn ($answer) => $answer->selected_option_id !== null)
+                    ->keys()
+                    ->map(fn ($id) => (int) $id)
+                    ->values();
+
+                return response()->json([
+                    'success' => true,
+                    'html' => view('exams.partials.attempt-question', [
+                        ...$data,
+                        'exam' => $exam,
+                    ])->render(),
+                    'currentNumber' => $data['currentNumber'],
+                    'totalQuestions' => $data['totalQuestions'],
+                    'answeredQuestionIds' => $answeredQuestionIds,
+                    'answeredCount' => $answeredQuestionIds->count(),
+                ]);
+            }
+
             return view(
                 'exams.attempt',
                 [
