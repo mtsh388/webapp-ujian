@@ -16,6 +16,8 @@ class ExamAttempt extends Model
         'started_at',
         'submitted_at',
         'total_questions',
+        'question_order',
+        'option_order',
         'correct_answers',
         'wrong_answers',
         'unanswered',
@@ -31,6 +33,8 @@ class ExamAttempt extends Model
         return [
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'question_order' => 'array',
+            'option_order' => 'array',
             'total_score' => 'decimal:2',
             'score' => 'decimal:2',
             'passed' => 'boolean',
