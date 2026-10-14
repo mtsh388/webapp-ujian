@@ -123,6 +123,17 @@
             </div>
         </div>
 
+        <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4" role="status">
+            <div>
+                <strong>Mode ujian terpantau</strong>
+                <div class="small">Perpindahan tab dan keluar dari fullscreen dicatat untuk ditinjau. Peringatan tidak otomatis menggugurkan peserta.</div>
+                <div id="proctorWarningStatus" class="small mt-1">Belum ada peringatan pada sesi ini.</div>
+            </div>
+            <button type="button" id="enterFullscreenButton" class="btn btn-sm btn-outline-primary">
+                <i class="bx bx-fullscreen me-1"></i> Masuk Fullscreen
+            </button>
+        </div>
+
         <div class="row g-4">
 
             <div class="col-lg-8">
@@ -390,6 +401,115 @@
             let isSubmitting = false;
             let isNavigating = false;
             let saveAnswerPromise = null;
+
+            const violationUrl = {{ Illuminate\\Support\\Js::from(route('exams.violations.store', [
+                'exam' => $exam->id,
+                'attempt' => $attempt->id,
+            ])) }};
+            const fullscreenButton = document.getElementById('enterFullscreenButton');
+            const proctorWarningStatus = document.getElementById('proctorWarningStatus');
+            let lastViolationAt = {};
+            let fullscreenPrompted = false;
+
+            async function recordViolation(eventType, metadata = {}) {
+                const now = Date.now();
+                if (lastViolationAt[eventType] && now - lastViolationAt[eventType] < 1500) {
+                    return;
+                }
+                lastViolationAt[eventType] = now;
+
+                try {
+                    const response = await fetch(violationUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            event_type: eventType,
+                            metadata: metadata
+                        })
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) {
+                        return;
+                    }
+
+                    if (proctorWarningStatus) {
+                        proctorWarningStatus.textContent =
+                            'Aktivitas tercatat: ' + data.event_count + ' kali pada sesi ini.';
+                    }
+
+                    if (data.warning) {
+                        await Swal.fire({
+                            icon: data.warning.level >= 3 ? 'warning' : 'info',
+                            title: data.warning.title,
+                            text: data.warning.message,
+                            confirmButtonText: 'Saya Mengerti',
+                            allowOutsideClick: true
+                        });
+                    }
+                } catch (error) {
+                    if (proctorWarningStatus) {
+                        proctorWarningStatus.textContent =
+                            'Status pencatatan aktivitas belum dapat dikonfirmasi.';
+                    }
+                }
+            }
+
+            if (fullscreenButton) {
+                fullscreenButton.addEventListener('click', async function () {
+                    try {
+                        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                            await document.documentElement.requestFullscreen();
+                        } else if (!document.fullscreenElement) {
+                            await Swal.fire({
+                                icon: 'info',
+                                title: 'Fullscreen tidak didukung',
+                                text: 'Browser ini tidak mendukung fullscreen. Anda tetap dapat melanjutkan ujian.',
+                                confirmButtonText: 'Mengerti'
+                            });
+                        }
+                    } catch (error) {
+                        await Swal.fire({
+                            icon: 'info',
+                            title: 'Fullscreen tidak tersedia',
+                            text: 'Browser menolak permintaan fullscreen. Ujian tetap dapat dilanjutkan.',
+                            confirmButtonText: 'Mengerti'
+                        });
+                    }
+                });
+            }
+
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden && !isSubmitting) {
+                    recordViolation('tab_hidden', {
+                        visibility_state: document.visibilityState
+                    });
+                }
+            });
+
+            document.addEventListener('fullscreenchange', function () {
+                if (!document.fullscreenElement && !isSubmitting && remainingSeconds > 0) {
+                    recordViolation('fullscreen_exit', {
+                        fullscreen_supported: Boolean(document.documentElement.requestFullscreen)
+                    });
+                    if (!fullscreenPrompted) {
+                        fullscreenPrompted = true;
+                        if (proctorWarningStatus) {
+                            proctorWarningStatus.textContent =
+                                'Anda keluar dari fullscreen. Anda dapat masuk kembali menggunakan tombol di atas.';
+                        }
+                    }
+                }
+                if (document.fullscreenElement) {
+                    fullscreenPrompted = false;
+                }
+            });
+
+
 
             function formatTime(seconds) {
                 seconds = Math.max(0, Number(seconds));
