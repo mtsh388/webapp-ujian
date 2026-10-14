@@ -65,9 +65,12 @@
                         </p>
                     </div>
 
-                    <span class="badge bg-label-secondary">
-                        Total {{ number_format($totalViolations, 0, ',', '.') }} aktivitas
-                    </span>
+                    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2">
+                        <div id="proctoringExportButtons"></div>
+                        <span class="badge bg-label-secondary">
+                            Total {{ number_format($totalViolations, 0, ',', '.') }} aktivitas
+                        </span>
+                    </div>
                 </div>
             </div>
 
