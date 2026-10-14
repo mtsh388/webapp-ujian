@@ -219,11 +219,14 @@ class ResultController extends Controller
 
         $attempts = $students
             ->flatMap(function ($student) {
-                return $student->examAttempts->map(function ($attempt) use ($student) {
-                    $attempt->setRelation('student', $student);
+                return $student->examAttempts
+                    ->whereIn('status', ['submitted', 'expired'])
+                    ->filter(fn ($attempt) => $attempt->submitted_at !== null)
+                    ->map(function ($attempt) use ($student) {
+                        $attempt->setRelation('student', $student);
 
-                    return $attempt;
-                });
+                        return $attempt;
+                    });
             })
             ->sortByDesc('submitted_at')
             ->values();
@@ -242,6 +245,12 @@ class ResultController extends Controller
             ->exists();
 
         abort_unless($isChild, 403, 'Anda tidak memiliki akses ke hasil ujian ini.');
+
+        abort_unless(
+            in_array($attempt->status, ['submitted', 'expired'], true)
+                && $attempt->submitted_at !== null,
+            404
+        );
 
         $attempt->load([
             'student.classRoom',
