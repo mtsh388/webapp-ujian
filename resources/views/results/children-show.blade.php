@@ -3,6 +3,10 @@
 @section('title', 'Detail Hasil Ujian Anak')
 
 @section('content')
+    @php
+        $showCorrectAnswers = (bool) ($attempt->exam?->show_correct_answers ?? false);
+    @endphp
+
     <div class="container-xxl flex-grow-1 container-p-y">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
@@ -179,7 +183,7 @@
                                             <span class="badge bg-label-primary">Jawaban Anak</span>
                                         @endif
 
-                                        @if ($isAnswerKey)
+                                        @if ($showCorrectAnswers && $isAnswerKey)
                                             <span class="badge bg-label-success">Kunci Jawaban</span>
                                         @endif
                                     </div>
@@ -187,7 +191,7 @@
                             @endforeach
                         </div>
 
-                        @if (!$isCorrect && $question && $question->explanation)
+                        @if ($showCorrectAnswers && !$isCorrect && $question && $question->explanation)
                             <div class="alert alert-info mb-0">
                                 <h6 class="alert-heading">
                                     <i class="bx bx-bulb me-1"></i>
