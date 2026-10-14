@@ -128,34 +128,49 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
         ExamAttempt $attempt
     ): array
     {
-        $attempt->load([
-            'exam.questions.options',
-        ]);
+        $attempt->loadMissing('exam');
 
-        $answers = $this->getAnswers($attempt->id);
+        $questionIds = collect($attempt->question_order);
+
+        if ($questionIds->isEmpty()) {
+            $questionIds = $attempt->exam
+                ->questions()
+                ->pluck('id');
+        }
+
+        $questionIds = $questionIds
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $answers = ExamAnswer::query()
+            ->where('exam_attempt_id', $attempt->id)
+            ->whereIn('exam_question_id', $questionIds)
+            ->get()
+            ->keyBy('exam_question_id');
 
         $correctAnswers = 0;
         $wrongAnswers = 0;
         $unanswered = 0;
-        $totalScore = 0;
+        $totalScore = 0.0;
 
-        foreach ($attempt->exam->questions as $question) {
-            $answer = $answers->get($question->id);
+        foreach ($questionIds as $questionId) {
+            $answer = $answers->get($questionId);
 
-            if (!$answer || !$answer->selected_option_id) {
+            if (!$answer || $answer->selected_option_id === null) {
                 $unanswered++;
                 continue;
             }
 
-            if ($answer->is_correct) {
+            if ($answer->is_correct === true) {
                 $correctAnswers++;
-                $totalScore += (float)$question->score;
+                $totalScore += (float) $answer->score;
             } else {
                 $wrongAnswers++;
             }
         }
 
-        $totalQuestions = $attempt->exam->questions->count();
+        $totalQuestions = $questionIds->count();
 
         $score = $totalQuestions > 0
             ? ($correctAnswers / $totalQuestions) * 100
@@ -166,8 +181,8 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
             'correct_answers' => $correctAnswers,
             'wrong_answers' => $wrongAnswers,
             'unanswered' => $unanswered,
-            'total_score' => $totalScore,
-            'score' => $score,
+            'total_score' => round($totalScore, 2),
+            'score' => round($score, 2),
         ];
     }
 }
