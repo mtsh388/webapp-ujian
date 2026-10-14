@@ -278,7 +278,8 @@ Route::middleware(['auth', 'password.first'])->group(function () {
         Route::post('/{exam}/close', [ExamController::class, 'close'])->middleware('permission:exam.close')->name('exams.close');
 
         Route::middleware('permission:exam.take')->group(function () {
-            Route::get('/{exam}/mulai', [ExamAttemptController::class, 'start'])
+            Route::post('/{exam}/mulai', [ExamAttemptController::class, 'start'])
+                ->middleware('throttle:10,1')
                 ->name('exams.start');
 
             Route::get('/{exam}/attempt/{attempt}', [ExamAttemptController::class, 'show'])
