@@ -24,7 +24,7 @@
                         </div>
 
                         <div class="exam-question-content mb-4" id="examQuestionContent">
-                            {!! $currentQuestion->question !!}
+                            {!! \App\Support\QuestionHtml::sanitize($currentQuestion->question) !!}
                         </div>
 
                         <div class="d-flex flex-column gap-3">
@@ -55,7 +55,7 @@
                                         </div>
 
                                         <div class="exam-option-content">
-                                            {!! $option->option_text !!}
+                                            {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
                                         </div>
 
                                     </div>
