@@ -55,12 +55,12 @@ class ExamViolationController extends Controller
         $recordsFiltered = (clone $baseQuery)->count('exam_violations.id');
 
         $columns = [
-            0 => 'exam_violations.created_at',
-            1 => 'students.full_name',
-            2 => 'exams.title',
-            3 => 'exam_violations.event_type',
-            4 => 'attempts.id',
-            5 => 'attempts.status',
+            1 => 'exam_violations.created_at',
+            2 => 'students.full_name',
+            3 => 'exams.title',
+            4 => 'exam_violations.event_type',
+            5 => 'attempts.id',
+            6 => 'attempts.status',
         ];
 
         $orderColumn = (int) $request->input('order.0.column', 0);
