@@ -145,7 +145,7 @@
                         </div>
 
                         <div class="mb-3">
-                            {!! $question->question ?? 'Soal tidak tersedia.' !!}
+                            {!! \App\Support\QuestionHtml::sanitize($question->question ?? 'Soal tidak tersedia.') !!}
                         </div>
 
                         <div class="mb-3">
@@ -172,7 +172,7 @@
                                         </span>
 
                                         <div class="flex-grow-1">
-                                            {!! $option->option_text ?? $option->text ?? '' !!}
+                                            {!! \App\Support\QuestionHtml::sanitize($option->option_text ?? $option->text ?? '') !!}
                                         </div>
 
                                         @if ($isSelected)
@@ -193,7 +193,7 @@
                                     <i class="bx bx-bulb me-1"></i>
                                     Pembahasan
                                 </h6>
-                                <div>{!! $question->explanation !!}</div>
+                                <div>{!! \App\Support\QuestionHtml::sanitize($question->explanation) !!}</div>
                             </div>
                         @endif
                     </div>
