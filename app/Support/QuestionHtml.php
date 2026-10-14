@@ -127,7 +127,11 @@ class QuestionHtml
     {
         $url = trim($url);
 
-        if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, '/')) {
+        if ($url === '' || preg_match('/[\\x00-\\x20\\\\\\\\]/', $url)) {
+            return false;
+        }
+
+        if (str_starts_with($url, '#') || str_starts_with($url, '/')) {
             return !str_starts_with($url, '//');
         }
 
@@ -140,7 +144,7 @@ class QuestionHtml
     {
         $url = trim($url);
 
-        if ($url === '' || str_starts_with($url, '//')) {
+        if ($url === '' || preg_match('/[\\x00-\\x20\\\\\\\\]/', $url) || str_starts_with($url, '//')) {
             return false;
         }
 
