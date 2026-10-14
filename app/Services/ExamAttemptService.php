@@ -202,56 +202,63 @@ class ExamAttemptService
         ExamAttempt $attempt
     ): void
     {
-        if (
-            $attempt->question_order !== null &&
-            $attempt->option_order !== null
-        ) {
-            return;
-        }
+        DB::transaction(function () use ($attempt) {
+            $lockedAttempt = ExamAttempt::query()
+                ->whereKey($attempt->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $exam = $attempt->exam()->firstOrFail();
-
-        $questions = $exam->questions()
-            ->with('options')
-            ->orderBy('sort_order')
-            ->get();
-
-        $questionOrder = $attempt->question_order;
-
-        if ($questionOrder === null) {
-            $questionOrder = $questions
-                ->pluck('id')
-                ->map(fn($id) => (int)$id)
-                ->all();
-
-            if ($exam->shuffle_questions) {
-                shuffle($questionOrder);
+            if (
+                $lockedAttempt->question_order !== null &&
+                $lockedAttempt->option_order !== null
+            ) {
+                return;
             }
-        }
 
-        $optionOrder = $attempt->option_order;
+            $exam = $lockedAttempt->exam()->firstOrFail();
 
-        if ($optionOrder === null) {
-            $optionOrder = [];
+            $questions = $exam->questions()
+                ->with('options')
+                ->orderBy('sort_order')
+                ->get();
 
-            foreach ($questions as $question) {
-                $optionIds = $question->options
+            $questionOrder = $lockedAttempt->question_order;
+
+            if ($questionOrder === null) {
+                $questionOrder = $questions
                     ->pluck('id')
-                    ->map(fn($id) => (int)$id)
+                    ->map(fn($id) => (int) $id)
                     ->all();
 
-                if ($exam->shuffle_options) {
-                    shuffle($optionIds);
+                if ($exam->shuffle_questions) {
+                    shuffle($questionOrder);
                 }
-
-                $optionOrder[(string)$question->id] = $optionIds;
             }
-        }
 
-        $attempt->forceFill([
-            'question_order' => $questionOrder,
-            'option_order' => $optionOrder,
-        ])->save();
+            $optionOrder = $lockedAttempt->option_order;
+
+            if ($optionOrder === null) {
+                $optionOrder = [];
+
+                foreach ($questions as $question) {
+                    $optionIds = $question->options
+                        ->pluck('id')
+                        ->map(fn($id) => (int) $id)
+                        ->all();
+
+                    if ($exam->shuffle_options) {
+                        shuffle($optionIds);
+                    }
+
+                    $optionOrder[(string) $question->id] = $optionIds;
+                }
+            }
+
+            $lockedAttempt->forceFill([
+                'question_order' => $questionOrder,
+                'option_order' => $optionOrder,
+            ])->save();
+        }, 3);
     }
 
     public function getRemainingSeconds(
