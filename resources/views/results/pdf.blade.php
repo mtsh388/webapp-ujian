@@ -589,7 +589,7 @@
                                 </span>
                         @endif
 
-                        @if ($isCorrectOption)
+                        @if ($showCorrectAnswers && $isCorrectOption)
                             <span class="badge badge-success">
                                     Jawaban Benar
                                 </span>
@@ -631,7 +631,7 @@
                         Jawaban Salah
                     </div>
 
-                    @if ($correctOption)
+                    @if ($showCorrectAnswers && $correctOption)
                         Jawaban yang benar adalah
                         <strong>
                             {{ $correctOption->option_key }}
