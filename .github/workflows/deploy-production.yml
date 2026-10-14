@@ -1,0 +1,95 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: 'Jalankan php artisan migrate --force'
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Laravel to HestiaCP
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Install deployment tools
+        run: sudo apt-get update && sudo apt-get install -y rsync openssh-client
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Validate deployment settings
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_PATH"
+          case "$DEPLOY_PATH" in
+            /home/user/web/demo-bimbel.dtgroup.co.id/public_html) ;;
+            *) echo 'DEPLOY_PATH tidak sesuai dengan path production yang diharapkan.'; exit 1 ;;
+          esac
+
+      - name: Sync application files
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          rsync -az \
+            --exclude='/.git/' \
+            --exclude='/.github/' \
+            --exclude='/.env' \
+            --exclude='/vendor/' \
+            --exclude='/node_modules/' \
+            --exclude='/storage/' \
+            --exclude='/public/storage' \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      - name: Install dependencies and refresh Laravel caches
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          RUN_MIGRATIONS: ${{ inputs.run_migrations }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "bash -s -- '$DEPLOY_PATH' '$RUN_MIGRATIONS'" <<'REMOTE'
+          set -euo pipefail
+          APP_PATH="$1"
+          RUN_MIGRATIONS="$2"
+          cd "$APP_PATH"
+          test -f .env
+          test -f artisan
+          php8.5 "$(command -v composer)" install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+          if [ "$RUN_MIGRATIONS" = "true" ]; then
+            php8.5 artisan migrate --force
+          fi
+          php8.5 artisan optimize:clear
+          php8.5 artisan config:cache
+          php8.5 artisan view:cache
+          chmod -R ug+rwX storage bootstrap/cache
+          php8.5 artisan about --only=environment
+          REMOTE
