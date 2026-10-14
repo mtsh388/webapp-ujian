@@ -221,6 +221,10 @@ Route::middleware(['auth', 'password.first'])->group(function () {
                 ->name('questions.show');
         });
 
+    Route::get('/pengawasan/pelanggaran/data', [ExamViolationController::class, 'data'])
+        ->middleware('permission:exam.violation.view')
+        ->name('proctoring.data');
+
     Route::get('/pengawasan/pelanggaran', [ExamViolationController::class, 'index'])
         ->middleware('permission:exam.violation.view')
         ->name('proctoring.index');
