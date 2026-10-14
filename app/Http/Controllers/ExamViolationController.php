@@ -1,29 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\\Http\\Controllers;
 
-use App\Models\Exam;
-use App\Models\ExamAttempt;
-use App\Models\ExamViolation;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
+use App\\Models\\Exam;
+use App\\Models\\ExamAttempt;
+use App\\Models\\ExamViolation;
+use Illuminate\\Http\\JsonResponse;
+use Illuminate\\Http\\Request;
+use Illuminate\\View\\View;
 
 class ExamViolationController extends Controller
 {
     public function index(): View
     {
-        $violations = ExamViolation::query()
-            ->with([
-                'attempt.exam',
-                'attempt.student',
-                'attempt' => fn ($query) => $query->withCount('violations'),
-            ])
-            ->latest()
-            ->paginate(25);
-
         return view('proctoring.index', [
-            'violations' => $violations,
             'totalToday' => ExamViolation::whereDate('created_at', today())->count(),
             'attemptsFlagged' => ExamViolation::whereDate('created_at', today())
                 ->distinct('exam_attempt_id')
@@ -31,6 +21,93 @@ class ExamViolationController extends Controller
             'activeAttemptsFlagged' => ExamViolation::whereHas('attempt', function ($query) {
                 $query->where('status', 'in_progress');
             })->distinct('exam_attempt_id')->count('exam_attempt_id'),
+        ]);
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $draw = (int) $request->input('draw', 1);
+        $start = max((int) $request->input('start', 0), 0);
+        $length = (int) $request->input('length', 10);
+        $length = $length === -1 ? 100 : min(max($length, 1), 100);
+
+        $baseQuery = ExamViolation::query()
+            ->leftJoin('exam_attempts as attempts', 'attempts.id', '=', 'exam_violations.exam_attempt_id')
+            ->leftJoin('students', 'students.id', '=', 'attempts.student_id')
+            ->leftJoin('exams', 'exams.id', '=', 'attempts.exam_id')
+            ->select('exam_violations.*');
+
+        $recordsTotal = (clone $baseQuery)->count('exam_violations.id');
+
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('students.full_name', 'like', "%{$search}%")
+                    ->orWhere('exams.title', 'like', "%{$search}%")
+                    ->orWhere('exam_violations.event_type', 'like', "%{$search}%")
+                    ->orWhere('exam_violations.exam_attempt_id', 'like', "%{$search}%")
+                    ->orWhere('attempts.status', 'like', "%{$search}%")
+                    ->orWhere('exam_violations.created_at', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('exam_violations.id');
+
+        $columns = [
+            0 => 'exam_violations.created_at',
+            1 => 'students.full_name',
+            2 => 'exams.title',
+            3 => 'exam_violations.event_type',
+            4 => 'attempts.id',
+            5 => 'attempts.status',
+        ];
+
+        $orderColumn = (int) $request->input('order.0.column', 0);
+        $orderBy = $columns[$orderColumn] ?? 'exam_violations.created_at';
+        $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc'
+            ? 'asc'
+            : 'desc';
+
+        $violations = $baseQuery
+            ->with([
+                'attempt.exam',
+                'attempt.student',
+                'attempt' => fn ($query) => $query->withCount('violations'),
+            ])
+            ->orderBy($orderBy, $orderDirection)
+            ->orderBy('exam_violations.id', 'desc')
+            ->offset($start)
+            ->limit($length)
+            ->get();
+
+        $data = $violations->values()->map(function (ExamViolation $violation, int $index) use ($start) {
+            $attempt = $violation->attempt;
+
+            return [
+                'no' => $start + $index + 1,
+                'id' => $violation->id,
+                'created_date' => $violation->created_at?->format('d-m-Y') ?? '-',
+                'created_time' => $violation->created_at?->format('H:i:s') ?? '-',
+                'student_name' => $attempt?->student?->full_name ?? 'Peserta tidak tersedia',
+                'attempt_id' => $violation->exam_attempt_id,
+                'exam_title' => $attempt?->exam?->title ?? 'Ujian tidak tersedia',
+                'event_label' => $violation->event_label,
+                'event_type' => $violation->event_type,
+                'visibility_state' => $violation->metadata['visibility_state'] ?? null,
+                'violations_count' => $attempt?->violations_count ?? 0,
+                'status' => $attempt?->status,
+                'status_label' => $attempt?->status
+                    ? ucfirst(str_replace('_', ' ', $attempt->status))
+                    : 'Tidak tersedia',
+            ];
+        });
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
         ]);
     }
 
