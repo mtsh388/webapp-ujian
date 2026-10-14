@@ -1049,6 +1049,27 @@
                     1000
                 );
 
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Masuk Mode Fullscreen',
+                    text: 'Untuk memulai ujian dalam tampilan penuh, klik tombol di bawah. Browser memerlukan tindakan langsung dari Anda untuk mengaktifkan fullscreen.',
+                    confirmButtonText: 'Mulai Ujian Fullscreen',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showCancelButton: false,
+                    preConfirm: async () => {
+                        try {
+                            await document.documentElement.requestFullscreen();
+                            return true;
+                        } catch (error) {
+                            Swal.showValidationMessage('Browser tidak mengizinkan fullscreen. Klik tombol Masuk Fullscreen pada halaman untuk mencoba kembali.');
+                            return false;
+                        }
+                    }
+                });
+            }
+
         });
     </script>
 @endsection
