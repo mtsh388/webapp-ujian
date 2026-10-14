@@ -188,8 +188,37 @@
         .question-content table,
         .option-content table,
         .explanation-content table {
+            border-collapse: collapse;
+            border: 1px solid #666;
             max-width: 100%;
-            width: auto;
+            width: 100%;
+            margin: 8px 0;
+            table-layout: auto;
+        }
+
+        .question-content th,
+        .question-content td,
+        .option-content th,
+        .option-content td,
+        .explanation-content th,
+        .explanation-content td {
+            border: 1px solid #666;
+            padding: 5px 7px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .question-content th,
+        .option-content th,
+        .explanation-content th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .question-content tr,
+        .option-content tr,
+        .explanation-content tr {
+            page-break-inside: avoid;
         }
 
         .option {
