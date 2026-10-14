@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreExamRequest;
 use App\Models\Exam;
 use App\Models\ExamParticipant;
+use App\Models\ExamAttempt;
+use App\Models\Student;
 use App\Services\ExamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -138,7 +140,19 @@ class ExamController extends Controller
             9
         );
 
-        return view('exams.available', compact('exams'));
+        $student = Student::query()
+            ->where('user_id', auth()->id())
+            ->first();
+
+        $activeAttempts = $student
+            ? ExamAttempt::query()
+                ->where('student_id', $student->id)
+                ->where('status', 'in_progress')
+                ->get()
+                ->keyBy('exam_id')
+            : collect();
+
+        return view('exams.available', compact('exams', 'activeAttempts'));
     }
 
     public function participants(Exam $exam)
