@@ -298,7 +298,7 @@ class ExamAttemptService
         ?int        $selectedOptionId
     ): ExamAnswer
     {
-        return DB::transaction(function () use (
+        $answer = DB::transaction(function () use (
             $attempt,
             $examQuestionId,
             $selectedOptionId
@@ -308,12 +308,32 @@ class ExamAttemptService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($lockedAttempt->status !== 'in_progress') {
+                throw new RuntimeException(
+                    'Ujian sudah tidak dapat dikerjakan.'
+                );
+            }
+
+            if ($this->isExpired($lockedAttempt)) {
+                $this->submit($lockedAttempt, true);
+
+                return null;
+            }
+
             return $this->answerLocked(
                 $lockedAttempt,
                 $examQuestionId,
                 $selectedOptionId
             );
         }, 3);
+
+        if (!$answer) {
+            throw new RuntimeException(
+                'Waktu ujian telah habis.'
+            );
+        }
+
+        return $answer;
     }
 
     protected function answerLocked(
@@ -327,14 +347,6 @@ class ExamAttemptService
         if ($attempt->status !== 'in_progress') {
             throw new RuntimeException(
                 'Ujian sudah tidak dapat dikerjakan.'
-            );
-        }
-
-        if ($this->isExpired($attempt)) {
-            $this->submit($attempt, true);
-
-            throw new RuntimeException(
-                'Waktu ujian telah habis.'
             );
         }
 
