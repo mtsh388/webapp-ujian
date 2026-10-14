@@ -168,8 +168,8 @@
                                 @endphp
 
                                 <div class="rounded border p-2 mb-2
-                                    {{ $isSelected && $isAnswerKey ? 'border-success bg-label-success' : '' }}
-                                    {{ $isSelected && !$isAnswerKey ? 'border-danger bg-label-danger' : '' }}">
+                                    {{ $showCorrectAnswers && $isSelected && $isAnswerKey ? 'border-success bg-label-success' : '' }}
+                                    {{ $showCorrectAnswers && $isSelected && !$isAnswerKey ? 'border-danger bg-label-danger' : '' }}">
                                     <div class="d-flex align-items-start gap-2">
                                         <span>
                                             {{ $option->option_label ?? $option->label ?? '' }}
