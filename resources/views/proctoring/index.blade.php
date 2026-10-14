@@ -97,6 +97,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const table = document.querySelector('#proctoringTable');
+            const exportContainer = document.querySelector('#proctoringExportButtons');
 
             if (!table) {
                 return;
@@ -114,33 +115,23 @@
                 });
             };
 
-            new DataTable(table, {
+            const dataTable = new DataTable(table, {
                 processing: true,
                 serverSide: true,
-
                 ajax: {
                     url: '{{ route('proctoring.data') }}',
                     type: 'GET'
                 },
-
                 pageLength: 10,
-
                 lengthMenu: [
                     [10, 25, 50, 75, 100],
                     [10, 25, 50, 75, 100]
                 ],
-
-                order: [
-                    [1, 'desc']
-                ],
-
+                order: [[1, 'desc']],
                 responsive: false,
                 scrollX: true,
-
                 dom:
-                    '<"row"' +
-                    '<"col-12 d-none"B>' +
-                    '>' +
+                    '<"row"<"col-12"B>>' +
                     '<"row mx-2"' +
                     '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"l>' +
                     '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>' +
@@ -150,7 +141,6 @@
                     '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"i>' +
                     '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"p>' +
                     '>',
-
                 language: {
                     processing: 'Memproses...',
                     search: 'Cari:',
@@ -167,7 +157,6 @@
                         previous: 'Sebelumnya'
                     }
                 },
-
                 buttons: [
                     {
                         extend: 'collection',
@@ -202,7 +191,6 @@
                         ]
                     }
                 ],
-
                 columns: [
                     {
                         data: 'no',
@@ -230,8 +218,12 @@
                                 return data || '';
                             }
 
-                            return '<div class="fw-semibold">' + escapeHtml(data || 'Peserta tidak tersedia') + '</div>' +
-                                '<small class="text-muted">Sesi #' + escapeHtml(row.exam_attempt_id) + '</small>';
+                            return '<div class="fw-semibold">' +
+                                escapeHtml(data || 'Peserta tidak tersedia') +
+                                '</div>' +
+                                '<small class="text-muted">Sesi #' +
+                                escapeHtml(row.exam_attempt_id) +
+                                '</small>';
                         }
                     },
                     {
@@ -250,10 +242,15 @@
                             }
 
                             const visibility = row.visibility_state
-                                ? '<small class="d-block text-muted mt-1">' + escapeHtml(row.visibility_state) + '</small>'
+                                ? '<small class="d-block text-muted mt-1">' +
+                                    escapeHtml(row.visibility_state) +
+                                    '</small>'
                                 : '';
 
-                            return '<span class="badge bg-label-warning">' + escapeHtml(data || '-') + '</span>' + visibility;
+                            return '<span class="badge bg-label-warning">' +
+                                escapeHtml(data || '-') +
+                                '</span>' +
+                                visibility;
                         }
                     },
                     {
@@ -261,7 +258,9 @@
                         name: 'session_event_count',
                         searchable: false,
                         render: function (data) {
-                            return '<span class="fw-medium">' + escapeHtml(data ?? 0) + '</span>';
+                            return '<span class="fw-medium">' +
+                                escapeHtml(data ?? 0) +
+                                '</span>';
                         }
                     },
                     {
@@ -276,23 +275,25 @@
                                 return '<span class="badge bg-label-secondary">Tidak tersedia</span>';
                             }
 
-                            return '<span class="badge bg-label-secondary">' +
-                                escapeHtml(data.replace(/_/g, ' ').replace(/\b\w/g, function (letter) {
+                            const statusLabel = data
+                                .replace(/_/g, ' ')
+                                .replace(/\b\w/g, function (letter) {
                                     return letter.toUpperCase();
-                                })) +
+                                });
+
+                            return '<span class="badge bg-label-secondary">' +
+                                escapeHtml(statusLabel) +
                                 '</span>';
                         }
                     }
-                ]
+                ],
+                initComplete: function () {
+                    if (exportContainer) {
+                        const buttons = this.api().buttons().container();
+                        exportContainer.appendChild(buttons[0]);
+                    }
+                }
             });
-
-            const exportContainer = document.querySelector('#proctoringExportButtons');
-
-            if (exportContainer) {
-                document.querySelectorAll('.dt-buttons').forEach(function (buttons) {
-                    exportContainer.appendChild(buttons);
-                });
-            }
         });
     </script>
 @endsection
