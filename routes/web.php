@@ -230,6 +230,10 @@ Route::middleware(['auth', 'password.first'])->group(function () {
                 ->name('questions.show');
         });
 
+    Route::get('/pengawasan/pelanggaran', [ExamViolationController::class, 'index'])
+        ->middleware('permission:exam.violation.view')
+        ->name('proctoring.index');
+
     Route::prefix('ujian')->group(function () {
 
         // 1. RUTE STATIS (Harus paling atas)
@@ -294,6 +298,10 @@ Route::middleware(['auth', 'password.first'])->group(function () {
 
             Route::post('/{exam}/attempt/{attempt}/submit', [ExamAttemptController::class, 'submit'])
                 ->name('exams.submit');
+
+            Route::post('/{exam}/attempt/{attempt}/violations', [ExamViolationController::class, 'store'])
+                ->middleware('throttle:30,1')
+                ->name('exams.violations.store');
         });
     });
 
