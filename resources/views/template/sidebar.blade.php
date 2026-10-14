@@ -183,6 +183,19 @@
             </li>
         @endif
 
+
+        @can('exam.violation.view')
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Pengawasan</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('proctoring.*') ? 'active' : '' }}">
+                <a href="{{ route('proctoring.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-shield-quarter"></i>
+                    <div>Log Aktivitas Ujian</div>
+                </a>
+            </li>
+        @endcan
+
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Akun</span>
         </li>
