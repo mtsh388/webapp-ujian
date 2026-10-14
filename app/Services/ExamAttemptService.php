@@ -313,6 +313,10 @@ class ExamAttemptService
             );
         }
 
+        $this->initializeAttemptOrder($attempt);
+        $attempt->refresh();
+        $attempt->loadMissing('exam');
+
         $examQuestion = ExamQuestion::query()
             ->where('id', $examQuestionId)
             ->where('exam_id', $attempt->exam_id)
@@ -325,6 +329,17 @@ class ExamAttemptService
             );
         }
 
+        $questionOrder = array_map(
+            'intval',
+            $attempt->question_order ?? []
+        );
+
+        if (!in_array((int) $examQuestion->id, $questionOrder, true)) {
+            throw new RuntimeException(
+                'Soal ini tidak termasuk dalam percobaan ujian Anda.'
+            );
+        }
+
         $selectedOption = null;
 
         if ($selectedOptionId !== null) {
@@ -334,6 +349,16 @@ class ExamAttemptService
             if (!$selectedOption) {
                 throw new RuntimeException(
                     'Pilihan jawaban tidak valid.'
+                );
+            }
+
+            $optionOrder = $attempt->option_order[(string) $examQuestion->id]
+                ?? $attempt->option_order[$examQuestion->id]
+                ?? [];
+
+            if (!in_array((int) $selectedOption->id, array_map('intval', $optionOrder), true)) {
+                throw new RuntimeException(
+                    'Pilihan jawaban ini tidak termasuk dalam percobaan ujian Anda.'
                 );
             }
         }
