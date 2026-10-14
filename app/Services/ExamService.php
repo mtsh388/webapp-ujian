@@ -203,7 +203,7 @@ class ExamService
             ->where('user_id', $userId)
             ->first();
 
-        if (!$student) {
+        if (!$student || !$student->is_active) {
             return new LengthAwarePaginator(
                 [],
                 0,
