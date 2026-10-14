@@ -64,6 +64,14 @@ class ExamAttemptController extends Controller
                     ->route('results.my.show', $attempt->id);
             }
 
+            if ($exam->status !== 'published') {
+                $attempt = $this->service->submit($attempt);
+
+                return redirect()
+                    ->route('results.my.show', $attempt->id)
+                    ->with('info', 'Ujian telah ditutup.');
+            }
+
             if ($this->service->isExpired($attempt)) {
                 $attempt = $this->service->submit(
                     $attempt,
@@ -211,8 +219,8 @@ class ExamAttemptController extends Controller
         $student = $this->getAuthenticatedStudent();
 
         if (
-            $attempt->exam_id !== $exam->id ||
-            $attempt->student_id !== $student->id
+            (int) $attempt->exam_id !== (int) $exam->id ||
+            (int) $attempt->student_id !== (int) $student->id
         ) {
             abort(403);
         }
