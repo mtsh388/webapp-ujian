@@ -56,29 +56,26 @@
         </div>
 
         <div class="card px-3">
-
             <div class="card-header border-bottom">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div>
-                        <h4 class="card-title mb-1">
-                            Log Aktivitas Ujian
-                        </h4>
-
+                        <h4 class="card-title mb-1">Log Aktivitas Ujian</h4>
                         <p class="card-subtitle text-muted mb-0">
                             Pantau aktivitas ujian yang perlu ditinjau. Waktu dicatat oleh server; tinjau konteks sebelum mengambil tindakan.
                         </p>
                     </div>
 
                     <span class="badge bg-label-secondary">
-                        Total {{ number_format($violations->total(), 0, ',', '.') }} aktivitas
+                        Total {{ number_format($totalViolations, 0, ',', '.') }} aktivitas
                     </span>
                 </div>
             </div>
 
             <div class="card-datatable table-responsive">
-                <table class="table table-bordered table-hover align-middle w-100">
+                <table id="proctoringTable" class="table table-bordered table-hover align-middle w-100">
                     <thead>
                     <tr>
+                        <th>No</th>
                         <th>Waktu</th>
                         <th>Peserta</th>
                         <th>Ujian</th>
@@ -87,81 +84,212 @@
                         <th>Status Sesi</th>
                     </tr>
                     </thead>
-
-                    <tbody>
-                    @forelse ($violations as $violation)
-                        <tr>
-                            <td class="text-nowrap">
-                                <div class="fw-medium">
-                                    {{ $violation->created_at?->format('d-m-Y') ?? '-' }}
-                                </div>
-                                <small class="text-muted">
-                                    {{ $violation->created_at?->format('H:i:s') ?? '-' }}
-                                </small>
-                            </td>
-
-                            <td>
-                                <div class="fw-semibold">
-                                    {{ $violation->attempt?->student?->full_name ?? 'Peserta tidak tersedia' }}
-                                </div>
-                                <small class="text-muted">
-                                    Sesi #{{ $violation->exam_attempt_id }}
-                                </small>
-                            </td>
-
-                            <td>
-                                {{ $violation->attempt?->exam?->title ?? 'Ujian tidak tersedia' }}
-                            </td>
-
-                            <td>
-                                <span class="badge bg-label-warning">
-                                    {{ $violation->event_label }}
-                                </span>
-
-                                @if (!empty($violation->metadata['visibility_state']))
-                                    <small class="d-block text-muted mt-1">
-                                        {{ $violation->metadata['visibility_state'] }}
-                                    </small>
-                                @endif
-                            </td>
-
-                            <td class="text-center">
-                                {{ $violation->attempt?->violations_count ?? $violation->attempt?->violations()->count() ?? 0 }}
-                            </td>
-
-                            <td>
-                                @if ($violation->attempt?->status === 'in_progress')
-                                    <span class="badge bg-label-primary">Sedang Ujian</span>
-                                @else
-                                    <span class="badge bg-label-secondary">
-                                        {{ $violation->attempt?->status ? ucfirst(str_replace('_', ' ', $violation->attempt->status)) : 'Tidak tersedia' }}
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <div class="mb-2">
-                                    <i class="bx bx-shield-quarter text-muted" style="font-size: 3rem;"></i>
-                                </div>
-                                <h6 class="mb-1">Belum Ada Aktivitas Ujian</h6>
-                                <p class="text-muted mb-0">
-                                    Aktivitas ujian yang tercatat akan ditampilkan di sini.
-                                </p>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
                 </table>
             </div>
-
-            @if ($violations->hasPages())
-                <div class="card-footer d-flex justify-content-end">
-                    {{ $violations->links() }}
-                </div>
-            @endif
-
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const table = document.querySelector('#proctoringTable');
+
+            if (!table) {
+                return;
+            }
+
+            const escapeHtml = function (value) {
+                return String(value ?? '').replace(/[&<>"']/g, function (character) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#039;'
+                    }[character];
+                });
+            };
+
+            new DataTable(table, {
+                processing: true,
+                serverSide: true,
+
+                ajax: {
+                    url: '{{ route('proctoring.data') }}',
+                    type: 'GET'
+                },
+
+                pageLength: 10,
+
+                lengthMenu: [
+                    [10, 25, 50, 75, 100],
+                    [10, 25, 50, 75, 100]
+                ],
+
+                order: [
+                    [1, 'desc']
+                ],
+
+                responsive: false,
+                scrollX: true,
+
+                dom:
+                    '<"row"' +
+                    '<"col-12 d-none"B>' +
+                    '>' +
+                    '<"row mx-2"' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"l>' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>' +
+                    '>' +
+                    't' +
+                    '<"row mx-2 mt-3 mb-4"' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"i>' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"p>' +
+                    '>',
+
+                language: {
+                    processing: 'Memproses...',
+                    search: 'Cari:',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ aktivitas',
+                    infoEmpty: 'Tidak ada aktivitas untuk ditampilkan',
+                    infoFiltered: '(difilter dari _MAX_ total aktivitas)',
+                    zeroRecords: 'Aktivitas tidak ditemukan',
+                    emptyTable: 'Belum ada aktivitas ujian yang tercatat',
+                    paginate: {
+                        first: 'Pertama',
+                        last: 'Terakhir',
+                        next: 'Berikutnya',
+                        previous: 'Sebelumnya'
+                    }
+                },
+
+                buttons: [
+                    {
+                        extend: 'collection',
+                        className: 'btn btn-label-primary dropdown-toggle',
+                        text: '<i class="bx bx-export me-1"></i>Export',
+                        buttons: [
+                            {
+                                extend: 'print',
+                                text: '<i class="bx bx-printer me-1"></i>Print',
+                                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                            },
+                            {
+                                extend: 'copy',
+                                text: '<i class="bx bx-copy me-1"></i>Copy',
+                                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="bx bx-file me-1"></i>CSV',
+                                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                            },
+                            {
+                                extend: 'excel',
+                                text: '<i class="bx bx-spreadsheet me-1"></i>Excel',
+                                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
+                                exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6] }
+                            }
+                        ]
+                    }
+                ],
+
+                columns: [
+                    {
+                        data: 'no',
+                        name: 'id',
+                        searchable: false,
+                        orderable: false
+                    },
+                    {
+                        data: 'created_date',
+                        name: 'created_at',
+                        render: function (data, type, row) {
+                            if (type !== 'display') {
+                                return (data || '') + ' ' + (row.created_time || '');
+                            }
+
+                            return '<div class="fw-medium">' + escapeHtml(data || '-') + '</div>' +
+                                '<small class="text-muted">' + escapeHtml(row.created_time || '-') + '</small>';
+                        }
+                    },
+                    {
+                        data: 'student_name',
+                        name: 'student_name',
+                        render: function (data, type, row) {
+                            if (type !== 'display') {
+                                return data || '';
+                            }
+
+                            return '<div class="fw-semibold">' + escapeHtml(data || 'Peserta tidak tersedia') + '</div>' +
+                                '<small class="text-muted">Sesi #' + escapeHtml(row.exam_attempt_id) + '</small>';
+                        }
+                    },
+                    {
+                        data: 'exam_title',
+                        name: 'exam_title',
+                        render: function (data) {
+                            return escapeHtml(data || 'Ujian tidak tersedia');
+                        }
+                    },
+                    {
+                        data: 'event_label',
+                        name: 'event_type',
+                        render: function (data, type, row) {
+                            if (type !== 'display') {
+                                return data || '';
+                            }
+
+                            const visibility = row.visibility_state
+                                ? '<small class="d-block text-muted mt-1">' + escapeHtml(row.visibility_state) + '</small>'
+                                : '';
+
+                            return '<span class="badge bg-label-warning">' + escapeHtml(data || '-') + '</span>' + visibility;
+                        }
+                    },
+                    {
+                        data: 'session_event_count',
+                        name: 'session_event_count',
+                        searchable: false,
+                        render: function (data) {
+                            return '<span class="fw-medium">' + escapeHtml(data ?? 0) + '</span>';
+                        }
+                    },
+                    {
+                        data: 'attempt_status',
+                        name: 'attempt_status',
+                        render: function (data) {
+                            if (data === 'in_progress') {
+                                return '<span class="badge bg-label-primary">Sedang Ujian</span>';
+                            }
+
+                            if (!data) {
+                                return '<span class="badge bg-label-secondary">Tidak tersedia</span>';
+                            }
+
+                            return '<span class="badge bg-label-secondary">' +
+                                escapeHtml(data.replace(/_/g, ' ').replace(/\b\w/g, function (letter) {
+                                    return letter.toUpperCase();
+                                })) +
+                                '</span>';
+                        }
+                    }
+                ]
+            });
+
+            const exportContainer = document.querySelector('#proctoringExportButtons');
+
+            if (exportContainer) {
+                document.querySelectorAll('.dt-buttons').forEach(function (buttons) {
+                    exportContainer.appendChild(buttons);
+                });
+            }
+        });
+    </script>
 @endsection
