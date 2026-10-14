@@ -56,6 +56,11 @@ class ExamAttempt extends Model
         return $this->hasMany(ExamAnswer::class);
     }
 
+    public function violations()
+    {
+        return $this->hasMany(ExamViolation::class, 'exam_attempt_id');
+    }
+
     public function isFinished(): bool
     {
         return $this->status === 'submitted';
