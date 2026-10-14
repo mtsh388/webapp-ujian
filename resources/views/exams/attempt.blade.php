@@ -260,8 +260,8 @@
 
             const timerElement = document.getElementById('examTimer');
             let submitButton = document.getElementById('submitButton');
-            const answeredCountElement = document.getElementById('answeredCount');
-            const answerStatusElement = document.getElementById('answerStatus');
+            let answeredCountElement = document.getElementById('answeredCount');
+            let answerStatusElement = document.getElementById('answerStatus');
 
             const answerUrl = {{ Illuminate\Support\Js::from(route('exams.answer', [
                 'exam' => $exam->id,
@@ -278,6 +278,7 @@
             let remainingSeconds = {{ max(0, (int) $remainingSeconds) }};
             let isSubmitting = false;
             let isNavigating = false;
+            let shouldPushHistory = true;
             let saveAnswerPromise = null;
 
             const violationUrl = {{ Illuminate\Support\Js::from(route('exams.violations.store', [
@@ -665,8 +666,13 @@
                     }
 
                     document.getElementById('examQuestionPanel').outerHTML = data.html;
-                    history.pushState({ question: data.currentNumber }, '', requestUrl.toString());
+                    if (shouldPushHistory) {
+                        history.pushState({ question: data.currentNumber }, '', requestUrl.toString());
+                    }
+                    shouldPushHistory = true;
                     submitButton = document.getElementById('submitButton');
+                    answeredCountElement = document.getElementById('answeredCount');
+                    answerStatusElement = document.getElementById('answerStatus');
 
                     document.querySelectorAll('.question-number').forEach(numberLink => {
                         const number = Number(numberLink.textContent.trim());
@@ -715,6 +721,7 @@
                     return Number(new URL(item.href, window.location.origin).searchParams.get('question') || 1) === questionNumber;
                 });
                 if (link) {
+                    shouldPushHistory = false;
                     link.click();
                 }
             });
