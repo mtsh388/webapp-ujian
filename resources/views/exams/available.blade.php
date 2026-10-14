@@ -258,7 +258,7 @@
                                         @else
                                             <a
                                                 href="{{ route('exams.start', ['exam' => $exam->id]) }}"
-                                                class="btn btn-primary w-100 start-exam-fullscreen">
+                                                class="btn btn-primary w-100">
                                                 <i class="bx bx-play-circle me-1"></i>
                                                 Kerjakan Ujian
                                             </a>
@@ -346,26 +346,5 @@
             }
         }
     </style>
-
-    <script>
-        document.querySelectorAll('.start-exam-fullscreen').forEach(function (button) {
-            button.addEventListener('click', async function (event) {
-                event.preventDefault();
-
-                const destination = button.href;
-                button.classList.add('disabled');
-                button.setAttribute('aria-disabled', 'true');
-
-                try {
-                    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                        await document.documentElement.requestFullscreen();
-                    }
-                } catch (error) {
-                }
-
-                window.location.href = destination;
-            });
-        });
-    </script>
 
 @endsection
