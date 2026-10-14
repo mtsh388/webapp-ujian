@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Exam;
+use App\Models\ExamAttempt;
 use App\Models\ExamQuestion;
 use App\Models\QuestionBank;
 use App\Models\Student;
@@ -202,7 +203,7 @@ class ExamService
             ->where('user_id', $userId)
             ->first();
 
-        if (!$student) {
+        if (!$student || !$student->is_active) {
             return new LengthAwarePaginator(
                 [],
                 0,
@@ -260,6 +261,17 @@ class ExamService
             $exam,
             $questionBankIds
         ) {
+            $exam = Exam::query()
+                ->whereKey($exam->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
+                throw new \RuntimeException(
+                    'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
+                );
+            }
+
             $lastSortOrder = ExamQuestion::query()
                 ->where(
                     'exam_id',
@@ -378,14 +390,28 @@ class ExamService
     }
 
     public function removeQuestionFromExam(
+        int $examId,
         int $examQuestionId
-    ): bool
-    {
-        return $this
-            ->repository
-            ->deleteExamQuestion(
-                $examQuestionId
-            );
+    ): bool {
+        return DB::transaction(function () use ($examId, $examQuestionId) {
+            $exam = Exam::query()
+                ->whereKey($examId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
+                throw new \RuntimeException(
+                    'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
+                );
+            }
+
+            $question = ExamQuestion::query()
+                ->where('exam_id', $exam->id)
+                ->whereKey($examQuestionId)
+                ->firstOrFail();
+
+            return (bool) $question->delete();
+        }, 3);
     }
 
     public function getExamParticipants(

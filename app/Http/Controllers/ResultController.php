@@ -33,6 +33,12 @@ class ResultController extends Controller
                 'submitted',
                 'expired',
             ])
+            ->whereHas('exam', function ($query) {
+                $query->where(function ($query) {
+                    $query->where('show_result_immediately', true)
+                        ->orWhere('status', 'closed');
+                });
+            })
             ->latest('submitted_at')
             ->paginate(10);
 
@@ -62,6 +68,8 @@ class ResultController extends Controller
                     'Ujian belum dikumpulkan.'
                 );
         }
+
+        $this->ensureResultIsVisible($attempt);
 
         $attempt->load([
             'exam.questions.options',
@@ -93,6 +101,12 @@ class ResultController extends Controller
                 'submitted',
                 'expired',
             ])
+            ->whereHas('exam', function ($query) {
+                $query->where(function ($query) {
+                    $query->where('show_result_immediately', true)
+                        ->orWhere('status', 'closed');
+                });
+            })
             ->latest('submitted_at')
             ->paginate(10);
 
@@ -122,6 +136,8 @@ class ResultController extends Controller
                     'Ujian belum dikumpulkan.'
                 );
         }
+
+        $this->ensureResultIsVisible($attempt);
 
         $attempt->load([
             'exam.questions.options',
@@ -162,6 +178,8 @@ class ResultController extends Controller
                 );
         }
 
+        $this->ensureResultIsVisible($attempt);
+
         $attempt->load([
             'exam.questions.options',
             'student',
@@ -184,6 +202,18 @@ class ResultController extends Controller
             'hasil-ujian-' .
             ($attempt->exam?->code ?? $attempt->id) .
             '.pdf'
+        );
+    }
+
+    private function ensureResultIsVisible(ExamAttempt $attempt): void
+    {
+        $attempt->loadMissing('exam');
+
+        abort_unless(
+            $attempt->exam &&
+            ($attempt->exam->show_result_immediately || $attempt->exam->status === 'closed'),
+            403,
+            'Hasil ujian belum tersedia.'
         );
     }
 
@@ -221,7 +251,7 @@ class ResultController extends Controller
             ->flatMap(function ($student) {
                 return $student->examAttempts
                     ->whereIn('status', ['submitted', 'expired'])
-                    ->filter(fn ($attempt) => $attempt->submitted_at !== null)
+                    ->filter(fn ($attempt) => $attempt->submitted_at !== null && ($attempt->exam?->show_result_immediately || $attempt->exam?->status === 'closed'))
                     ->map(function ($attempt) use ($student) {
                         $attempt->setRelation('student', $student);
 
@@ -251,6 +281,8 @@ class ResultController extends Controller
                 && $attempt->submitted_at !== null,
             404
         );
+
+        $this->ensureResultIsVisible($attempt);
 
         $attempt->load([
             'student.classRoom',

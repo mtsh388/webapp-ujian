@@ -41,11 +41,11 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        $user->update([
+        $user->forceFill([
             'password' => $request->validated('password'),
             'must_change_password' => false,
             'password_changed_at' => now(),
-        ]);
+        ])->save();
 
         $request->session()->regenerate();
 

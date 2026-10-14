@@ -17,16 +17,6 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'password.first'])->group(function () {
-    Route::get('/php-upload-check', function () {
-        return response()->json([
-            'php_version' => PHP_VERSION,
-            'sapi' => PHP_SAPI,
-            'upload_max_filesize' => ini_get('upload_max_filesize'),
-            'post_max_size' => ini_get('post_max_size'),
-            'upload_tmp_dir' => ini_get('upload_tmp_dir'),
-            'max_file_uploads' => ini_get('max_file_uploads'),
-        ]);
-    });
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
@@ -288,7 +278,8 @@ Route::middleware(['auth', 'password.first'])->group(function () {
         Route::post('/{exam}/close', [ExamController::class, 'close'])->middleware('permission:exam.close')->name('exams.close');
 
         Route::middleware('permission:exam.take')->group(function () {
-            Route::get('/{exam}/mulai', [ExamAttemptController::class, 'start'])
+            Route::post('/{exam}/mulai', [ExamAttemptController::class, 'start'])
+                ->middleware('throttle:10,1')
                 ->name('exams.start');
 
             Route::get('/{exam}/attempt/{attempt}', [ExamAttemptController::class, 'show'])

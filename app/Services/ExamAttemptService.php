@@ -20,86 +20,108 @@ class ExamAttemptService
     }
 
     public function start(
-        Exam    $exam,
+        Exam $exam,
         Student $student
-    ): ExamAttempt
-    {
-        if ($exam->status !== 'published') {
-            throw new RuntimeException(
-                'Ujian belum dipublikasikan.'
+    ): ExamAttempt {
+        return DB::transaction(function () use ($exam, $student) {
+            $lockedStudent = Student::query()
+                ->whereKey($student->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (!$lockedStudent->is_active) {
+                throw new RuntimeException(
+                    'Akun siswa tidak aktif.'
+                );
+            }
+
+            $lockedExam = Exam::query()
+                ->whereKey($exam->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedExam->status !== 'published') {
+                throw new RuntimeException(
+                    'Ujian belum dipublikasikan.'
+                );
+            }
+
+            $now = now();
+
+            if ($lockedExam->start_at && $now->lt($lockedExam->start_at)) {
+                throw new RuntimeException(
+                    'Ujian belum dimulai.'
+                );
+            }
+
+            if ($lockedExam->end_at && $now->gte($lockedExam->end_at)) {
+                throw new RuntimeException(
+                    'Waktu ujian telah berakhir.'
+                );
+            }
+
+            $isActiveParticipant = $lockedExam->participants()
+                ->where('student_id', $lockedStudent->id)
+                ->where('is_active', true)
+                ->exists();
+
+            if (!$isActiveParticipant) {
+                throw new RuntimeException(
+                    'Anda tidak terdaftar sebagai peserta aktif ujian ini.'
+                );
+            }
+
+            $existingAttempt = $this->repository->getActiveAttempt(
+                $lockedExam->id,
+                $lockedStudent->id
             );
-        }
 
-        $now = now();
+            if ($existingAttempt) {
+                return $existingAttempt;
+            }
 
-        if (
-            $exam->start_at &&
-            $now->lt($exam->start_at)
-        ) {
-            throw new RuntimeException(
-                'Ujian belum dimulai.'
+            $attemptCount = $this->repository->getAttemptCount(
+                $lockedExam->id,
+                $lockedStudent->id
             );
-        }
 
-        if (
-            $exam->end_at &&
-            $now->gt($exam->end_at)
-        ) {
-            throw new RuntimeException(
-                'Waktu ujian telah berakhir.'
-            );
-        }
+            if (
+                $lockedExam->max_attempts !== null &&
+                $attemptCount >= $lockedExam->max_attempts
+            ) {
+                throw new RuntimeException(
+                    'Anda sudah mencapai batas maksimal percobaan ujian.'
+                );
+            }
 
-        $existingAttempt = $this->repository->getActiveAttempt(
-            $exam->id,
-            $student->id
-        );
+            $totalQuestions = $lockedExam->questions()->count();
 
-        if ($existingAttempt) {
-            return $existingAttempt;
-        }
+            if ($totalQuestions === 0) {
+                throw new RuntimeException(
+                    'Ujian belum memiliki soal.'
+                );
+            }
 
-        $attemptCount = $this->repository->getAttemptCount(
-            $exam->id,
-            $student->id
-        );
+            $attempt = $this->repository->create([
+                'exam_id' => $lockedExam->id,
+                'student_id' => $lockedStudent->id,
+                'attempt_number' => $attemptCount + 1,
+                'started_at' => $now,
+                'total_questions' => $totalQuestions,
+                'correct_answers' => 0,
+                'wrong_answers' => 0,
+                'unanswered' => $totalQuestions,
+                'total_score' => 0,
+                'score' => 0,
+                'duration_seconds' => 0,
+                'status' => 'in_progress',
+                'passed' => false,
+            ]);
 
-        if (
-            $exam->max_attempts !== null &&
-            $attemptCount >= $exam->max_attempts
-        ) {
-            throw new RuntimeException(
-                'Anda sudah mencapai batas maksimal percobaan ujian.'
-            );
-        }
+            $this->initializeAttemptOrder($attempt);
 
-        $totalQuestions = $exam->questions()->count();
-
-        if ($totalQuestions === 0) {
-            throw new RuntimeException(
-                'Ujian belum memiliki soal.'
-            );
-        }
-
-        $attempt = $this->repository->create([
-            'exam_id' => $exam->id,
-            'student_id' => $student->id,
-            'attempt_number' => $attemptCount + 1,
-            'started_at' => now(),
-            'total_questions' => $totalQuestions,
-            'correct_answers' => 0,
-            'wrong_answers' => 0,
-            'unanswered' => $totalQuestions,
-            'total_score' => 0,
-            'score' => 0,
-            'duration_seconds' => 0,
-            'status' => 'in_progress',
-            'passed' => false,
-        ]);
-
-        $this->initializeAttemptOrder($attempt);
-
-        return $attempt->fresh();
+            return $attempt->fresh();
+        }, 3);
     }
 
     public function isExpired(ExamAttempt $attempt): bool
