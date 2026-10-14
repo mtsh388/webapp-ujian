@@ -243,7 +243,7 @@
                             <div class="border rounded-3 p-4 bg-light">
 
                                 <div class="question-content">
-                                    {!! \\App\\Support\\QuestionHtml::sanitize($questionBank->question) !!}
+                                    {!! \App\Support\QuestionHtml::sanitize($questionBank->question) !!}
                                 </div>
 
                             </div>
@@ -541,7 +541,7 @@
 
                                                 @if (filled($option->option_text))
                                                     <div class="option-content">
-                                                        {!! \\App\\Support\\QuestionHtml::sanitize($option->option_text) !!}
+                                                        {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
                                                     </div>
                                                 @endif
 
@@ -681,7 +681,7 @@
                                 <div class="border rounded-3 p-4 bg-light">
 
                                     <div class="explanation-content">
-                                        {!! \\App\\Support\\QuestionHtml::sanitize($questionBank->explanation) !!}
+                                        {!! \App\Support\QuestionHtml::sanitize($questionBank->explanation) !!}
                                     </div>
 
                                 </div>
