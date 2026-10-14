@@ -1049,7 +1049,15 @@
                     1000
                 );
 
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            const fullscreenPromptKey = 'exam-fullscreen-prompt-{{ $attempt->id }}';
+
+            if (
+                !document.fullscreenElement &&
+                document.documentElement.requestFullscreen &&
+                !sessionStorage.getItem(fullscreenPromptKey)
+            ) {
+                sessionStorage.setItem(fullscreenPromptKey, 'shown');
+
                 Swal.fire({
                     icon: 'info',
                     title: 'Masuk Mode Fullscreen',
