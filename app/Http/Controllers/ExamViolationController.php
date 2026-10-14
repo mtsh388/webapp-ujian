@@ -14,8 +14,11 @@ class ExamViolationController extends Controller
     public function index(): View
     {
         $violations = ExamViolation::query()
-            ->with(['attempt.exam', 'attempt.student'])
-            ->withCount('attempt.violations')
+            ->with([
+                'attempt.exam',
+                'attempt.student',
+                'attempt' => fn ($query) => $query->withCount('violations'),
+            ])
             ->latest()
             ->paginate(25);
 
