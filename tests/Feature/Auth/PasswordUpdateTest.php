@@ -3,13 +3,15 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
-test('password can be updated', function () {
-    $user = User::factory()->create();
+test('password can be updated through the change password route', function () {
+    $user = User::factory()->create([
+        'must_change_password' => false,
+    ]);
 
     $response = $this
         ->actingAs($user)
-        ->from('/profile')
-        ->put('/password', [
+        ->from('/change-password')
+        ->put('/change-password', [
             'current_password' => 'password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
@@ -17,24 +19,30 @@ test('password can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect('/profile');
+        ->assertRedirect(route('dashboard', absolute: false));
 
-    $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+    expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+    expect($user->must_change_password)->toBeFalse();
+    expect($user->password_changed_at)->not->toBeNull();
 });
 
-test('correct password must be provided to update password', function () {
-    $user = User::factory()->create();
+test('current password is required to update the password', function () {
+    $user = User::factory()->create([
+        'must_change_password' => false,
+    ]);
 
     $response = $this
         ->actingAs($user)
-        ->from('/profile')
-        ->put('/password', [
+        ->from('/change-password')
+        ->put('/change-password', [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ]);
 
     $response
-        ->assertSessionHasErrorsIn('updatePassword', 'current_password')
-        ->assertRedirect('/profile');
+        ->assertSessionHasErrors('current_password')
+        ->assertRedirect('/change-password');
+
+    expect(Hash::check('password', $user->refresh()->password))->toBeTrue();
 });
