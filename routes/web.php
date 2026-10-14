@@ -8,6 +8,7 @@ use App\Http\Controllers\ParentController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
+use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
 use Illuminate\Support\Facades\Route;
 
