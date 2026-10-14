@@ -15,6 +15,7 @@ class ExamViolationController extends Controller
     {
         $violations = ExamViolation::query()
             ->with(['attempt.exam', 'attempt.student'])
+            ->withCount('attempt.violations')
             ->latest()
             ->paginate(25);
 
@@ -51,6 +52,7 @@ class ExamViolationController extends Controller
         $validated = $request->validate([
             'event_type' => ['required', 'in:tab_hidden,fullscreen_exit'],
             'metadata' => ['nullable', 'array'],
+            'metadata.visibility_state' => ['nullable', 'string', 'max:30'],
             'metadata.fullscreen_supported' => ['nullable', 'boolean'],
         ]);
 
