@@ -81,7 +81,7 @@ class ExamAttemptService
             );
         }
 
-        return $this->repository->create([
+        $attempt = $this->repository->create([
             'exam_id' => $exam->id,
             'student_id' => $student->id,
             'attempt_number' => $attemptCount + 1,
@@ -96,6 +96,10 @@ class ExamAttemptService
             'status' => 'in_progress',
             'passed' => false,
         ]);
+
+        $this->initializeAttemptOrder($attempt);
+
+        return $attempt->fresh();
     }
 
     public function isExpired(ExamAttempt $attempt): bool
@@ -128,11 +132,36 @@ class ExamAttemptService
             'answers',
         ]);
 
+        $this->initializeAttemptOrder($attempt);
+        $attempt->refresh();
+
         $questions = $attempt->exam
             ->questions()
             ->with('options')
             ->orderBy('sort_order')
             ->get();
+
+        $questionsById = $questions->keyBy('id');
+
+        $questions = collect($attempt->question_order)
+            ->map(fn($questionId) => $questionsById->get($questionId))
+            ->filter()
+            ->values();
+
+        foreach ($questions as $question) {
+            $optionIds = $attempt->option_order[(string)$question->id]
+                ?? $attempt->option_order[$question->id]
+                ?? [];
+
+            $optionsById = $question->options->keyBy('id');
+
+            $orderedOptions = collect($optionIds)
+                ->map(fn($optionId) => $optionsById->get($optionId))
+                ->filter()
+                ->values();
+
+            $question->setRelation('options', $orderedOptions);
+        }
 
         $totalQuestions = $questions->count();
 
@@ -172,6 +201,62 @@ class ExamAttemptService
             'currentAnswer' => $currentAnswer,
             'remainingSeconds' => $remainingSeconds,
         ];
+    }
+
+    protected function initializeAttemptOrder(
+        ExamAttempt $attempt
+    ): void
+    {
+        if (
+            $attempt->question_order !== null &&
+            $attempt->option_order !== null
+        ) {
+            return;
+        }
+
+        $exam = $attempt->exam()->firstOrFail();
+
+        $questions = $exam->questions()
+            ->with('options')
+            ->orderBy('sort_order')
+            ->get();
+
+        $questionOrder = $attempt->question_order;
+
+        if ($questionOrder === null) {
+            $questionOrder = $questions
+                ->pluck('id')
+                ->map(fn($id) => (int)$id)
+                ->all();
+
+            if ($exam->shuffle_questions) {
+                shuffle($questionOrder);
+            }
+        }
+
+        $optionOrder = $attempt->option_order;
+
+        if ($optionOrder === null) {
+            $optionOrder = [];
+
+            foreach ($questions as $question) {
+                $optionIds = $question->options
+                    ->pluck('id')
+                    ->map(fn($id) => (int)$id)
+                    ->all();
+
+                if ($exam->shuffle_options) {
+                    shuffle($optionIds);
+                }
+
+                $optionOrder[(string)$question->id] = $optionIds;
+            }
+        }
+
+        $attempt->forceFill([
+            'question_order' => $questionOrder,
+            'option_order' => $optionOrder,
+        ])->save();
     }
 
     public function getRemainingSeconds(
