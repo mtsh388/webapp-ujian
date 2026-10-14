@@ -1,14 +1,14 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\Exam;
-use App\\Models\\ExamAttempt;
-use App\\Models\\ExamViolation;
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\View\\View;
+use App\Models\Exam;
+use App\Models\ExamAttempt;
+use App\Models\ExamViolation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class ExamViolationController extends Controller
 {
@@ -35,7 +35,7 @@ class ExamViolationController extends Controller
 
         $recordsTotal = (clone $baseQuery)->count('exam_violations.id');
 
-        $search = trim((string) $request->input('search.value', ''));
+        $search = trim((string)$request->input('search.value', ''));
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
@@ -58,15 +58,15 @@ class ExamViolationController extends Controller
             5 => 'exam_attempts.status',
         ];
 
-        $orderColumn = (int) $request->input('order.0.column', 0);
-        $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc'
+        $orderColumn = (int)$request->input('order.0.column', 0);
+        $orderDirection = strtolower((string)$request->input('order.0.dir', 'desc')) === 'asc'
             ? 'asc'
             : 'desc';
 
         $orderBy = $columns[$orderColumn] ?? 'exam_violations.created_at';
 
-        $start = max(0, (int) $request->input('start', 0));
-        $length = (int) $request->input('length', 10);
+        $start = max(0, (int)$request->input('start', 0));
+        $length = (int)$request->input('length', 10);
         $length = $length < 1 ? 10 : min($length, 100);
 
         $rows = $baseQuery
@@ -106,23 +106,23 @@ class ExamViolationController extends Controller
                 'no' => $start + $index + 1,
                 'id' => $violation->id,
                 'created_date' => $violation->created_at
-                    ? \\Illuminate\\Support\\Carbon::parse($violation->created_at)->format('d-m-Y')
+                    ? \Illuminate\Support\Carbon::parse($violation->created_at)->format('d-m-Y')
                     : '-',
                 'created_time' => $violation->created_at
-                    ? \\Illuminate\\Support\\Carbon::parse($violation->created_at)->format('H:i:s')
+                    ? \Illuminate\Support\Carbon::parse($violation->created_at)->format('H:i:s')
                     : '-',
                 'student_name' => $violation->student_name ?: 'Peserta tidak tersedia',
                 'exam_attempt_id' => $violation->exam_attempt_id,
                 'exam_title' => $violation->exam_title ?: 'Ujian tidak tersedia',
                 'event_label' => $eventLabel,
                 'visibility_state' => $metadata['visibility_state'] ?? null,
-                'session_event_count' => (int) $violation->session_event_count,
+                'session_event_count' => (int)$violation->session_event_count,
                 'attempt_status' => $violation->attempt_status,
             ];
         });
 
         return response()->json([
-            'draw' => (int) $request->input('draw', 0),
+            'draw' => (int)$request->input('draw', 0),
             'recordsTotal' => $recordsTotal,
             'recordsFiltered' => $recordsFiltered,
             'data' => $data,
@@ -135,8 +135,8 @@ class ExamViolationController extends Controller
 
         abort_unless(
             $student &&
-            (int) $attempt->student_id === (int) $student->id &&
-            (int) $attempt->exam_id === (int) $exam->id,
+            (int)$attempt->student_id === (int)$student->id &&
+            (int)$attempt->exam_id === (int)$exam->id,
             403
         );
 
