@@ -101,6 +101,12 @@ class ResultController extends Controller
                 'submitted',
                 'expired',
             ])
+            ->whereHas('exam', function ($query) {
+                $query->where(function ($query) {
+                    $query->where('show_result_immediately', true)
+                        ->orWhere('status', 'closed');
+                });
+            })
             ->latest('submitted_at')
             ->paginate(10);
 
