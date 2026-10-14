@@ -69,7 +69,8 @@ class ExamController extends Controller
     {
         try {
             $this->examService->removeQuestionFromExam(
-                (int)$questionId
+                (int) $id,
+                (int) $questionId
             );
 
             return response()->json([
