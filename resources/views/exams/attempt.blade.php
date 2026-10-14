@@ -402,7 +402,7 @@
             let isNavigating = false;
             let saveAnswerPromise = null;
 
-            const violationUrl = {{ Illuminate\\Support\\Js::from(route('exams.violations.store', [
+            const violationUrl = {{ Illuminate\Support\Js::from(route('exams.violations.store', [
                 'exam' => $exam->id,
                 'attempt' => $attempt->id,
             ])) }};
