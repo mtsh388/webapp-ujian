@@ -257,12 +257,13 @@
                                                 Waktu Habis
                                             </button>
                                         @else
-                                            <a
-                                                href="{{ route('exams.start', ['exam' => $exam->id]) }}"
-                                                class="btn btn-primary w-100">
-                                                <i class="bx {{ $activeAttempt ? 'bx-refresh' : 'bx-play-circle' }} me-1"></i>
-                                                {{ $activeAttempt ? 'Lanjutkan Ujian' : 'Kerjakan Ujian' }}
-                                            </a>
+                                            <form action="{{ route('exams.start', ['exam' => $exam->id]) }}" method="POST">
+                                                @csrf
+                                                <button type="submit" class="btn btn-primary w-100">
+                                                    <i class="bx {{ $activeAttempt ? 'bx-refresh' : 'bx-play-circle' }} me-1"></i>
+                                                    {{ $activeAttempt ? 'Lanjutkan Ujian' : 'Kerjakan Ujian' }}
+                                                </button>
+                                            </form>
                                         @endif
                                     </div>
 
