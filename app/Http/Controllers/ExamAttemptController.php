@@ -140,18 +140,11 @@ class ExamAttemptController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' =>
-                    'Jawaban berhasil disimpan.',
+                'message' => 'Jawaban berhasil disimpan.',
                 'data' => [
                     'answer_id' => $answer->id,
-                    'exam_question_id' =>
-                        $answer->exam_question_id,
-                    'selected_option_id' =>
-                        $answer->selected_option_id,
-                    'is_correct' =>
-                        $answer->is_correct,
-                    'score' =>
-                        $answer->score,
+                    'exam_question_id' => $answer->exam_question_id,
+                    'selected_option_id' => $answer->selected_option_id,
                 ],
             ]);
         } catch (RuntimeException $e) {
