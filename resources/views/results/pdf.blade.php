@@ -642,7 +642,7 @@
 
             @endif
 
-            @if ($question->explanation)
+            @if ($question->explanation && ($showCorrectAnswers || ($isAnswered && !$isCorrect)))
 
                 <div class="explanation">
 
