@@ -578,7 +578,7 @@
                                 <div class="result-question-content result-question-card-body p-4">
 
                                     <div class="question-content mb-4">
-                                        {!! $question->question !!}
+                                        {!! \App\Support\QuestionHtml::sanitize($question->question) !!}
                                     </div>
 
                                     <div class="d-flex flex-column gap-2">
@@ -606,7 +606,7 @@
                                                     </div>
 
                                                     <div class="flex-grow-1 option-content">
-                                                        {!! $option->option_text !!}
+                                                        {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
                                                     </div>
 
                                                     <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
@@ -712,7 +712,7 @@
                                                     </div>
 
                                                     <div class="explanation-content">
-                                                        {!! $question->explanation !!}
+                                                        {!! \App\Support\QuestionHtml::sanitize($question->explanation) !!}
                                                     </div>
 
                                                 </div>
