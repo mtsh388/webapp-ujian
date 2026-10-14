@@ -291,6 +291,30 @@ class ExamAttemptService
         ?int        $selectedOptionId
     ): ExamAnswer
     {
+        return DB::transaction(function () use (
+            $attempt,
+            $examQuestionId,
+            $selectedOptionId
+        ) {
+            $lockedAttempt = ExamAttempt::query()
+                ->whereKey($attempt->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            return $this->answerLocked(
+                $lockedAttempt,
+                $examQuestionId,
+                $selectedOptionId
+            );
+        }, 3);
+    }
+
+    protected function answerLocked(
+        ExamAttempt $attempt,
+        int         $examQuestionId,
+        ?int        $selectedOptionId
+    ): ExamAnswer
+    {
         $attempt->loadMissing('exam');
 
         if ($attempt->status !== 'in_progress') {
@@ -389,48 +413,15 @@ class ExamAttemptService
         ExamAttempt $attempt
     ): void
     {
-        $answers = $this->repository->getAnswers(
-            $attempt->id
-        );
-
-        $correct = $answers
-            ->where('is_correct', true)
-            ->count();
-
-        $wrong = $answers
-            ->filter(
-                fn($answer) => $answer->selected_option_id !== null &&
-                    $answer->is_correct === false
-            )
-            ->count();
-
-        $answered = $answers
-            ->filter(
-                fn($answer) => $answer->selected_option_id !== null
-            )
-            ->count();
-
-        $totalQuestions = $attempt->total_questions;
-
-        $unanswered = max(
-            0,
-            $totalQuestions - $answered
-        );
-
-        $totalScore = (float)$answers->sum(
-            fn($answer) => (float)$answer->score
-        );
-
-        $score = $totalQuestions > 0
-            ? ($correct / $totalQuestions) * 100
-            : 0;
+        $result = $this->repository->calculateResult($attempt);
 
         $this->repository->update($attempt, [
-            'correct_answers' => $correct,
-            'wrong_answers' => $wrong,
-            'unanswered' => $unanswered,
-            'total_score' => $totalScore,
-            'score' => $score,
+            'total_questions' => $result['total_questions'],
+            'correct_answers' => $result['correct_answers'],
+            'wrong_answers' => $result['wrong_answers'],
+            'unanswered' => $result['unanswered'],
+            'total_score' => $result['total_score'],
+            'score' => $result['score'],
         ]);
     }
 
@@ -439,61 +430,63 @@ class ExamAttemptService
         bool        $expired = false
     ): ExamAttempt
     {
-        if (
-            $attempt->status === 'submitted' ||
-            $attempt->status === 'expired'
-        ) {
-            return $attempt;
-        }
-
-        if ($attempt->status !== 'in_progress') {
-            throw new RuntimeException(
-                'Status percobaan ujian tidak valid.'
-            );
-        }
-
-        if (!$expired && $this->isExpired($attempt)) {
-            $expired = true;
-        }
-
         return DB::transaction(function () use (
             $attempt,
             $expired
         ) {
+            $lockedAttempt = ExamAttempt::query()
+                ->whereKey($attempt->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (
+                $lockedAttempt->status === 'submitted' ||
+                $lockedAttempt->status === 'expired'
+            ) {
+                return $lockedAttempt;
+            }
+
+            if ($lockedAttempt->status !== 'in_progress') {
+                throw new RuntimeException(
+                    'Status percobaan ujian tidak valid.'
+                );
+            }
+
+            $lockedAttempt->load('exam');
+
+            if (!$expired && $this->isExpired($lockedAttempt)) {
+                $expired = true;
+            }
+
             $result = $this->repository->calculateResult(
-                $attempt
+                $lockedAttempt
             );
 
             $score = $result['score'];
+            $passed = $score >= (float) $lockedAttempt->exam->passing_score;
 
-            $passed = $score >=
-                (float)$attempt->exam->passing_score;
-
-            $durationSeconds = $attempt->started_at
-                ? $attempt->started_at->diffInSeconds(now())
+            $now = now();
+            $durationSeconds = $lockedAttempt->started_at
+                ? min(
+                    (int) $lockedAttempt->started_at->diffInSeconds($now),
+                    max(0, (int) $lockedAttempt->exam->duration_minutes * 60)
+                )
                 : 0;
 
-            $this->repository->update($attempt, [
-                'submitted_at' => now(),
-                'total_questions' =>
-                    $result['total_questions'],
-                'correct_answers' =>
-                    $result['correct_answers'],
-                'wrong_answers' =>
-                    $result['wrong_answers'],
-                'unanswered' =>
-                    $result['unanswered'],
-                'total_score' =>
-                    $result['total_score'],
+            $lockedAttempt->update([
+                'submitted_at' => $now,
+                'total_questions' => $result['total_questions'],
+                'correct_answers' => $result['correct_answers'],
+                'wrong_answers' => $result['wrong_answers'],
+                'unanswered' => $result['unanswered'],
+                'total_score' => $result['total_score'],
                 'score' => $score,
                 'duration_seconds' => $durationSeconds,
-                'status' => $expired
-                    ? 'expired'
-                    : 'submitted',
+                'status' => $expired ? 'expired' : 'submitted',
                 'passed' => $passed,
             ]);
 
-            return $attempt->fresh();
-        });
+            return $lockedAttempt->fresh();
+        }, 3);
     }
 }
