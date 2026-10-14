@@ -112,12 +112,7 @@ class ExamAttemptService
             return false;
         }
 
-        $durationSeconds =
-            (int)$attempt->exam->duration_minutes * 60;
-
-        $endTime = $attempt->started_at
-            ->copy()
-            ->addSeconds($durationSeconds);
+        $endTime = $this->getAttemptDeadline($attempt);
 
         return now()->greaterThanOrEqualTo($endTime);
     }
@@ -267,17 +262,27 @@ class ExamAttemptService
             return 0;
         }
 
-        $durationSeconds =
-            (int)$attempt->exam->duration_minutes * 60;
-
-        $endTime = $attempt->started_at
-            ->copy()
-            ->addSeconds($durationSeconds);
+        $endTime = $this->getAttemptDeadline($attempt);
 
         return max(
             0,
-            now()->diffInSeconds($endTime, false)
+            (int) now()->diffInSeconds($endTime, false)
         );
+    }
+
+    protected function getAttemptDeadline(ExamAttempt $attempt): \Illuminate\Support\Carbon
+    {
+        $attempt->loadMissing('exam');
+
+        $deadline = $attempt->started_at
+            ->copy()
+            ->addMinutes((int) $attempt->exam->duration_minutes);
+
+        if ($attempt->exam->end_at && $attempt->exam->end_at->lt($deadline)) {
+            return $attempt->exam->end_at->copy();
+        }
+
+        return $deadline;
     }
 
     public function answer(
@@ -286,6 +291,8 @@ class ExamAttemptService
         ?int        $selectedOptionId
     ): ExamAnswer
     {
+        $attempt->loadMissing('exam');
+
         if ($attempt->status !== 'in_progress') {
             throw new RuntimeException(
                 'Ujian sudah tidak dapat dikerjakan.'
@@ -297,6 +304,12 @@ class ExamAttemptService
 
             throw new RuntimeException(
                 'Waktu ujian telah habis.'
+            );
+        }
+
+        if ($attempt->exam->status !== 'published') {
+            throw new RuntimeException(
+                'Ujian sudah ditutup dan jawaban tidak dapat diubah.'
             );
         }
 
@@ -406,6 +419,16 @@ class ExamAttemptService
             $attempt->status === 'expired'
         ) {
             return $attempt;
+        }
+
+        if ($attempt->status !== 'in_progress') {
+            throw new RuntimeException(
+                'Status percobaan ujian tidak valid.'
+            );
+        }
+
+        if (!$expired && $this->isExpired($attempt)) {
+            $expired = true;
         }
 
         return DB::transaction(function () use (
