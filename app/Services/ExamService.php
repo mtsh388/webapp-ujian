@@ -261,6 +261,11 @@ class ExamService
             $exam,
             $questionBankIds
         ) {
+            $exam = Exam::query()
+                ->whereKey($exam->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
                 throw new \RuntimeException(
                     'Soal tidak dapat diubah setelah percobaan ujian dibuat.'
@@ -389,7 +394,10 @@ class ExamService
         int $examQuestionId
     ): bool {
         return DB::transaction(function () use ($examId, $examQuestionId) {
-            $exam = $this->repository->findById($examId);
+            $exam = Exam::query()
+                ->whereKey($examId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
                 throw new \RuntimeException(
