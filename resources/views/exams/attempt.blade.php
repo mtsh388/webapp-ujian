@@ -136,129 +136,7 @@
 
         <div class="row g-4">
 
-            <div class="col-lg-8">
-
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-body">
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <span class="badge bg-label-primary">
-                                    Soal {{ $currentNumber }}
-                                </span>
-
-                                <span class="text-muted ms-2">
-                                    dari {{ $totalQuestions }}
-                                </span>
-                            </div>
-
-                            <div class="text-muted small">
-                                Terjawab:
-                                <strong id="answeredCount">
-                                    {{ $answers->whereNotNull('selected_option_id')->count() }}
-                                </strong>
-                                / {{ $totalQuestions }}
-                            </div>
-                        </div>
-
-                        <div class="exam-question-content mb-4">
-                            {!! $currentQuestion->question !!}
-                        </div>
-
-                        <div class="d-flex flex-column gap-3">
-
-                            @foreach ($currentQuestion->options as $option)
-                                @php
-                                    $isSelected =
-                                        $currentAnswer &&
-                                        (int) $currentAnswer->selected_option_id === (int) $option->id;
-                                @endphp
-
-                                <label
-                                    class="question-option border rounded p-3 d-flex align-items-start gap-3 {{ $isSelected ? 'selected' : '' }}"
-                                    data-option-wrapper="{{ $option->id }}">
-
-                                    <input
-                                        type="radio"
-                                        class="form-check-input mt-1 answer-option"
-                                        name="selected_option_id"
-                                        value="{{ $option->id }}"
-                                        data-question-id="{{ $currentQuestion->id }}"
-                                        {{ $isSelected ? 'checked' : '' }}>
-
-                                    <div class="flex-grow-1">
-
-                                        <div class="fw-semibold mb-1">
-                                            {{ $option->option_key }}
-                                        </div>
-
-                                        <div class="exam-option-content">
-                                            {!! $option->option_text !!}
-                                        </div>
-
-                                    </div>
-
-                                </label>
-                            @endforeach
-
-                        </div>
-
-                        <div
-                            id="answerStatus"
-                            class="mt-3 small text-muted">
-                            @if ($currentAnswer && $currentAnswer->selected_option_id)
-                                <i class="bx bx-check-circle text-success me-1"></i>
-                                Jawaban tersimpan
-                            @else
-                                <i class="bx bx-info-circle me-1"></i>
-                                Pilih salah satu jawaban
-                            @endif
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between gap-2">
-
-                    @if ($currentNumber > 1)
-                        <a
-                            href="{{ route('exams.attempt', [
-                                'exam' => $exam->id,
-                                'attempt' => $attempt->id,
-                                'question' => $currentNumber - 1,
-                            ]) }}"
-                            class="btn btn-outline-secondary question-navigation-link">
-                            <i class="bx bx-chevron-left me-1"></i>
-                            Sebelumnya
-                        </a>
-                    @else
-                        <div></div>
-                    @endif
-
-                    @if ($currentNumber < $totalQuestions)
-                        <a
-                            href="{{ route('exams.attempt', [
-                                'exam' => $exam->id,
-                                'attempt' => $attempt->id,
-                                'question' => $currentNumber + 1,
-                            ]) }}"
-                            class="btn btn-primary question-navigation-link">
-                            Selanjutnya
-                            <i class="bx bx-chevron-right ms-1"></i>
-                        </a>
-                    @else
-                        <button
-                            type="button"
-                            id="submitButton"
-                            class="btn btn-success">
-                            <i class="bx bx-check-circle me-1"></i>
-                            Kumpulkan Ujian
-                        </button>
-                    @endif
-
-                </div>
-
-            </div>
+            @include('exams.partials.attempt-question')
 
             <div class="col-lg-4">
 
@@ -381,7 +259,7 @@
         document.addEventListener('DOMContentLoaded', function () {
 
             const timerElement = document.getElementById('examTimer');
-            const submitButton = document.getElementById('submitButton');
+            let submitButton = document.getElementById('submitButton');
             const answeredCountElement = document.getElementById('answeredCount');
             const answerStatusElement = document.getElementById('answerStatus');
 
@@ -718,165 +596,160 @@
                 );
             }
 
-            document
-                .querySelectorAll('.answer-option')
-                .forEach(option => {
+            document.addEventListener('change', async function (event) {
+                const option = event.target.closest('.answer-option');
+                if (!option || isSubmitting) {
+                    return;
+                }
 
-                    option.addEventListener(
-                        'change',
-                        async function () {
-
-                            if (isSubmitting) {
-                                return;
-                            }
-
-                            document
-                                .querySelectorAll(
-                                    '[data-option-wrapper]'
-                                )
-                                .forEach(wrapper => {
-                                    wrapper.classList.remove(
-                                        'selected'
-                                    );
-                                });
-
-                            const wrapper =
-                                document.querySelector(
-                                    `[data-option-wrapper="${this.value}"]`
-                                );
-
-                            if (wrapper) {
-                                wrapper.classList.add(
-                                    'selected'
-                                );
-                            }
-
-                            markCurrentQuestionAnswered();
-
-                            await saveAnswer(
-                                Number(
-                                    this.dataset.questionId
-                                ),
-                                Number(this.value)
-                            );
-                        }
-                    );
-
+                document.querySelectorAll('[data-option-wrapper]').forEach(wrapper => {
+                    wrapper.classList.remove('selected');
                 });
 
-            document
-                .querySelectorAll(
-                    '.question-navigation-link'
-                )
-                .forEach(link => {
+                const wrapper = document.querySelector(`[data-option-wrapper="${option.value}"]`);
+                if (wrapper) {
+                    wrapper.classList.add('selected');
+                }
 
-                    link.addEventListener(
-                        'click',
-                        async function (event) {
+                markCurrentQuestionAnswered();
 
-                            if (
-                                isSubmitting ||
-                                isNavigating
-                            ) {
-                                event.preventDefault();
-                                return;
-                            }
-
-                            event.preventDefault();
-
-                            const targetUrl =
-                                this.href;
-
-                            isNavigating = true;
-
-                            document
-                                .querySelectorAll(
-                                    '.question-navigation-link'
-                                )
-                                .forEach(navigationLink => {
-                                    navigationLink.classList.add(
-                                        'exam-navigation-loading'
-                                    );
-                                });
-
-                            if (saveAnswerPromise) {
-                                try {
-                                    await saveAnswerPromise;
-                                } catch (error) {
-                                    isNavigating = false;
-
-                                    document
-                                        .querySelectorAll(
-                                            '.question-navigation-link'
-                                        )
-                                        .forEach(navigationLink => {
-                                            navigationLink.classList.remove(
-                                                'exam-navigation-loading'
-                                            );
-                                        });
-
-                                    return;
-                                }
-                            }
-
-                            Swal.fire({
-                                title: 'Memuat Soal...',
-                                text: 'Mohon tunggu sebentar.',
-                                allowOutsideClick: false,
-                                allowEscapeKey: false,
-                                showConfirmButton: false,
-                                didOpen: () => {
-                                    Swal.showLoading();
-                                }
-                            });
-
-                            window.location.assign(
-                                targetUrl
-                            );
-                        }
+                try {
+                    await saveAnswer(
+                        Number(option.dataset.questionId),
+                        Number(option.value)
                     );
+                } catch (error) {
+                }
+            });
 
+            document.addEventListener('click', async function (event) {
+                const link = event.target.closest('.question-navigation-link');
+                if (!link) {
+                    return;
+                }
+
+                if (isSubmitting || isNavigating) {
+                    event.preventDefault();
+                    return;
+                }
+
+                event.preventDefault();
+                const targetUrl = new URL(link.href, window.location.origin);
+                const questionNumber = Number(targetUrl.searchParams.get('question') || 1);
+                isNavigating = true;
+
+                document.querySelectorAll('.question-navigation-link').forEach(item => {
+                    item.classList.add('exam-navigation-loading');
                 });
 
-            if (submitButton) {
-
-                submitButton.addEventListener(
-                    'click',
-                    async function () {
-
-                        if (isSubmitting) {
-                            return;
-                        }
-
-                        const result =
-                            await Swal.fire({
-                                icon: 'question',
-                                title: 'Kumpulkan Ujian?',
-                                text: 'Setelah dikumpulkan, Anda tidak dapat mengubah jawaban lagi.',
-                                showCancelButton: true,
-                                confirmButtonText: 'Ya, Kumpulkan',
-                                cancelButtonText: 'Batal',
-                                reverseButtons: true,
-                                allowOutsideClick: false
-                            });
-
-                        if (!result.isConfirmed) {
-                            return;
-                        }
-
-                        if (saveAnswerPromise) {
-                            try {
-                                await saveAnswerPromise;
-                            } catch (error) {
-                                return;
-                            }
-                        }
-
-                        await submitExam(false);
+                try {
+                    if (saveAnswerPromise) {
+                        await saveAnswerPromise;
                     }
-                );
 
-            }
+                    const requestUrl = new URL(window.location.href);
+                    requestUrl.searchParams.set('question', String(questionNumber));
+
+                    const response = await fetch(requestUrl.toString(), {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success || !data.html) {
+                        throw new Error(data.message || 'Soal gagal dimuat.');
+                    }
+
+                    document.getElementById('examQuestionPanel').outerHTML = data.html;
+                    history.pushState({ question: data.currentNumber }, '', requestUrl.toString());
+                    submitButton = document.getElementById('submitButton');
+
+                    document.querySelectorAll('.question-number').forEach(numberLink => {
+                        const number = Number(numberLink.textContent.trim());
+                        numberLink.classList.remove('current');
+                        if (number === Number(data.currentNumber)) {
+                            numberLink.classList.add('current');
+                        }
+                        numberLink.classList.toggle('answered', data.answeredQuestionIds.includes(Number(numberLink.dataset.questionId)));
+                        if (!numberLink.classList.contains('current') && !numberLink.classList.contains('answered')) {
+                            numberLink.classList.add('bg-light', 'text-dark');
+                        } else {
+                            numberLink.classList.remove('bg-light', 'text-dark');
+                        }
+                    });
+
+                    const activeLink = Array.from(document.querySelectorAll('.question-number')).find(item =>
+                        Number(item.textContent.trim()) === Number(data.currentNumber)
+                    );
+                    if (activeLink) {
+                        activeLink.classList.add('current');
+                    }
+
+                    if (answeredCountElement) {
+                        answeredCountElement.textContent = data.answeredCount;
+                    }
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } catch (error) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memuat Soal',
+                        text: error.message,
+                        confirmButtonText: 'OK'
+                    });
+                } finally {
+                    isNavigating = false;
+                    document.querySelectorAll('.question-navigation-link').forEach(item => {
+                        item.classList.remove('exam-navigation-loading');
+                    });
+                }
+            });
+
+            window.addEventListener('popstate', function () {
+                const questionNumber = Number(new URL(window.location.href).searchParams.get('question') || 1);
+                const link = Array.from(document.querySelectorAll('.question-navigation-link')).find(item => {
+                    return Number(new URL(item.href, window.location.origin).searchParams.get('question') || 1) === questionNumber;
+                });
+                if (link) {
+                    link.click();
+                }
+            });
+
+            document.addEventListener('click', async function (event) {
+                const clickedSubmit = event.target.closest('#submitButton');
+                if (!clickedSubmit || isSubmitting) {
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    icon: 'question',
+                    title: 'Kumpulkan Ujian?',
+                    text: 'Setelah dikumpulkan, Anda tidak dapat mengubah jawaban lagi.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Kumpulkan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    allowOutsideClick: false
+                });
+
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                if (saveAnswerPromise) {
+                    try {
+                        await saveAnswerPromise;
+                    } catch (error) {
+                        return;
+                    }
+                }
+
+                await submitExam(false);
+            });
 
             async function submitExam(
                 isExpired = false
