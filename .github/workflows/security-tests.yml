@@ -12,6 +12,8 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
