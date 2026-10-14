@@ -520,7 +520,7 @@
         <div class="question-body">
 
             <div class="question-content">
-                {!! $question->question !!}
+                {!! \App\Support\QuestionHtml::sanitize($question->question) !!}
             </div>
 
             <div style="margin-top: 10px;">
@@ -550,7 +550,7 @@
                             </span>
 
                         <span class="option-text option-content">
-                                {!! $option->option_text !!}
+                                {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
                             </span>
 
                         @if ($isSelected)
@@ -621,7 +621,7 @@
                     </div>
 
                     <div class="explanation-content">
-                        {!! $question->explanation !!}
+                        {!! \App\Support\QuestionHtml::sanitize($question->explanation) !!}
                     </div>
 
                 </div>
