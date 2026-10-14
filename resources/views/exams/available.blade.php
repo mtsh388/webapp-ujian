@@ -114,6 +114,7 @@
                             $end = $exam->end_at
                                 ? \Carbon\Carbon::parse($exam->end_at)
                                 : null;
+                            $activeAttempt = $activeAttempts->get($exam->id);
                         @endphp
 
                         <div class="col-12 col-md-6 col-xl-4">
@@ -259,8 +260,8 @@
                                             <a
                                                 href="{{ route('exams.start', ['exam' => $exam->id]) }}"
                                                 class="btn btn-primary w-100">
-                                                <i class="bx bx-play-circle me-1"></i>
-                                                Kerjakan Ujian
+                                                <i class="bx {{ $activeAttempt ? 'bx-refresh' : 'bx-play-circle' }} me-1"></i>
+                                                {{ $activeAttempt ? 'Lanjutkan Ujian' : 'Kerjakan Ujian' }}
                                             </a>
                                         @endif
                                     </div>
