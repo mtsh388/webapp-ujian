@@ -46,6 +46,7 @@ class RolePermissionSeeder extends Seeder
             'exam.close',
 
             'exam.take',
+            'exam.violation.view',
 
             'result.view',
             'result.view_own',
@@ -105,6 +106,7 @@ class RolePermissionSeeder extends Seeder
             'exam.close',
 
             'result.view',
+            'exam.violation.view',
         ]);
 
         $siswa->syncPermissions([
