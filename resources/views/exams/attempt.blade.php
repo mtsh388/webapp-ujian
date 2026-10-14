@@ -167,7 +167,7 @@
                                         'attempt' => $attempt->id,
                                         'question' => $number,
                                     ]) }}"
-                                    class="question-number rounded-circle text-decoration-none question-navigation-link {{ $isCurrent ? 'current' : ($isAnswered ? 'answered' : 'bg-light text-dark') }}">
+                                    data-question-id="{{ $question->id }}" class="question-number rounded-circle text-decoration-none question-navigation-link {{ $isCurrent ? 'current' : ($isAnswered ? 'answered' : 'bg-light text-dark') }}">
                                     {{ $number }}
                                 </a>
                             @endforeach
@@ -708,6 +708,7 @@
                         confirmButtonText: 'OK'
                     });
                 } finally {
+                    shouldPushHistory = true;
                     isNavigating = false;
                     document.querySelectorAll('.question-navigation-link').forEach(item => {
                         item.classList.remove('exam-navigation-loading');
