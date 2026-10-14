@@ -31,15 +31,23 @@ class ExamAttemptController extends Controller
         try {
             $student = $this->getAuthenticatedStudent();
 
+            $isResuming = ExamAttempt::query()
+                ->where('exam_id', $exam->id)
+                ->where('student_id', $student->id)
+                ->where('status', 'in_progress')
+                ->exists();
+
             $attempt = $this->service->start(
                 $exam,
                 $student
             );
 
-            return redirect()->route('exams.attempt', [
-                'exam' => $exam->id,
-                'attempt' => $attempt->id,
-            ]);
+            return redirect()
+                ->route('exams.attempt', [
+                    'exam' => $exam->id,
+                    'attempt' => $attempt->id,
+                ])
+                ->with('resume_exam', $isResuming);
         } catch (RuntimeException $e) {
             return redirect()
                 ->back()
