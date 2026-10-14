@@ -945,30 +945,45 @@
                 );
 
             const fullscreenPromptKey = 'exam-fullscreen-prompt-{{ $attempt->id }}';
+            const isResumingExam = @json((bool) session('resume_exam'));
 
             if (
                 !document.fullscreenElement &&
                 document.documentElement.requestFullscreen &&
-                !sessionStorage.getItem(fullscreenPromptKey)
+                (isResumingExam || !sessionStorage.getItem(fullscreenPromptKey))
             ) {
                 sessionStorage.setItem(fullscreenPromptKey, 'shown');
 
                 Swal.fire({
                     icon: 'info',
-                    title: 'Masuk Mode Fullscreen',
-                    text: 'Untuk memulai ujian dalam tampilan penuh, klik tombol di bawah. Browser memerlukan tindakan langsung dari Anda untuk mengaktifkan fullscreen.',
-                    confirmButtonText: 'Mulai Ujian Fullscreen',
+                    title: isResumingExam ? 'Lanjutkan Ujian' : 'Masuk Mode Fullscreen',
+                    text: isResumingExam
+                        ? 'Ujian Anda masih berlangsung. Klik tombol di bawah untuk kembali ke mode fullscreen dan melanjutkan ujian.'
+                        : 'Untuk memulai ujian dalam tampilan penuh, klik tombol di bawah. Browser memerlukan tindakan langsung dari Anda untuk mengaktifkan fullscreen.',
+                    confirmButtonText: isResumingExam ? 'Lanjutkan Ujian Fullscreen' : 'Mulai Ujian Fullscreen',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     showCancelButton: false,
                     preConfirm: async () => {
                         try {
                             await document.documentElement.requestFullscreen();
-                            return true;
+                            return { fullscreen: true };
                         } catch (error) {
-                            Swal.showValidationMessage('Browser tidak mengizinkan fullscreen. Klik tombol Masuk Fullscreen pada halaman untuk mencoba kembali.');
-                            return false;
+                            return { fullscreen: false };
                         }
+                    }
+                }).then(result => {
+                    if (
+                        result.isConfirmed &&
+                        result.value &&
+                        !result.value.fullscreen
+                    ) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Fullscreen Belum Aktif',
+                            text: 'Browser tidak mengizinkan fullscreen otomatis. Klik tombol Masuk Fullscreen pada halaman ujian untuk mencoba kembali.',
+                            confirmButtonText: 'Saya Mengerti'
+                        });
                     }
                 });
             }
