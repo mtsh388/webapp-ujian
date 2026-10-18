@@ -40,10 +40,11 @@ class SubjectService
             0 => 'id',
             1 => 'name',
             2 => 'education_level',
-            3 => 'topic',
-            4 => 'description',
-            5 => 'is_active',
-            6 => 'id',
+            3 => 'class_id',
+            4 => 'topic',
+            5 => 'description',
+            6 => 'is_active',
+            7 => 'id',
         ];
 
         $columnIndex = (int) $request->input('order.0.column', 1);
