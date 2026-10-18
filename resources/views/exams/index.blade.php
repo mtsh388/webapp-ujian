@@ -4,6 +4,43 @@
 
 @section('content')
 
+    <style>
+        #examsTable th:nth-child(3),
+        #examsTable td:nth-child(3) {
+            min-width: 210px;
+            max-width: 320px;
+            white-space: normal;
+            vertical-align: middle;
+        }
+
+        #examsTable th:nth-child(5),
+        #examsTable td:nth-child(5) {
+            min-width: 190px;
+            vertical-align: middle;
+        }
+
+        #examsTable td {
+            vertical-align: middle;
+        }
+
+        .exam-title-cell,
+        .exam-schedule-cell {
+            line-height: 1.45;
+        }
+
+        @media (max-width: 767.98px) {
+            #examsTable th:nth-child(3),
+            #examsTable td:nth-child(3) {
+                min-width: 180px;
+            }
+
+            #examsTable th:nth-child(5),
+            #examsTable td:nth-child(5) {
+                min-width: 175px;
+            }
+        }
+    </style>
+
     <div class="container-xxl flex-grow-1 container-p-y">
 
         @if(session('success'))
@@ -211,9 +248,19 @@
                         data: 'title',
                         name: 'title',
                         render: function (data, type, row) {
+                            const examType = row.exam_type === 'trial'
+                                ? '<span class="badge bg-label-info mb-1">Trial</span>'
+                                : '<span class="badge bg-label-primary mb-1">Ujian</span>';
+                            const duration = row.has_duration
+                                ? `<small class="text-muted d-block mt-1"><i class="bx bx-time-five me-1"></i>${row.duration_minutes} menit</small>`
+                                : '<small class="text-muted d-block mt-1"><i class="bx bx-infinite me-1"></i>Tanpa batas durasi</small>';
+
                             return `
-                                <span>${data}</span><br>
-                                <small class="text-muted"><i class="bx bx-time-five"></i> ${row.duration_minutes} Menit</small>
+                                <div class="exam-title-cell">
+                                    ${examType}
+                                    <span class="fw-semibold d-block text-break">${data || '-'}</span>
+                                    ${duration}
+                                </div>
                             `;
                         }
                     },
@@ -229,11 +276,15 @@
                         name: 'start_at',
                         searchable: false,
                         render: function (data, type, row) {
+                            if (!row.has_duration) {
+                                return '<span class="badge bg-label-secondary"><i class="bx bx-calendar-x me-1"></i>Tanpa jadwal</span>';
+                            }
+
                             return `
-                                <small>
-                                    Mulai: ${data}<br>
-                                    Akhir: ${row.end_at}
-                                </small>
+                                <div class="exam-schedule-cell">
+                                    <small class="d-block text-nowrap"><span class="text-muted">Mulai</span><br><i class="bx bx-calendar-check me-1"></i>${data || '-'}</small>
+                                    <small class="d-block text-nowrap mt-2"><span class="text-muted">Berakhir</span><br><i class="bx bx-calendar-x me-1"></i>${row.end_at || '-'}</small>
+                                </div>
                             `;
                         }
                     },
