@@ -65,7 +65,7 @@
                                                 value="{{ $subject->id }}"
                                                 @selected(old('subject_id', $questionBank->subject_id) == $subject->id)>
 
-                                                {{ $subject->name }}
+                                                {{ $subject->name }} — {{ $subject->education_level ?? '-' }} — {{ $subject->topic ?? '-' }}
 
                                             </option>
 
@@ -82,25 +82,9 @@
                                 </div>
 
                                 <div class="col-md-6">
-
-                                    <label class="form-label">
-                                        Kode Soal
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="code"
-                                        class="form-control @error('code') is-invalid @enderror"
-                                        value="{{ old('code', $questionBank->code) }}"
-                                        placeholder="Contoh: MAT-001"
-                                        required>
-
-                                    @error('code')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                    @enderror
-
+                                    <label class="form-label">Kode Soal</label>
+                                    <input type="text" class="form-control" value="{{ $questionBank->code }}" readonly>
+                                    <div class="form-text">Kode dibuat otomatis. Jika mata pelajaran diubah, kode akan diperbarui.</div>
                                 </div>
 
                                 <div class="col-md-4">
