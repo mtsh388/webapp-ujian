@@ -97,7 +97,7 @@
                                 @foreach($subjects as $subject)
                                     <option
                                         value="{{ $subject->id }}" {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
-                                        {{ $subject->name }} ({{ $subject->code }})
+                                        {{ $subject->name }} — {{ $subject->education_level }} / {{ $subject->classRoom?->name }} / {{ $subject->topic }}
                                     </option>
                                 @endforeach
                             </select>
