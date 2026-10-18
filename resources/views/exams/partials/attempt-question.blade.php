@@ -51,7 +51,7 @@
                                     <div class="flex-grow-1">
 
                                         <div class="fw-semibold mb-1">
-                                            {{ $option->option_key }}
+                                            {{ chr(64 + $loop->iteration) }}
                                         </div>
 
                                         <div class="exam-option-content">
