@@ -177,11 +177,26 @@ class ExamService
                     $data['subject_id']
                 );
 
-            $prefix = 'UJ-' . (
-                $subject
-                    ? $subject->code
-                    : 'UMUM'
-                );
+            $subjectIdentifier = $subject
+                ? ($subject->topic ?: $subject->name)
+                : 'UMUM';
+
+            $subjectIdentifier = strtoupper(
+                trim(
+                    preg_replace(
+                        '/[^A-Z0-9]+/',
+                        '-',
+                        strtoupper((string) $subjectIdentifier)
+                    ),
+                    '-'
+                )
+            );
+
+            if ($subjectIdentifier === '') {
+                $subjectIdentifier = 'UMUM';
+            }
+
+            $prefix = 'UJ-' . $subjectIdentifier;
 
             $data['code'] = $this
                 ->repository
