@@ -3,6 +3,27 @@
 @section('title', 'Edit Ujian')
 
 @section('content')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selector = document.getElementById('has_duration');
+            const fields = document.querySelectorAll('.duration-settings');
+
+            function toggleDurationFields() {
+                const enabled = selector.value === '1';
+
+                fields.forEach(function (field) {
+                    field.classList.toggle('d-none', !enabled);
+                    field.querySelectorAll('input').forEach(function (input) {
+                        input.required = enabled;
+                        input.disabled = !enabled;
+                    });
+                });
+            }
+
+            selector.addEventListener('change', toggleDurationFields);
+            toggleDurationFields();
+        });
+    </script>
     <div class="container-xxl flex-grow-1 container-p-y">
 
         @if (session('success'))
@@ -132,6 +153,23 @@
                     <div class="row">
 
                         <div class="col-md-6 mb-3">
+                            <label for="exam_type" class="form-label">Jenis Ujian <span class="text-danger">*</span></label>
+                            <select class="form-select @error('exam_type') is-invalid @enderror" id="exam_type" name="exam_type" required>
+                                <option value="trial" {{ old('exam_type', $exam->exam_type) === 'trial' ? 'selected' : '' }}>Trial</option>
+                                <option value="ujian" {{ old('exam_type', $exam->exam_type) === 'ujian' ? 'selected' : '' }}>Ujian</option>
+                            </select>
+                            @error('exam_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="has_duration" class="form-label">Pengaturan Durasi <span class="text-danger">*</span></label>
+                            <select class="form-select" id="has_duration" name="has_duration" required>
+                                <option value="1" {{ old('has_duration', (string) (int) $exam->has_duration) === '1' ? 'selected' : '' }}>Menggunakan durasi dan jadwal</option>
+                                <option value="0" {{ old('has_duration', (string) (int) $exam->has_duration) === '0' ? 'selected' : '' }}>Tanpa durasi dan jadwal</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
                             <label for="subject_id" class="form-label">
                                 Mata Pelajaran <span class="text-danger">*</span>
                             </label>
@@ -212,7 +250,7 @@
                 <div class="card-body pt-4">
                     <div class="row">
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 duration-settings">
                             <label for="duration_minutes" class="form-label">
                                 Durasi (Menit) <span class="text-danger">*</span>
                             </label>
@@ -254,7 +292,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 duration-settings">
                             <label for="max_attempts" class="form-label">
                                 Batas Percobaan <span class="text-danger">*</span>
                             </label>
@@ -288,7 +326,7 @@
                 <div class="card-body pt-4">
                     <div class="row">
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 duration-settings">
                             <label for="start_at" class="form-label">
                                 Waktu Mulai <span class="text-danger">*</span>
                             </label>
@@ -307,7 +345,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 duration-settings">
                             <label for="end_at" class="form-label">
                                 Waktu Berakhir <span class="text-danger">*</span>
                             </label>
