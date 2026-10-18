@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSubjectRequest extends FormRequest
 {
@@ -14,25 +15,11 @@ class StoreSubjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash',
-            ],
-            'description' => [
-                'nullable',
-                'string',
-            ],
-            'is_active' => [
-                'nullable',
-                'boolean',
-            ],
+            'name' => ['required', 'string', 'max:255'],
+            'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
+            'topic' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 
@@ -40,7 +27,8 @@ class StoreSubjectRequest extends FormRequest
     {
         return [
             'name' => 'nama mata pelajaran',
-            'code' => 'kode mata pelajaran',
+            'education_level' => 'jenjang pendidikan',
+            'topic' => 'topik',
             'description' => 'deskripsi',
             'is_active' => 'status',
         ];
