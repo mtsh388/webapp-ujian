@@ -6,8 +6,6 @@ use App\Models\Subject;
 use App\Repositories\SubjectRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class SubjectService
 {
@@ -19,21 +17,20 @@ class SubjectService
     public function getDataTable(Request $request): array
     {
         $query = $this->repository->query();
-        $total = $query->count();
-        $search = $request->input('search.value');
+        $total = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
 
-        if ($search) {
+        if ($search !== '') {
             $query->where(function ($query) use ($search) {
                 $query
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('education_level', 'like', "%{$search}%")
                     ->orWhere('topic', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        $filtered = $query->count();
+        $filtered = (clone $query)->count();
 
         $columns = [
             0 => 'id',
@@ -84,48 +81,29 @@ class SubjectService
 
     public function create(array $data): Subject
     {
+        $data['name'] = trim($data['name']);
+        $data['education_level'] = strtoupper(trim($data['education_level']));
         $data['topic'] = trim($data['topic']);
-        $data['code'] = $this->makeUniqueCode($data['topic']);
         $data['is_active'] = $data['is_active'] ?? true;
 
-        return DB::transaction(function () use ($data) {
-            return $this->repository->create($data);
-        });
+        return DB::transaction(fn () => $this->repository->create($data));
     }
 
     public function update(Subject $subject, array $data): Subject
     {
+        $data['name'] = trim($data['name']);
+        $data['education_level'] = strtoupper(trim($data['education_level']));
         $data['topic'] = trim($data['topic']);
-        $data['code'] = $this->makeUniqueCode($data['topic'], $subject->id);
         $data['is_active'] = $data['is_active'] ?? false;
 
-        DB::transaction(function () use ($subject, $data) {
-            $this->repository->update($subject, $data);
-        });
+        DB::transaction(fn () => $this->repository->update($subject, $data));
 
         return $subject->refresh();
     }
 
-    protected function makeUniqueCode(string $topic, ?int $exceptId = null): string
-    {
-        $base = Str::upper(Str::slug($topic, '-'));
-        $base = substr($base !== '' ? $base : 'TOPIK', 0, 50);
-        $candidate = $base;
-        $suffix = 2;
-
-        while ($this->repository->existsByCode($candidate, $exceptId)) {
-            $ending = '-' . $suffix++;
-            $candidate = substr($base, 0, 50 - strlen($ending)) . $ending;
-        }
-
-        return $candidate;
-    }
-
     public function delete(Subject $subject): bool
     {
-        return DB::transaction(function () use ($subject) {
-            return $this->repository->delete($subject);
-        });
+        return DB::transaction(fn () => $this->repository->delete($subject));
     }
 
     public function updateStatus(Subject $subject, bool $isActive): Subject
