@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\QuestionBank;
 use App\Models\Subject;
 use App\Repositories\QuestionBankRepositoryInterface;
 use DOMDocument;
@@ -1607,54 +1608,37 @@ class BulkQuestionImportService
         );
     }
 
-    protected function getNextCodeNumber(
-        Subject $subject
-    ): int
+    protected function getNextCodeNumber(Subject $subject): int
     {
-        $prefix =
-            strtoupper(
-                $subject->code
-            );
+        $prefix = $this->codePrefix($subject);
+        $lastNumber = QuestionBank::withTrashed()
+            ->where('code', 'like', $prefix . '-%')
+            ->pluck('code')
+            ->map(fn (string $code) => (int) Str::afterLast($code, '-'))
+            ->max();
 
-        $lastCode =
-            $this->repository->getLastCode(
-                $prefix
-            );
-
-        if (!$lastCode) {
-            return 1;
-        }
-
-        preg_match(
-            '/(\d+)$/',
-            $lastCode,
-            $matches
-        );
-
-        if (!isset($matches[1])) {
-            return 1;
-        }
-
-        return ((int)$matches[1]) + 1;
+        return ($lastNumber ?? 0) + 1;
     }
 
-    protected function generateCode(
-        Subject $subject,
-        int     $number
-    ): string
+    protected function generateCode(Subject $subject, int $number): string
     {
-        $prefix =
-            strtoupper(
-                $subject->code
-            );
+        return $this->codePrefix($subject) . '-' . str_pad(
+            (string) $number,
+            3,
+            '0',
+            STR_PAD_LEFT
+        );
+    }
 
-        return $prefix . '-' .
-            str_pad(
-                (string)$number,
-                3,
-                '0',
-                STR_PAD_LEFT
-            );
+    protected function codePrefix(Subject $subject): string
+    {
+        $prefix = Str::upper(Str::slug(implode('-', array_filter([
+            $subject->name,
+            $subject->education_level,
+            $subject->topic,
+        ])), '-'));
+
+        return substr($prefix !== '' ? $prefix : 'SOAL', 0, 90);
     }
 
     protected function getMimeType(
