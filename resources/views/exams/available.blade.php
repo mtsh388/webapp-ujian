@@ -142,9 +142,14 @@
                                             </div>
                                         </div>
 
-                                        <span class="badge bg-label-primary flex-shrink-0">
-                                            {{ $exam->code }}
-                                        </span>
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            <span class="badge {{ ($exam->exam_type ?? ($exam->passing_score === null ? 'trial' : 'ujian')) === 'trial' ? 'bg-label-info' : 'bg-label-primary' }}">
+                                                {{ ($exam->exam_type ?? ($exam->passing_score === null ? 'trial' : 'ujian')) === 'trial' ? 'Trial' : 'Ujian' }}
+                                            </span>
+                                            <span class="badge bg-label-secondary">
+                                                {{ $exam->code }}
+                                            </span>
+                                        </div>
 
                                     </div>
                                 </div>
@@ -157,102 +162,85 @@
 
                                     <div class="d-flex flex-column gap-3 mb-4">
 
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar avatar-sm flex-shrink-0">
-                                                <span class="avatar-initial rounded bg-label-primary">
-                                                    <i class="bx bx-time-five"></i>
-                                                </span>
+                                        @if ($exam->has_duration)
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-initial rounded bg-label-primary">
+                                                        <i class="bx bx-time-five"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Durasi</small>
+                                                    <span class="fw-semibold">{{ $exam->duration_minutes }} Menit</span>
+                                                </div>
                                             </div>
-
-                                            <div>
-                                                <small class="text-muted d-block">
-                                                    Durasi
-                                                </small>
-
-                                                <span class="fw-semibold">
-                                                    {{ $exam->duration_minutes }} Menit
-                                                </span>
+                                        @else
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-initial rounded bg-label-info">
+                                                        <i class="bx bx-infinite"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Batas Waktu</small>
+                                                    <span class="fw-semibold">Tanpa batas durasi</span>
+                                                </div>
                                             </div>
-                                        </div>
+                                        @endif
 
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar avatar-sm flex-shrink-0">
-                                                <span class="avatar-initial rounded bg-label-success">
-                                                    <i class="bx bx-check-shield"></i>
-                                                </span>
+                                        @if (($exam->exam_type ?? ($exam->passing_score === null ? 'trial' : 'ujian')) === 'ujian' && $exam->passing_score !== null)
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-initial rounded bg-label-success">
+                                                        <i class="bx bx-check-shield"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Nilai KKM</small>
+                                                    <span class="fw-semibold">{{ number_format((float) $exam->passing_score, 2, ',', '.') }}</span>
+                                                </div>
                                             </div>
+                                        @endif
 
-                                            <div>
-                                                <small class="text-muted d-block">
-                                                    Passing Grade
-                                                </small>
-
-                                                <span class="fw-semibold">
-                                                    {{ number_format((float) $exam->passing_score, 2, ',', '.') }}
-                                                </span>
+                                        @if ($exam->has_duration)
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-initial rounded bg-label-warning">
+                                                        <i class="bx bx-calendar"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Mulai</small>
+                                                    <span class="fw-semibold">{{ $start?->format('d M Y, H:i') ?? '-' }}</span>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar avatar-sm flex-shrink-0">
-                                                <span class="avatar-initial rounded bg-label-warning">
-                                                    <i class="bx bx-calendar"></i>
-                                                </span>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-initial rounded bg-label-danger">
+                                                        <i class="bx bx-calendar-x"></i>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Berakhir</small>
+                                                    <span class="fw-semibold">{{ $end?->format('d M Y, H:i') ?? '-' }}</span>
+                                                </div>
                                             </div>
-
-                                            <div>
-                                                <small class="text-muted d-block">
-                                                    Mulai
-                                                </small>
-
-                                                <span class="fw-semibold">
-                                                    {{ $start?->format('d M Y, H:i') ?? '-' }}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar avatar-sm flex-shrink-0">
-                                                <span class="avatar-initial rounded bg-label-danger">
-                                                    <i class="bx bx-calendar-x"></i>
-                                                </span>
-                                            </div>
-
-                                            <div>
-                                                <small class="text-muted d-block">
-                                                    Berakhir
-                                                </small>
-
-                                                <span class="fw-semibold">
-                                                    {{ $end?->format('d M Y, H:i') ?? '-' }}
-                                                </span>
-                                            </div>
-                                        </div>
-
+                                        @endif
                                     </div>
 
                                     <div class="mt-auto">
-                                        @if (!$start || !$end)
-                                            <button
-                                                type="button"
-                                                class="btn btn-secondary w-100"
-                                                disabled>
+                                        @if ($exam->has_duration && (!$start || !$end))
+                                            <button type="button" class="btn btn-secondary w-100" disabled>
                                                 <i class="bx bx-info-circle me-1"></i>
                                                 Jadwal Belum Tersedia
                                             </button>
-                                        @elseif ($now->lt($start))
-                                            <button
-                                                type="button"
-                                                class="btn btn-secondary w-100"
-                                                disabled>
+                                        @elseif ($exam->has_duration && $now->lt($start))
+                                            <button type="button" class="btn btn-secondary w-100" disabled>
                                                 <i class="bx bx-lock-alt me-1"></i>
                                                 Belum Dimulai
                                             </button>
-                                        @elseif ($now->gt($end))
-                                            <button
-                                                type="button"
-                                                class="btn btn-danger w-100"
-                                                disabled>
+                                        @elseif ($exam->has_duration && $now->greaterThanOrEqualTo($end))
+                                            <button type="button" class="btn btn-danger w-100" disabled>
                                                 <i class="bx bx-x-circle me-1"></i>
                                                 Waktu Habis
                                             </button>
