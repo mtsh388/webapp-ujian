@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\QuestionBank;
+use App\Models\Subject;
 use App\Models\QuestionOption;
 use App\Repositories\QuestionBankRepositoryInterface;
 use Illuminate\Http\UploadedFile;
@@ -14,7 +15,8 @@ use Illuminate\Http\Request;
 class QuestionBankService
 {
     public function __construct(
-        protected QuestionBankRepositoryInterface $repository
+        protected QuestionBankRepositoryInterface $repository,
+        protected QuestionCodeGenerator $codeGenerator
     )
     {
     }
@@ -318,6 +320,9 @@ class QuestionBankService
     public function create(array $data): QuestionBank
     {
         return DB::transaction(function () use ($data) {
+            $subject = Subject::query()->findOrFail($data['subject_id']);
+            $data['code'] = $this->codeGenerator->generate($subject);
+
             $options = $data['options'] ?? [];
             $questionMedia = $data['question_media'] ?? [];
 
@@ -353,6 +358,14 @@ class QuestionBankService
             $questionBank,
             $data
         ) {
+            $subject = Subject::query()->findOrFail($data['subject_id']);
+
+            if ((int) $questionBank->subject_id !== (int) $subject->id) {
+                $data['code'] = $this->codeGenerator->generate($subject);
+            } else {
+                unset($data['code']);
+            }
+
             $options = $data['options'] ?? [];
             $questionMedia = $data['question_media'] ?? [];
 
