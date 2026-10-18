@@ -80,9 +80,9 @@ class QuestionBankController extends Controller
             abort(500, 'Template import tidak dapat dibuat.');
         }
 
-        $zip = new \\ZipArchive();
+        $zip = new \ZipArchive();
 
-        if ($zip->open($path, \\ZipArchive::CREATE | \\ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             @unlink($path);
             abort(500, 'Template import tidak dapat dibuat.');
         }
@@ -184,7 +184,7 @@ class QuestionBankController extends Controller
                 'question-banks.import-preview',
                 compact('preview', 'pending', 'subject')
             );
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             Storage::disk('local')->delete($path);
 
             return redirect()
@@ -245,7 +245,7 @@ class QuestionBankController extends Controller
                     'success',
                     "{$result['imported']} soal berhasil diimport. Pilihan Ganda: {$result['multiple_choice']}, Benar/Salah: {$result['true_false']}."
                 );
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             Log::error('Bulk question import failed.', [
                 'message' => $e->getMessage(),
                 'exception' => $e,
