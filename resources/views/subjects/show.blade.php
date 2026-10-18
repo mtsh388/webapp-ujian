@@ -88,12 +88,22 @@
 
                                     <div class="col-md-6">
                                         <div class="text-muted small mb-1">
-                                            Kode Mata Pelajaran
+                                            Jenjang Pendidikan
+                                        </div>
+
+                                        <div class="fw-semibold">
+                                            {{ $subject->education_level ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">
+                                            Topik
                                         </div>
 
                                         <div>
                                             <span class="badge bg-light text-dark border px-3 py-2">
-                                                {{ $subject->code }}
+                                                {{ $subject->topic ?? '-' }}
                                             </span>
                                         </div>
                                     </div>
