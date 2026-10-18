@@ -187,7 +187,7 @@
                                         value="{{ $subject->id }}"
                                         {{ old('subject_id', $exam->subject_id) == $subject->id ? 'selected' : '' }}
                                     >
-                                        {{ $subject->name }} ({{ $subject->code }})
+                                        {{ $subject->name }}@if ($subject->topic) ({{ $subject->topic }})@endif
                                     </option>
                                 @endforeach
                             </select>
