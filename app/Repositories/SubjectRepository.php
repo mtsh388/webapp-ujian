@@ -57,6 +57,7 @@ class SubjectRepository
     ): bool
     {
         return $this->model
+            ->withTrashed()
             ->where('code', $code)
             ->when(
                 $exceptId,
