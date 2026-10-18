@@ -12,10 +12,12 @@ class Exam extends Model
 
     protected $fillable = [
         'subject_id',
+        'exam_type',
         'code',
         'title',
         'description',
         'duration_minutes',
+        'is_timed',
         'start_at',
         'end_at',
         'passing_score',
@@ -30,6 +32,7 @@ class Exam extends Model
     protected function casts(): array
     {
         return [
+            'is_timed' => 'boolean',
             'start_at' => 'datetime',
             'end_at' => 'datetime',
             'passing_score' => 'decimal:2',
