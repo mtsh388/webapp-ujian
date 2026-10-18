@@ -590,13 +590,13 @@ class BulkQuestionImportService
 
         $offset = 0;
 
-        $extractNode = function (\\DOMNode $node) use (
+        $extractNode = function (\DOMNode $node) use (
             &$extractNode,
             &$offset,
             $start,
             $end,
             $dom
-        ): ?\\DOMNode {
+        ): ?\DOMNode {
             if ($node->nodeType === XML_TEXT_NODE) {
                 $value = $node->nodeValue ?? '';
                 $nodeStart = $offset;
