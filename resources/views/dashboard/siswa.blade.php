@@ -19,10 +19,16 @@
                             </p>
                         </div>
 
-                        <span class="badge bg-label-primary px-3 py-2">
-                        <i class="icon-base bx bx-user me-1"></i>
-                        Siswa
-                    </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-label-primary px-3 py-2">
+                                <i class="icon-base bx bx-user me-1"></i>
+                                Siswa
+                            </span>
+                            <a href="{{ route('exams.available') }}" class="btn btn-primary">
+                                <i class="icon-base bx bx-play-circle me-1"></i>
+                                Mulai Ujian
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
