@@ -1,52 +1,162 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
-        @csrf
+<!doctype html>
+<html
+    lang="id"
+    class="layout-wide customizer-hide"
+    data-assets-path="{{ asset('assets/sneat') }}/"
+    data-template="vertical-menu-template-free">
 
-        <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Register | Bimbel</title>
+    <meta name="description" content="Registrasi akun siswa aplikasi Bimbel">
+    <link rel="icon" type="image/x-icon" href="{{ asset('assets/sneat/img/favicon/favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('assets/sneat/vendor/fonts/iconify-icons.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/sneat/vendor/css/core.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/sneat/css/demo.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/sneat/vendor/libs/perfect-scrollbar/perfect-scrollbar.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/sneat/vendor/css/pages/page-auth.css') }}">
+    <script src="{{ asset('assets/sneat/vendor/js/helpers.js') }}"></script>
+    <script src="{{ asset('assets/sneat/js/config.js') }}"></script>
+</head>
+
+<body>
+<div class="container-xxl">
+    <div class="authentication-wrapper authentication-basic container-p-y">
+        <div class="authentication-inner">
+            <div class="card px-sm-6 px-0">
+                <div class="card-body">
+                    <div class="app-brand justify-content-center mb-6">
+                        <a href="{{ route('login') }}" class="app-brand-link gap-2">
+                            <span class="app-brand-logo demo">
+                                <span class="text-primary">
+                                    <svg width="25" viewBox="0 0 25 42" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960553 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.59773219,21.2525164 L2.63468769,24.5493413 C0.445452254,26.3002124 0.0884951797,28.5083815 1.56381646,31.1738486 C2.83770406,32.8170431 5.20850219,33.2640127 7.09180128,32.5391577 C8.347334,32.0559211 11.4559176,30.0011079 16.4175519,26.3747182 C18.0338579,24.4997857 18.6973423,22.4544881 18.4080071,20.2388261 C17.9637532,17.5346866 16.1776345,15.5799961 13.0496516,14.3747546 L10.9194936,13.4715819 L18.6192054,7.984237 L13.7918663,0.358365126 Z" fill="currentColor"></path>
+                                    </svg>
+                                </span>
+                            </span>
+                            <span class="app-brand-text demo text-heading fw-bold">Bimbel</span>
+                        </a>
+                    </div>
+
+                    <h4 class="mb-1">Buat Akun Siswa 🎓</h4>
+                    <p class="mb-6">Daftar untuk mulai menggunakan aplikasi Bimbel.</p>
+
+                    @if ($errors->any())
+                        <div class="alert alert-danger mb-6">
+                            <ul class="mb-0 ps-3">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form id="formAuthentication" method="POST" action="{{ route('register') }}">
+                        @csrf
+
+                        <div class="mb-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input
+                                type="email"
+                                class="form-control @error('email') is-invalid @enderror"
+                                id="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                placeholder="Masukkan email"
+                                autocomplete="email"
+                                autofocus
+                                required>
+                            @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-6 form-password-toggle">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group input-group-merge">
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    class="form-control @error('password') is-invalid @enderror"
+                                    placeholder="Buat password"
+                                    autocomplete="new-password"
+                                    required>
+                                <span class="input-group-text cursor-pointer">
+                                    <i class="icon-base bx bx-hide"></i>
+                                </span>
+                            </div>
+                            @error('password')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-6 form-password-toggle">
+                            <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
+                            <div class="input-group input-group-merge">
+                                <input
+                                    type="password"
+                                    id="password_confirmation"
+                                    name="password_confirmation"
+                                    class="form-control"
+                                    placeholder="Ulangi password"
+                                    autocomplete="new-password"
+                                    required>
+                                <span class="input-group-text cursor-pointer">
+                                    <i class="icon-base bx bx-hide"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <button class="btn btn-primary d-grid w-100" type="submit">
+                                Daftar
+                            </button>
+                        </div>
+                    </form>
+
+                    <p class="text-center mb-0">
+                        <span class="text-muted">Sudah punya akun?</span>
+                        <a href="{{ route('login') }}" class="text-decoration-none">
+                            <span>Login</span>
+                        </a>
+                    </p>
+                </div>
+            </div>
         </div>
+    </div>
+</div>
 
-        <!-- Email Address -->
-        <div class="mt-4">
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+<script src="{{ asset('assets/sneat/vendor/libs/jquery/jquery.js') }}"></script>
+<script src="{{ asset('assets/sneat/vendor/libs/popper/popper.js') }}"></script>
+<script src="{{ asset('assets/sneat/vendor/js/bootstrap.js') }}"></script>
+<script src="{{ asset('assets/sneat/vendor/libs/perfect-scrollbar/perfect-scrollbar.js') }}"></script>
+<script src="{{ asset('assets/sneat/vendor/js/menu.js') }}"></script>
+<script src="{{ asset('assets/sneat/js/main.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.form-password-toggle').forEach(function (group) {
+            const toggle = group.querySelector('.input-group-text');
+            const password = group.querySelector('input[type="password"], input[type="text"]');
+            const icon = toggle?.querySelector('i');
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+            if (!toggle || !password || !icon) {
+                return;
+            }
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="new-password" />
+            toggle.addEventListener('click', function () {
+                const isPassword = password.type === 'password';
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                            type="password"
-                            name="password_confirmation" required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
-            </a>
-
-            <x-primary-button class="ms-4">
-                {{ __('Register') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+                password.type = isPassword ? 'text' : 'password';
+                icon.classList.toggle('bx-hide', !isPassword);
+                icon.classList.toggle('bx-show', isPassword);
+            });
+        });
+    });
+</script>
+</body>
+</html>
