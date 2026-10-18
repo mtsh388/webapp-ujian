@@ -23,6 +23,58 @@ class BulkQuestionImportService
     {
     }
 
+    public function preview(UploadedFile $file): array
+    {
+        $questions = $this->parseDocument($file);
+
+        if (empty($questions)) {
+            throw new RuntimeException(
+                'Tidak ditemukan soal pada file Word. Pastikan setiap soal menggunakan format "SOAL 1", "SOAL 2", dan seterusnya.'
+            );
+        }
+
+        $this->validateQuestions($questions);
+
+        $multipleChoice = 0;
+        $trueFalse = 0;
+        $previewQuestions = [];
+
+        foreach ($questions as $index => $question) {
+            if ($question['type'] === 'multiple_choice') {
+                $multipleChoice++;
+            } else {
+                $trueFalse++;
+            }
+
+            $options = [];
+            foreach (($question['options'] ?? []) as $key => $option) {
+                $options[] = [
+                    'key' => $key,
+                    'html' => $option['html'] ?? htmlspecialchars((string) ($option['text'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    'is_correct' => $key === ($question['answer'] ?? null),
+                    'image_count' => count($option['images'] ?? []),
+                ];
+            }
+
+            $previewQuestions[] = [
+                'number' => $index + 1,
+                'type' => $question['type'],
+                'question' => $question['question'],
+                'explanation' => $question['explanation'],
+                'answer' => $question['answer'],
+                'options' => $options,
+                'image_count' => count($question['question_images'] ?? []),
+            ];
+        }
+
+        return [
+            'total' => count($previewQuestions),
+            'multiple_choice' => $multipleChoice,
+            'true_false' => $trueFalse,
+            'questions' => $previewQuestions,
+        ];
+    }
+
     public function import(
         UploadedFile $file,
         int          $subjectId,
