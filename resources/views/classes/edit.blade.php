@@ -175,6 +175,32 @@
 
 
 
+                        <div class="col-md-6">
+                            <label for="education_level" class="form-label">Jenjang Pendidikan</label>
+                            <select id="education_level" name="education_level" class="form-select @error('education_level') is-invalid @enderror" required>
+                                <option value="">Pilih Jenjang</option>
+                                <option value="SD" {{ old('education_level', $classRoom->education_level ?? '') === 'SD' ? 'selected' : '' }}>SD</option>
+                                <option value="SMP" {{ old('education_level', $classRoom->education_level ?? '') === 'SMP' ? 'selected' : '' }}>SMP</option>
+                                <option value="SMA" {{ old('education_level', $classRoom->education_level ?? '') === 'SMA' ? 'selected' : '' }}>SMA</option>
+                            </select>
+                            @error('education_level')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="grade_level" class="form-label">Tingkat Kelas</label>
+                            <select id="grade_level" name="grade_level" class="form-select @error('grade_level') is-invalid @enderror" required>
+                                <option value="">Pilih Kelas</option>
+                                @foreach([4, 5, 6, 7, 8, 9, 10, 11, 12] as $grade)
+                                    <option value="{{ $grade }}" {{ (string) old('grade_level', $classRoom->grade_level ?? '') === (string) $grade ? 'selected' : '' }}>{{ $grade }}</option>
+                                @endforeach
+                            </select>
+                            @error('grade_level')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-12">
 
 
