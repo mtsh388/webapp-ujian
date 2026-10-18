@@ -70,6 +70,13 @@
 
                         <div id="studentsExportButtons"></div>
 
+                        @can('exam.take')
+                            <a href="{{ route('exams.available') }}" class="btn btn-outline-primary">
+                                <i class="bx bx-play-circle me-1"></i>
+                                Mulai Ujian
+                            </a>
+                        @endcan
+
                         @can('student.create')
                             <a
                                 href="{{ route('students.create') }}"
@@ -92,11 +99,12 @@
 
                     <thead>
                     <tr>
-                        <th>Nomor Siswa</th>
                         <th>Nama Lengkap</th>
-                        <th>Jenis Kelamin</th>
+                        <th>Nama Sekolah</th>
+                        <th>No. HP</th>
+                        <th>Email</th>
+                        <th>Jenjang Pendidikan</th>
                         <th>Kelas</th>
-                        <th>No. Telepon</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -137,7 +145,7 @@
                 ],
 
                 order: [
-                    [2, 'asc']
+                    [0, 'asc']
                 ],
 
                 responsive: false,
@@ -170,131 +178,49 @@
                                 extend: 'print',
                                 text: '<i class="bx bx-printer me-1"></i>Print',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
-                                }
-                            },
-                            {
-                                extend: 'copy',
-                                text: '<i class="bx bx-copy me-1"></i>Copy',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
-                                }
-                            },
-                            {
-                                extend: 'csv',
-                                text: '<i class="bx bx-file me-1"></i>CSV',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
-                                }
-                            },
-                            {
-                                extend: 'excel',
-                                text: '<i class="bx bx-spreadsheet me-1"></i>Excel',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
-                                }
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
-                                }
-                            }
-                        ]
-                    }
-                ],
-
-                columns: [
-
-                    {
-                        data: 'student_number',
-                        name: 'student_number',
-                        render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">-</span>';
-                            }
-
-                            return `
-                                <span class="badge bg-label-primary">
-                                    ${data}
-                                </span>
-                            `;
-                        }
-                    },
-
+                                    columns: [
                     {
                         data: 'full_name',
                         name: 'full_name',
                         render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">-</span>';
-                            }
-
-                            return `
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar avatar-sm me-3">
-                                        <span class="avatar-initial rounded bg-label-primary">
-                                            <i class="bx bx-user"></i>
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <span class="fw-medium">${data}</span>
-                                    </div>
-                                </div>
-                            `;
+                            return data ? `<span class="fw-medium">${data}</span>` : '<span class="text-muted">-</span>';
                         }
                     },
-
                     {
-                        data: 'gender',
-                        name: 'gender',
+                        data: 'school_name',
+                        name: 'school_name',
                         render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">-</span>';
-                            }
-
-                            return `
-                                <span>
-                                    ${data}
-                                </span>
-                            `;
+                            return data ? data : '<span class="text-muted">-</span>';
                         }
                     },
-
-                    {
-                        data: 'class_name',
-                        name: 'class_id',
-                        render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">Belum ada kelas</span>';
-                            }
-
-                            return `
-                                <span class="badge bg-label-info">
-                                    ${data}
-                                </span>
-                            `;
-                        }
-                    },
-
                     {
                         data: 'phone',
                         name: 'phone',
                         render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">-</span>';
-                            }
-
-                            return `
-                                <span>
-                                    ${data}
-                                </span>
-                            `;
+                            return data ? data : '<span class="text-muted">-</span>';
                         }
                     },
-
+                    {
+                        data: 'email',
+                        name: 'email',
+                        render: function (data) {
+                            return data ? data : '<span class="text-muted">-</span>';
+                        }
+                    },
+                    {
+                        data: 'education_level',
+                        name: 'education_level',
+                        render: function (data) {
+                            return data ? `<span class="badge bg-label-info">${data}</span>` : '<span class="text-muted">-</span>';
+                        }
+                    },
+                    {
+                        data: 'class_name',
+                        name: 'class_id',
+                        render: function (data) {
+                            return data ? `<span class="badge bg-label-secondary">${data}</span>` : '<span class="text-muted">Belum ada kelas</span>';
+                        }
+                    },
                     {
                         data: 'is_active',
                         name: 'is_active',
@@ -306,20 +232,12 @@
 
                             return `
                                 <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
-                                    <input
-                                        class="form-check-input student-status-switch"
-                                        type="checkbox"
-                                        role="switch"
-                                        data-id="${row.id}"
-                                        ${checked}>
-                                    <label class="form-check-label mb-0">
-                                        ${label}
-                                    </label>
+                                    <input class="form-check-input student-status-switch" type="checkbox" role="switch" data-id="${row.id}" ${checked}>
+                                    <label class="form-check-label mb-0">${label}</label>
                                 </div>
                             `;
                         }
                     },
-
                     {
                         data: 'id',
                         name: 'id',
@@ -328,38 +246,21 @@
                         render: function (id) {
                             return `
                                 <div class="d-flex align-items-center gap-1">
-
-                                    <a
-                                        href="/master-data/siswa/${id}"
-                                        class="btn btn-sm btn-icon text-secondary rounded-pill"
-                                        data-bs-toggle="tooltip"
-                                        title="Detail">
+                                    <a href="/master-data/siswa/${id}" class="btn btn-sm btn-icon text-secondary rounded-pill" data-bs-toggle="tooltip" title="Detail">
                                         <i class="bx bx-show"></i>
                                     </a>
-
                                     @can('student.update')
-                            <a
-                                href="/master-data/siswa/${id}/edit"
-                                            class="btn btn-sm btn-icon text-primary rounded-pill"
-                                            data-bs-toggle="tooltip"
-                                            title="Edit">
+                                        <a href="/master-data/siswa/${id}/edit" class="btn btn-sm btn-icon text-primary rounded-pill" data-bs-toggle="tooltip" title="Edit">
                                             <i class="bx bx-edit"></i>
                                         </a>
                                     @endcan
-
-                            @can('student.delete')
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-icon text-danger rounded-pill"
-                                data-bs-toggle="tooltip"
-                                title="Hapus"
-                                onclick="deleteStudent(${id})">
+                                    @can('student.delete')
+                                        <button type="button" class="btn btn-sm btn-icon text-danger rounded-pill" data-bs-toggle="tooltip" title="Hapus" onclick="deleteStudent(${id})">
                                             <i class="bx bx-trash"></i>
                                         </button>
                                     @endcan
-
-                            </div>
-`;
+                                </div>
+                            `;
                         }
                     }
                 ],
