@@ -232,11 +232,15 @@ Route::middleware(['auth', 'password.first'])->group(function () {
     Route::prefix('ujian')->group(function () {
 
         // 1. RUTE STATIS (Harus paling atas)
-        Route::middleware('permission:exam.view')->group(function () {
+        Route::middleware(['role:Admin|Tentor', 'permission:exam.view'])->group(function () {
             Route::get('/', [ExamController::class, 'index'])->name('exams.index');
             Route::get('/data', [ExamController::class, 'data'])->name('exams.data');
-            Route::get('/tersedia', [ExamController::class, 'available'])->middleware('permission:exam.take')->name('exams.available');
+            Route::get('/{exam}', [ExamController::class, 'show'])->name('exams.show');
         });
+
+        Route::get('/tersedia', [ExamController::class, 'available'])
+            ->middleware('permission:exam.take')
+            ->name('exams.available');
 
         Route::get('/create', [ExamController::class, 'create'])->middleware('permission:exam.create')->name('exams.create');
         Route::post('/', [ExamController::class, 'store'])->middleware('permission:exam.create')->name('exams.store');
@@ -272,10 +276,6 @@ Route::middleware(['auth', 'password.first'])->group(function () {
                 ->name('exams.participants.destroy');
         });
 
-
-        Route::middleware('permission:exam.view')->group(function () {
-            Route::get('/{exam}', [ExamController::class, 'show'])->name('exams.show');
-        });
 
         Route::delete('/{exam}', [ExamController::class, 'destroy'])->middleware('permission:exam.delete')->name('exams.destroy');
         Route::post('/{exam}/publish', [ExamController::class, 'publish'])->middleware('permission:exam.publish')->name('exams.publish');
