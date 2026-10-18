@@ -208,6 +208,11 @@
                             </button>
                         </div>
 
+                        <div class="text-center mt-3">
+                            <span class="text-muted">Belum memiliki akun?</span>
+                            <a href="{{ route('register') }}" class="text-primary text-decoration-none fw-semibold">Daftar sebagai siswa</a>
+                        </div>
+
                     </form>
 
                 </div>
