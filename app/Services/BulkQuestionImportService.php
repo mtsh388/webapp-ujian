@@ -563,37 +563,99 @@ class BulkQuestionImportService
         int    $end
     ): string
     {
-        if ($html === '') {
+        if ($html === '' || $end <= $start) {
             return '';
         }
 
-        if ($start === 0 && $end >= strlen($text)) {
-            return $html;
-        }
+        $dom = new DOMDocument();
+        $previousErrorState = libxml_use_internal_errors(true);
 
-        $plainText = strip_tags($html);
-
-        $plainLength = strlen($plainText);
-
-        if ($plainLength === 0) {
-            return '';
-        }
-
-        $start = max(
-            0,
-            min($start, $plainLength)
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="UTF-8"><div id="question-import-fragment">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
 
-        $end = max(
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousErrorState);
+
+        if (!$loaded) {
+            return '';
+        }
+
+        $container = $dom->getElementById('question-import-fragment');
+
+        if (!$container instanceof DOMElement) {
+            return '';
+        }
+
+        $offset = 0;
+
+        $extractNode = function (\\DOMNode $node) use (
+            &$extractNode,
+            &$offset,
             $start,
-            min($end, $plainLength)
-        );
+            $end,
+            $dom
+        ): ?\\DOMNode {
+            if ($node->nodeType === XML_TEXT_NODE) {
+                $value = $node->nodeValue ?? '';
+                $nodeStart = $offset;
+                $nodeEnd = $nodeStart + strlen($value);
+                $offset = $nodeEnd;
 
-        if ($start === 0 && $end === $plainLength) {
-            return $html;
+                $segmentStart = max($start, $nodeStart);
+                $segmentEnd = min($end, $nodeEnd);
+
+                if ($segmentEnd <= $segmentStart) {
+                    return null;
+                }
+
+                return $dom->createTextNode(
+                    substr(
+                        $value,
+                        $segmentStart - $nodeStart,
+                        $segmentEnd - $segmentStart
+                    )
+                );
+            }
+
+            if ($node->nodeType !== XML_ELEMENT_NODE) {
+                return null;
+            }
+
+            if (strtolower($node->nodeName) === 'br') {
+                $nodeStart = $offset;
+                $offset++;
+
+                return $nodeStart >= $start && $nodeStart < $end
+                    ? $node->cloneNode(false)
+                    : null;
+            }
+
+            $clone = $node->cloneNode(false);
+
+            foreach ($node->childNodes as $child) {
+                $childClone = $extractNode($child);
+
+                if ($childClone !== null) {
+                    $clone->appendChild($childClone);
+                }
+            }
+
+            return $clone->hasChildNodes() ? $clone : null;
+        };
+
+        $fragment = $dom->createDocumentFragment();
+
+        foreach ($container->childNodes as $child) {
+            $clone = $extractNode($child);
+
+            if ($clone !== null) {
+                $fragment->appendChild($clone);
+            }
         }
 
-        return $html;
+        return $dom->saveHTML($fragment) ?: '';
     }
 
     protected function convertParagraphToHtml(
@@ -927,7 +989,8 @@ class BulkQuestionImportService
             ) {
                 $optionResult = $this->extractOptions(
                     $rawText,
-                    $images
+                    $images,
+                    (string) ($block['html'] ?? '')
                 );
 
                 if (
@@ -1123,7 +1186,8 @@ class BulkQuestionImportService
 
     protected function extractOptions(
         string $text,
-        array  $images
+        array  $images,
+        string $html = ''
     ): array
     {
         preg_match_all(
@@ -1181,7 +1245,16 @@ class BulkQuestionImportService
             $optionText = $this->normalizeText($optionText);
 
             $optionImages = [];
-            $optionHtml = $this->escapeTextAsHtml($optionText);
+            $optionHtml = $this->extractHtmlByTextRange(
+                $text,
+                $html,
+                $marker['start'],
+                $marker['end']
+            );
+
+            if ($optionHtml === '') {
+                $optionHtml = $this->escapeTextAsHtml($optionText);
+            }
 
             foreach ($images as $image) {
                 $position = (int)($image['position'] ?? 0);
