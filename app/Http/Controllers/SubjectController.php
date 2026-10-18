@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSubjectRequest;
 use App\Http\Requests\UpdateSubjectRequest;
+use App\Models\ClassRoom;
 use App\Models\Subject;
 use App\Services\SubjectService;
 use Illuminate\Http\JsonResponse;
@@ -35,7 +36,9 @@ class SubjectController extends Controller
 
     public function create(): View
     {
-        return view('subjects.create');
+        $classes = ClassRoom::query()->where('is_active', true)->orderBy('education_level')->orderBy('grade_level')->get();
+
+        return view('subjects.create', compact('classes'));
     }
 
     public function store(
@@ -56,18 +59,17 @@ class SubjectController extends Controller
 
     public function show(Subject $subject): View
     {
-        return view(
-            'subjects.show',
-            compact('subject')
-        );
+        $subject->load('classRoom');
+
+        return view('subjects.show', compact('subject'));
     }
 
     public function edit(Subject $subject): View
     {
-        return view(
-            'subjects.edit',
-            compact('subject')
-        );
+        $classes = ClassRoom::query()->where('is_active', true)->orderBy('education_level')->orderBy('grade_level')->get();
+        $subject->load('classRoom');
+
+        return view('subjects.edit', compact('subject', 'classes'));
     }
 
     public function update(
