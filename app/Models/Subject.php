@@ -13,6 +13,7 @@ class Subject extends Model
     protected $fillable = [
         'name',
         'code',
+        'class_id',
         'education_level',
         'topic',
         'description',
@@ -24,6 +25,11 @@ class Subject extends Model
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    public function classRoom()
+    {
+        return $this->belongsTo(ClassRoom::class, 'class_id');
     }
 
     public function questionBanks()
