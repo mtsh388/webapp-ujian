@@ -27,14 +27,6 @@ class UpdateQuestionBankRequest extends FormRequest
                 'exists:subjects,id',
             ],
 
-            'code' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('question_banks', 'code')
-                    ->ignore($questionBankId),
-            ],
-
             'type' => [
                 'required',
                 Rule::in([
