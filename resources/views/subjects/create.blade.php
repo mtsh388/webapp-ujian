@@ -76,6 +76,21 @@
                         </div>
 
                         <div class="col-md-4">
+                            <label for="class_id" class="form-label fw-semibold">
+                                Kelas <span class="text-danger">*</span>
+                            </label>
+                            <select name="class_id" id="class_id" class="form-select @error('class_id') is-invalid @enderror" required>
+                                <option value="">Pilih Kelas</option>
+                                @foreach ($classes as $classRoom)
+                                    <option value="{{ $classRoom->id }}" data-level="{{ $classRoom->education_level }}" {{ (string) old('class_id', $subject->class_id ?? '') === (string) $classRoom->id ? 'selected' : '' }}>{{ $classRoom->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('class_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4">
                             <label for="topic" class="form-label fw-semibold">
                                 Topik <span class="text-danger">*</span>
                             </label>
@@ -162,4 +177,26 @@
         </div>
 
     </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const level = document.getElementById('education_level');
+    const classSelect = document.getElementById('class_id');
+
+    function filterSubjectClasses() {
+        const selectedLevel = level.value;
+        Array.from(classSelect.options).forEach(function (option) {
+            if (!option.value) return;
+            option.hidden = option.dataset.level !== selectedLevel;
+            option.disabled = option.hidden;
+            if (option.hidden && option.selected) classSelect.value = '';
+        });
+    }
+
+    level.addEventListener('change', filterSubjectClasses);
+    filterSubjectClasses();
+});
+</script>
 @endsection
