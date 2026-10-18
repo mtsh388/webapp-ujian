@@ -32,7 +32,7 @@
 
                     <div class="row g-4">
 
-                        <div class="col-md-8">
+                        <div class="col-md-4">
                             <label for="name" class="form-label fw-semibold">
                                 Nama Mata Pelajaran
                                 <span class="text-danger">*</span>
@@ -57,31 +57,43 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label for="code" class="form-label fw-semibold">
-                                Kode Mata Pelajaran
-                                <span class="text-danger">*</span>
+                            <label for="education_level" class="form-label fw-semibold">
+                                Jenjang Pendidikan <span class="text-danger">*</span>
                             </label>
-
-                            <input
-                                type="text"
-                                name="code"
-                                id="code"
-                                class="form-control text-uppercase @error('code') is-invalid @enderror"
-                                value="{{ old('code', $subject->code) }}"
-                                placeholder="Contoh: MTK"
-                                maxlength="50"
+                            <select
+                                name="education_level"
+                                id="education_level"
+                                class="form-select @error('education_level') is-invalid @enderror"
                                 required
                             >
-
-                            @error('code')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
+                                <option value="">Pilih Jenjang</option>
+                                <option value="SD" {{ old('education_level', $subject->education_level ?? '') === 'SD' ? 'selected' : '' }}>SD</option>
+                                <option value="SMP" {{ old('education_level', $subject->education_level ?? '') === 'SMP' ? 'selected' : '' }}>SMP</option>
+                                <option value="SMA" {{ old('education_level', $subject->education_level ?? '') === 'SMA' ? 'selected' : '' }}>SMA</option>
+                            </select>
+                            @error('education_level')
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                        </div>
 
-                            <div class="form-text">
-                                Gunakan huruf, angka, tanda hubung, atau underscore.
-                            </div>
+                        <div class="col-md-4">
+                            <label for="topic" class="form-label fw-semibold">
+                                Topik <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="topic"
+                                id="topic"
+                                class="form-control @error('topic') is-invalid @enderror"
+                                value="{{ old('topic', $subject->topic ?? '') }}"
+                                placeholder="Contoh: Pecahan"
+                                maxlength="150"
+                                required
+                            >
+                            @error('topic')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <div class="form-text">Kode internal dibuat otomatis dari topik.</div>
                         </div>
 
                         <div class="col-12">
@@ -163,9 +175,4 @@
         </div>
 
     </div>
-    <script>
-        document.getElementById('code')?.addEventListener('input', function () {
-            this.value = this.value.toUpperCase();
-        });
-    </script>
 @endsection
