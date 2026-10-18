@@ -516,7 +516,9 @@ class ExamAttemptService
             );
 
             $score = $result['score'];
-            $passed = $score >= (float) $lockedAttempt->exam->passing_score;
+            $passed = $lockedAttempt->exam->passing_score !== null
+                ? $score >= (float) $lockedAttempt->exam->passing_score
+                : null;
 
             $now = now();
             $durationSeconds = $lockedAttempt->started_at
