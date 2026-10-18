@@ -48,19 +48,38 @@ class BulkQuestionImportService
 
             $options = [];
             foreach (($question['options'] ?? []) as $key => $option) {
+                $optionHtml = $option['html'] ?? htmlspecialchars((string) ($option['text'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $optionHtml = preg_replace(
+                    '/<img src="__WORD_[^"]+"[^>]*>/u',
+                    '<span class="badge bg-label-info">[Gambar]</span>',
+                    $optionHtml
+                );
+
                 $options[] = [
                     'key' => $key,
-                    'html' => $option['html'] ?? htmlspecialchars((string) ($option['text'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+                    'html' => $optionHtml,
                     'is_correct' => $key === ($question['answer'] ?? null),
                     'image_count' => count($option['images'] ?? []),
                 ];
             }
 
+            $questionHtml = preg_replace(
+                '/<img src="__WORD_[^"]+"[^>]*>/u',
+                '<span class="badge bg-label-info">[Gambar]</span>',
+                (string) $question['question']
+            );
+
+            $explanationHtml = preg_replace(
+                '/<img src="__WORD_[^"]+"[^>]*>/u',
+                '<span class="badge bg-label-info">[Gambar]</span>',
+                (string) $question['explanation']
+            );
+
             $previewQuestions[] = [
                 'number' => $index + 1,
                 'type' => $question['type'],
-                'question' => $question['question'],
-                'explanation' => $question['explanation'],
+                'question' => $questionHtml,
+                'explanation' => $explanationHtml,
                 'answer' => $question['answer'],
                 'options' => $options,
                 'image_count' => count($question['question_images'] ?? []),
