@@ -72,6 +72,24 @@
                     <div class="row">
                         <!-- Informasi Dasar -->
                         <div class="col-md-6 mb-3">
+                            <label for="exam_type" class="form-label">Jenis Ujian <span class="text-danger">*</span></label>
+                            <select class="form-select @error('exam_type') is-invalid @enderror" id="exam_type" name="exam_type" required>
+                                <option value="trial" {{ old('exam_type', 'exam') == 'trial' ? 'selected' : '' }}>Trial</option>
+                                <option value="exam" {{ old('exam_type', 'exam') == 'exam' ? 'selected' : '' }}>Ujian</option>
+                            </select>
+                            @error('exam_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="is_timed" class="form-label">Pengaturan Durasi <span class="text-danger">*</span></label>
+                            <select class="form-select @error('is_timed') is-invalid @enderror" id="is_timed" name="is_timed" required>
+                                <option value="1" {{ old('is_timed', '1') == '1' ? 'selected' : '' }}>Dengan Durasi</option>
+                                <option value="0" {{ old('is_timed', '1') == '0' ? 'selected' : '' }}>Tanpa Durasi</option>
+                            </select>
+                            @error('is_timed')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div class="col-md-6 mb-3">
                             <label for="subject_id" class="form-label">Mata Pelajaran <span class="text-danger">*</span></label>
                             <select class="form-select @error('subject_id') is-invalid @enderror"
                                     id="subject_id" name="subject_id" required>
@@ -109,7 +127,7 @@
                         </div>
 
                         <!-- Pengaturan Waktu & Nilai -->
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 timed-config-field">
                             <label for="duration_minutes" class="form-label">Durasi (Menit) <span
                                     class="text-danger">*</span></label>
                             <input type="number"
@@ -133,7 +151,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 timed-config-field">
                             <label for="max_attempts" class="form-label">Batas Percobaan <span
                                     class="text-danger">*</span></label>
                             <input type="number"
@@ -145,7 +163,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 timed-config-field">
                             <label for="start_at" class="form-label">Waktu Mulai <span
                                     class="text-danger">*</span></label>
                             <input type="datetime-local"
@@ -156,7 +174,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 timed-config-field">
                             <label for="end_at" class="form-label">Waktu Berakhir <span
                                     class="text-danger">*</span></label>
                             <input type="datetime-local"
@@ -225,4 +243,27 @@
 
         </div>
     </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const timingSelect = document.getElementById('is_timed');
+    if (!timingSelect) return;
+
+    function toggleTimingFields() {
+        const timed = timingSelect.value === '1';
+        document.querySelectorAll('.timed-config-field').forEach(function (container) {
+            container.classList.toggle('d-none', !timed);
+            container.querySelectorAll('input, select').forEach(function (field) {
+                field.required = timed;
+                if (!timed) field.value = '';
+            });
+        });
+    }
+
+    timingSelect.addEventListener('change', toggleTimingFields);
+    toggleTimingFields();
+});
+</script>
 @endsection
