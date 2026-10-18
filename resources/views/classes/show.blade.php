@@ -149,6 +149,16 @@
 
 
 
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block mb-1">Jenjang Pendidikan</small>
+                                        <div class="fw-semibold">{{ $classRoom->education_level ?? '-' }}</div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block mb-1">Tingkat Kelas</small>
+                                        <div class="fw-semibold">{{ $classRoom->grade_level ? 'Kelas ' . $classRoom->grade_level : '-' }}</div>
+                                    </div>
+
                                     <div class="col-12">
 
 
