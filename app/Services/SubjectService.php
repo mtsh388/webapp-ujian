@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClassRoom;
 use App\Models\Subject;
 use App\Repositories\SubjectRepository;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class SubjectService
 
     public function getDataTable(Request $request): array
     {
-        $query = $this->repository->query();
+        $query = $this->repository->query()->with('classRoom');
         $total = $query->count();
         $search = $request->input('search.value');
 
@@ -68,6 +69,7 @@ class SubjectService
                 'id' => $subject->id,
                 'name' => $subject->name,
                 'education_level' => $subject->education_level,
+                'class_name' => $subject->classRoom?->name,
                 'topic' => $subject->topic,
                 'description' => $subject->description,
                 'is_active' => $subject->is_active,
@@ -85,6 +87,7 @@ class SubjectService
     public function create(array $data): Subject
     {
         $data['topic'] = trim($data['topic']);
+        $data['education_level'] = ClassRoom::query()->findOrFail($data['class_id'])->education_level;
         $data['code'] = $this->makeUniqueCode($data['topic']);
         $data['is_active'] = $data['is_active'] ?? true;
 
@@ -96,6 +99,7 @@ class SubjectService
     public function update(Subject $subject, array $data): Subject
     {
         $data['topic'] = trim($data['topic']);
+        $data['education_level'] = ClassRoom::query()->findOrFail($data['class_id'])->education_level;
         $data['code'] = $this->makeUniqueCode($data['topic'], $subject->id);
         $data['is_active'] = $data['is_active'] ?? false;
 
