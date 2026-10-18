@@ -198,17 +198,23 @@
                             </div>
                         </div>
 
-                        <div class="mb-6">
+                        <div class="mb-4">
                             <button
                                 class="btn btn-primary d-grid w-100"
                                 type="submit">
-
                                 Login
-
                             </button>
                         </div>
 
                     </form>
+
+                    <div class="text-center mb-3">
+                        <span class="text-muted">Belum punya akun?</span>
+                    </div>
+
+                    <a href="{{ route('register') }}" class="btn btn-outline-primary d-grid w-100">
+                        Daftar sebagai Siswa
+                    </a>
 
                 </div>
             </div>

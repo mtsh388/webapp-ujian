@@ -19,10 +19,16 @@
                             </p>
                         </div>
 
-                        <span class="badge bg-label-primary px-3 py-2">
-                        <i class="icon-base bx bx-user me-1"></i>
-                        Siswa
-                    </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-label-primary px-3 py-2">
+                                <i class="icon-base bx bx-user me-1"></i>
+                                Siswa
+                            </span>
+                            <a href="{{ route('exams.available') }}" class="btn btn-primary">
+                                <i class="icon-base bx bx-play-circle me-1"></i>
+                                Mulai Ujian
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -211,6 +217,26 @@
                                 <span class="fw-semibold">
                                 {{ $student?->classRoom?->name ?? '-' }}
                             </span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Nama Sekolah</small>
+                                <span class="fw-semibold">{{ $student?->school_name ?? '-' }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Nomor HP</small>
+                                <span class="fw-semibold">{{ $student?->phone ?? '-' }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Email</small>
+                                <span class="fw-semibold">{{ auth()->user()->email }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Jenjang Pendidikan</small>
+                                <span class="fw-semibold">{{ $student?->education_level ?? '-' }}</span>
                             </div>
 
                             <div>

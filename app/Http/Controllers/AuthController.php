@@ -29,6 +29,20 @@ class AuthController extends Controller
             return redirect()->route('password.change');
         }
 
+        if ($request->user()->hasRole('Siswa')) {
+            $student = $request->user()->student;
+            $profileComplete = $student
+                && filled($student->full_name)
+                && filled($student->school_name)
+                && filled($student->phone)
+                && filled($student->education_level)
+                && filled($student->class_id);
+
+            if (!$profileComplete) {
+                return redirect()->route('students.profile.edit');
+            }
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
