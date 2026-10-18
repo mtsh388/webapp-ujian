@@ -13,6 +13,7 @@ class Subject extends Model
     protected $fillable = [
         'name',
         'education_level',
+        'grade_level',
         'topic',
         'description',
         'is_active',
@@ -21,6 +22,7 @@ class Subject extends Model
     protected function casts(): array
     {
         return [
+            'grade_level' => 'integer',
             'is_active' => 'boolean',
         ];
     }
