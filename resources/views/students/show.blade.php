@@ -112,6 +112,26 @@
 
                                     <div class="col-md-6">
                                         <div class="text-muted small mb-1">
+                                            Nama Sekolah
+                                        </div>
+
+                                        <div class="fw-semibold">
+                                            {{ $student->school_name ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">
+                                            Jenjang Pendidikan
+                                        </div>
+
+                                        <div class="fw-semibold">
+                                            {{ $student->education_level ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">
                                             Jenis Kelamin
                                         </div>
 
