@@ -156,6 +156,13 @@ class QuestionBankController extends Controller
         BulkQuestionImportRequest $request
     ): View|RedirectResponse
     {
+        $disk = Storage::disk('local');
+        $previousPending = session('question_import.pending');
+
+        if (is_array($previousPending) && !empty($previousPending['path'])) {
+            $disk->delete($previousPending['path']);
+        }
+
         $path = $request->file('file')->storeAs(
             'question-imports',
             Str::uuid() . '.docx',
