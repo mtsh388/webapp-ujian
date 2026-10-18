@@ -76,6 +76,26 @@
                         </div>
 
                         <div class="col-md-4">
+                            <label for="grade_level" class="form-label fw-semibold">
+                                Kelas <span class="text-danger">*</span>
+                            </label>
+                            <select
+                                name="grade_level"
+                                id="grade_level"
+                                class="form-select @error('grade_level') is-invalid @enderror"
+                                required
+                            >
+                                <option value="">Pilih Kelas</option>
+                                @foreach([4, 5, 6, 7, 8, 9, 10, 11, 12] as $grade)
+                                    <option value="{{ $grade }}" {{ (string) old('grade_level', $subject->grade_level ?? '') === (string) $grade ? 'selected' : '' }}>Kelas {{ $grade }}</option>
+                                @endforeach
+                            </select>
+                            @error('grade_level')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-4">
                             <label for="topic" class="form-label fw-semibold">
                                 Topik <span class="text-danger">*</span>
                             </label>
@@ -162,4 +182,40 @@
         </div>
 
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const levelSelect = document.getElementById('education_level');
+            const gradeSelect = document.getElementById('grade_level');
+            const gradesByLevel = {
+                SD: [4, 5, 6],
+                SMP: [7, 8, 9],
+                SMA: [10, 11, 12]
+            };
+
+            if (!levelSelect || !gradeSelect) {
+                return;
+            }
+
+            function filterGrades() {
+                const allowedGrades = gradesByLevel[levelSelect.value] || [];
+
+                Array.from(gradeSelect.options).forEach(function (option) {
+                    if (!option.value) {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    option.hidden = !allowedGrades.includes(Number(option.value));
+                });
+
+                if (gradeSelect.value && !allowedGrades.includes(Number(gradeSelect.value))) {
+                    gradeSelect.value = '';
+                }
+            }
+
+            levelSelect.addEventListener('change', filterGrades);
+            filterGrades();
+        });
+    </script>
+
 @endsection
