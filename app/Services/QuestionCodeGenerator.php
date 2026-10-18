@@ -18,6 +18,10 @@ class QuestionCodeGenerator
 
         $levelPart = Str::upper($subject->education_level ?: 'UMUM');
 
+        $gradePart = $subject->grade_level
+            ? 'K' . (string) $subject->grade_level
+            : 'KX';
+
         $topicPart = substr(
             Str::upper(Str::slug($subject->topic ?: 'UMUM', '-')),
             0,
@@ -28,6 +32,7 @@ class QuestionCodeGenerator
             implode('-', array_filter([
                 $subjectPart ?: 'MAPEL',
                 $levelPart,
+                $gradePart,
                 $topicPart ?: 'TOPIK',
             ])),
             '-'
