@@ -93,7 +93,7 @@
                             @error('topic')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <div class="form-text">Kode internal dibuat otomatis dari topik.</div>
+                            <div class="form-text">Topik menjadi dasar pengelompokan materi dan pembentukan kode soal otomatis.</div>
                         </div>
 
                         <div class="col-12">
