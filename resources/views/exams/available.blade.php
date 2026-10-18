@@ -134,6 +134,7 @@
                                             <div>
                                                 <h5 class="card-title mb-1">
                                                     {{ $exam->title }}
+                                                    <span class="badge bg-label-info ms-1">{{ $exam->exam_type === 'trial' ? 'Trial' : 'Ujian' }}</span>
                                                 </h5>
 
                                                 <small class="text-muted">
@@ -170,7 +171,7 @@
                                                 </small>
 
                                                 <span class="fw-semibold">
-                                                    {{ $exam->duration_minutes }} Menit
+                                                    {{ $exam->is_timed ? $exam->duration_minutes . ' Menit' : 'Tanpa Durasi' }}
                                                 </span>
                                             </div>
                                         </div>
