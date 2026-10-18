@@ -25,6 +25,7 @@ class SubjectService
                 $query
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('education_level', 'like', "%{$search}%")
+                    ->orWhere('grade_level', 'like', "%{$search}%")
                     ->orWhere('topic', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             });
@@ -36,10 +37,11 @@ class SubjectService
             0 => 'id',
             1 => 'name',
             2 => 'education_level',
-            3 => 'topic',
-            4 => 'description',
-            5 => 'is_active',
-            6 => 'id',
+            3 => 'grade_level',
+            4 => 'topic',
+            5 => 'description',
+            6 => 'is_active',
+            7 => 'id',
         ];
 
         $columnIndex = (int) $request->input('order.0.column', 1);
@@ -65,6 +67,7 @@ class SubjectService
                 'id' => $subject->id,
                 'name' => $subject->name,
                 'education_level' => $subject->education_level,
+                'grade_level' => $subject->grade_level,
                 'topic' => $subject->topic,
                 'description' => $subject->description,
                 'is_active' => $subject->is_active,
