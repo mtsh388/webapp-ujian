@@ -127,11 +127,13 @@
                 <ul class="menu-sub">
 
                     @can('exam.view')
-                        <li class="menu-item {{ request()->routeIs('exams.index') ? 'active' : '' }}">
-                            <a href="{{ route('exams.index') }}" class="menu-link">
-                                <div>Daftar Ujian</div>
-                            </a>
-                        </li>
+                        @unless(auth()->user()->hasRole('Siswa'))
+                            <li class="menu-item {{ request()->routeIs('exams.index') ? 'active' : '' }}">
+                                <a href="{{ route('exams.index') }}" class="menu-link">
+                                    <div>Daftar Ujian</div>
+                                </a>
+                            </li>
+                        @endunless
                     @endcan
 
                     @can('exam.create')
