@@ -94,6 +94,7 @@
                         <th>No</th>
                         <th>Nama Mata Pelajaran</th>
                         <th>Jenjang</th>
+                        <th>Kelas</th>
                         <th>Topik</th>
                         <th>Deskripsi</th>
                         <th>Status</th>
@@ -163,14 +164,14 @@
                                 extend: 'print',
                                 text: '<i class="bx bx-printer me-1"></i>Print',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 }
                             },
                             {
                                 extend: 'copy',
                                 text: '<i class="bx bx-copy me-1"></i>Copy',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 }
                             },
                             {
@@ -237,6 +238,14 @@
                             return data
                                 ? `<span class="badge bg-label-info">${data}</span>`
                                 : '<span class="text-muted">-</span>';
+                        }
+                    },
+
+                    {
+                        data: 'class_name',
+                        name: 'class_name',
+                        render: function (data) {
+                            return data ? `<span class="badge bg-label-secondary">${data}</span>` : '<span class="text-muted">-</span>';
                         }
                     },
 
