@@ -178,21 +178,21 @@
                                 extend: 'csv',
                                 text: '<i class="bx bx-file me-1"></i>CSV',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="bx bx-spreadsheet me-1"></i>Excel',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5]
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 }
                             }
                         ]
