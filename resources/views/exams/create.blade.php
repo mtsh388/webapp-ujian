@@ -6,6 +6,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const selector = document.getElementById('has_duration');
+            const examTypeSelector = document.getElementById('exam_type');
+            const passingScore = document.getElementById('passing_score');
+            const passingScoreLabel = document.querySelector('label[for="passing_score"]');
             const fields = document.querySelectorAll('.duration-settings');
 
             function toggleDurationFields() {
@@ -20,8 +23,18 @@
                 });
             }
 
+            function togglePassingScore() {
+                const required = examTypeSelector.value === 'ujian';
+                passingScore.required = required;
+                passingScoreLabel.innerHTML = required
+                    ? 'Nilai KKM / Lulus <span class="text-danger">*</span>'
+                    : 'Nilai KKM / Lulus <span class="text-muted">(Opsional untuk Trial)</span>';
+            }
+
             selector.addEventListener('change', toggleDurationFields);
+            examTypeSelector.addEventListener('change', togglePassingScore);
             toggleDurationFields();
+            togglePassingScore();
         });
     </script>
     <div class="container-xxl flex-grow-1 container-p-y">
@@ -165,7 +178,7 @@
                             <input type="number" step="0.01"
                                    class="form-control @error('passing_score') is-invalid @enderror"
                                    id="passing_score" name="passing_score"
-                                   value="{{ old('passing_score', 75.00) }}" required>
+                                   value="{{ old('passing_score', 75.00) }}" min="0" max="100">
                             @error('passing_score')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
