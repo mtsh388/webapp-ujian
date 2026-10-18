@@ -17,7 +17,8 @@ use ZipArchive;
 class BulkQuestionImportService
 {
     public function __construct(
-        protected QuestionBankRepositoryInterface $repository
+        protected QuestionBankRepositoryInterface $repository,
+        protected QuestionCodeGenerator $codeGenerator
     )
     {
     }
@@ -55,15 +56,8 @@ class BulkQuestionImportService
                 $multipleChoice = 0;
                 $trueFalse = 0;
 
-                $nextCodeNumber = $this->getNextCodeNumber($subject);
-
                 foreach ($questions as $question) {
-                    $code = $this->generateCode(
-                        $subject,
-                        $nextCodeNumber
-                    );
-
-                    $nextCodeNumber++;
+                    $code = $this->codeGenerator->generate($subject);
 
                     $questionBank = $this->repository->create([
                         'subject_id' => $subject->id,
@@ -1605,56 +1599,6 @@ class BulkQuestionImportService
             array_values($mediaMap),
             $content
         );
-    }
-
-    protected function getNextCodeNumber(
-        Subject $subject
-    ): int
-    {
-        $prefix =
-            strtoupper(
-                $subject->code
-            );
-
-        $lastCode =
-            $this->repository->getLastCode(
-                $prefix
-            );
-
-        if (!$lastCode) {
-            return 1;
-        }
-
-        preg_match(
-            '/(\d+)$/',
-            $lastCode,
-            $matches
-        );
-
-        if (!isset($matches[1])) {
-            return 1;
-        }
-
-        return ((int)$matches[1]) + 1;
-    }
-
-    protected function generateCode(
-        Subject $subject,
-        int     $number
-    ): string
-    {
-        $prefix =
-            strtoupper(
-                $subject->code
-            );
-
-        return $prefix . '-' .
-            str_pad(
-                (string)$number,
-                3,
-                '0',
-                STR_PAD_LEFT
-            );
     }
 
     protected function getMimeType(
