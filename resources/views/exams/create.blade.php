@@ -39,6 +39,33 @@
     </script>
     <div class="container-xxl flex-grow-1 container-p-y">
 
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-start">
+                    <i class="bx bx-error-circle me-2 fs-4"></i>
+                    <div>{{ session('error') }}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-start">
+                    <i class="bx bx-error-circle me-2 fs-4"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Ujian gagal disimpan. Periksa kembali data berikut:</h6>
+                        <ul class="mb-0 ps-3">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <!-- Breadcrumb / Header Title opsional jika ingin tetap dipertahankan,
              namun karena card-header sudah lengkap, ini bisa dihilangkan agar persis index -->
 
@@ -153,10 +180,13 @@
 
                         <div class="col-md-6 mb-3">
                             <label for="has_duration" class="form-label">Pengaturan Durasi <span class="text-danger">*</span></label>
-                            <select class="form-select" id="has_duration" name="has_duration" required>
+                            <select class="form-select @error('has_duration') is-invalid @enderror" id="has_duration" name="has_duration" required>
                                 <option value="1" {{ old('has_duration', '1') === '1' ? 'selected' : '' }}>Menggunakan durasi dan jadwal</option>
                                 <option value="0" {{ old('has_duration') === '0' ? 'selected' : '' }}>Tanpa durasi dan jadwal</option>
                             </select>
+                            @error('has_duration')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <!-- Pengaturan Waktu & Nilai -->
