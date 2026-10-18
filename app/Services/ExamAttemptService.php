@@ -126,6 +126,12 @@ class ExamAttemptService
 
     public function isExpired(ExamAttempt $attempt): bool
     {
+        $attempt->loadMissing('exam');
+
+        if (!$attempt->exam->is_timed) {
+            return false;
+        }
+
         if ($attempt->status !== 'in_progress') {
             return false;
         }
@@ -287,7 +293,9 @@ class ExamAttemptService
         ExamAttempt $attempt
     ): int
     {
-        if (!$attempt->started_at) {
+        $attempt->loadMissing('exam');
+
+        if (!$attempt->exam->is_timed || !$attempt->started_at) {
             return 0;
         }
 
