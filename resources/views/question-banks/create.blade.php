@@ -63,7 +63,7 @@
                                             <option
                                                 value="{{ $subject->id }}"
                                                 @selected(old('subject_id') == $subject->id)>
-                                                {{ $subject->name }}
+                                                {{ $subject->name }} — {{ $subject->education_level ?? '-' }} — {{ $subject->topic ?? '-' }}
                                             </option>
                                         @endforeach
 
@@ -77,23 +77,9 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <label class="form-label">
-                                        Kode Soal
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="code"
-                                        class="form-control @error('code') is-invalid @enderror"
-                                        value="{{ old('code') }}"
-                                        placeholder="Contoh: MAT-001"
-                                        required>
-
-                                    @error('code')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                    @enderror
+                                    <label class="form-label">Kode Soal</label>
+                                    <input type="text" class="form-control" value="Dibuat otomatis saat disimpan" readonly>
+                                    <div class="form-text">Kode dibentuk dari mata pelajaran, jenjang pendidikan, dan topik.</div>
                                 </div>
 
                                 <div class="col-md-4">
