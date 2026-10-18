@@ -114,6 +114,8 @@ class ExamService
                     'code' => $exam->code,
                     'title' => $exam->title,
                     'duration_minutes' => $exam->duration_minutes,
+                    'exam_type' => $exam->exam_type,
+                    'is_timed' => $exam->is_timed,
                     'subject_name' => $exam->subject?->name,
                     'start_at' => $exam->start_at
                         ? Carbon::parse(
@@ -164,6 +166,8 @@ class ExamService
 
     public function create(array $data): Exam
     {
+        $data = $this->normalizeTiming($data);
+
         return DB::transaction(function () use ($data) {
             $subject = $this
                 ->getSubjects()
@@ -188,10 +192,27 @@ class ExamService
 
     public function update(Exam $exam, array $data): Exam
     {
+        $data = $this->normalizeTiming($data);
+
         return DB::transaction(function () use ($exam, $data) {
             $exam->update($data);
             return $exam->fresh();
         });
+    }
+
+    protected function normalizeTiming(array $data): array
+    {
+        $isTimed = filter_var($data['is_timed'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $data['is_timed'] = $isTimed;
+
+        if (!$isTimed) {
+            $data['duration_minutes'] = 0;
+            $data['max_attempts'] = 1;
+            $data['start_at'] = null;
+            $data['end_at'] = null;
+        }
+
+        return $data;
     }
 
     public function getAvailableForStudent(
