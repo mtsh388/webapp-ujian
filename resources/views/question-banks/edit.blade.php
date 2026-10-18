@@ -65,7 +65,7 @@
                                                 value="{{ $subject->id }}"
                                                 @selected(old('subject_id', $questionBank->subject_id) == $subject->id)>
 
-                                                {{ $subject->name }} — {{ $subject->education_level ?? '-' }} — {{ $subject->topic ?? '-' }}
+                                                {{ $subject->name }} — {{ $subject->education_level ?? '-' }} — Kelas {{ $subject->grade_level ?? '-' }} — {{ $subject->topic ?? '-' }}
 
                                             </option>
 
