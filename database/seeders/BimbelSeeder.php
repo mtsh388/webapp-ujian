@@ -47,6 +47,8 @@ class BimbelSeeder extends Seeder
         $class10 = ClassRoom::create([
             'name' => 'Kelas 10 Reguler',
             'code' => 'K10-REG',
+            'education_level' => 'SMA',
+            'grade_level' => 10,
             'description' => 'Kelas reguler tingkat 10',
             'is_active' => true,
         ]);
@@ -54,6 +56,8 @@ class BimbelSeeder extends Seeder
         $class11 = ClassRoom::create([
             'name' => 'Kelas 11 Reguler',
             'code' => 'K11-REG',
+            'education_level' => 'SMA',
+            'grade_level' => 11,
             'description' => 'Kelas reguler tingkat 11',
             'is_active' => true,
         ]);
@@ -61,22 +65,26 @@ class BimbelSeeder extends Seeder
         $subjects = [
             [
                 'name' => 'Matematika',
-                'code' => 'MTK',
+                'education_level' => 'SMA',
+                'topic' => 'Operasi Hitung Dasar',
             ],
             [
                 'name' => 'Bahasa Indonesia',
-                'code' => 'BIN',
+                'education_level' => 'SMA',
+                'topic' => 'Kata Benda',
             ],
             [
                 'name' => 'Bahasa Inggris',
-                'code' => 'BIG',
+                'education_level' => 'SMA',
+                'topic' => 'Vocabulary Dasar',
             ],
         ];
 
         foreach ($subjects as $subjectData) {
             Subject::create([
                 'name' => $subjectData['name'],
-                'code' => $subjectData['code'],
+                'education_level' => $subjectData['education_level'],
+                'topic' => $subjectData['topic'],
                 'is_active' => true,
             ]);
         }
@@ -139,8 +147,8 @@ class BimbelSeeder extends Seeder
             'is_primary' => true,
         ]);
 
-        $matematika = Subject::where('code', 'MTK')->first();
-        $bahasaIndonesia = Subject::where('code', 'BIN')->first();
+        $matematika = Subject::where('name', 'Matematika')->first();
+        $bahasaIndonesia = Subject::where('name', 'Bahasa Indonesia')->first();
 
         $questions = [
             [
