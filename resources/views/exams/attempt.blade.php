@@ -102,6 +102,7 @@
                 </div>
             </div>
 
+            @if ($exam->is_timed)
             <div class="card shadow-sm border-0">
                 <div class="card-body py-2 px-3">
                     <div class="d-flex align-items-center gap-2">
@@ -121,6 +122,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4" role="status">
