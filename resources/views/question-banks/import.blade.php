@@ -131,8 +131,7 @@
                                                     value="{{ $subject->id }}"
                                                     @selected(old('subject_id') == $subject->id)>
 
-                                                    {{ $subject->code }} -
-                                                    {{ $subject->name }}
+                                                    {{ $subject->name }} — {{ $subject->education_level ?? '-' }} — Kelas {{ $subject->grade_level ?? '-' }} — {{ $subject->topic ?? '-' }}
 
                                                 </option>
 
