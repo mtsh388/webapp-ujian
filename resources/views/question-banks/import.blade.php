@@ -99,7 +99,7 @@
                             <div class="card-body p-4">
 
                                 <form
-                                    action="{{ route('questions.import.store') }}"
+                                    action="{{ route('questions.import.preview') }}"
                                     method="POST"
                                     enctype="multipart/form-data">
 
@@ -451,7 +451,7 @@ SOAL 3 [PILIHAN_GANDA]
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector(
-                'form[action="{{ route('questions.import.store') }}"]'
+                'form[action="{{ route('questions.import.preview') }}"]'
             );
 
             const button = document.getElementById('btn-import');
