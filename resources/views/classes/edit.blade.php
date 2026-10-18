@@ -338,4 +338,41 @@
     </div>
 
 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const levelSelect = document.getElementById('education_level');
+            const gradeSelect = document.getElementById('grade_level');
+            const gradesByLevel = {
+                SD: [4, 5, 6],
+                SMP: [7, 8, 9],
+                SMA: [10, 11, 12]
+            };
+
+            if (!levelSelect || !gradeSelect) {
+                return;
+            }
+
+            function filterGrades() {
+                const allowedGrades = gradesByLevel[levelSelect.value] || [];
+
+                Array.from(gradeSelect.options).forEach(function (option) {
+                    if (!option.value) {
+                        option.hidden = false;
+                        return;
+                    }
+
+                    option.hidden = !allowedGrades.includes(Number(option.value));
+                });
+
+                if (gradeSelect.value && !allowedGrades.includes(Number(gradeSelect.value))) {
+                    gradeSelect.value = '';
+                }
+            }
+
+            levelSelect.addEventListener('change', filterGrades);
+            filterGrades();
+        });
+    </script>
+
 @endsection
