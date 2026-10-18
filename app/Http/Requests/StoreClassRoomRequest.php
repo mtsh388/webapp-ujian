@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreClassRoomRequest extends FormRequest
 {
@@ -14,28 +16,31 @@ class StoreClassRoomRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                'unique:classes,code',
-            ],
-
-            'description' => [
-                'nullable',
-                'string',
-            ],
-
-            'is_active' => [
-                'required',
-                'boolean',
-            ],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', 'unique:classes,code'],
+            'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
+            'grade_level' => ['required', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
+            'description' => ['nullable', 'string'],
+            'is_active' => ['required', 'boolean'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $level = $this->input('education_level');
+            $grade = (int) $this->input('grade_level');
+
+            $allowedGrades = match ($level) {
+                'SD' => [4, 5, 6],
+                'SMP' => [7, 8, 9],
+                'SMA' => [10, 11, 12],
+                default => [],
+            };
+
+            if (!in_array($grade, $allowedGrades, true)) {
+                $validator->errors()->add('grade_level', 'Kelas tidak sesuai dengan jenjang pendidikan.');
+            }
+        });
     }
 }
