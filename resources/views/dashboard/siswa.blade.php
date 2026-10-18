@@ -219,6 +219,26 @@
                             </span>
                             </div>
 
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Nama Sekolah</small>
+                                <span class="fw-semibold">{{ $student?->school_name ?? '-' }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Nomor HP</small>
+                                <span class="fw-semibold">{{ $student?->phone ?? '-' }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Email</small>
+                                <span class="fw-semibold">{{ auth()->user()->email }}</span>
+                            </div>
+
+                            <div class="mb-4">
+                                <small class="text-muted d-block mb-1">Jenjang Pendidikan</small>
+                                <span class="fw-semibold">{{ $student?->education_level ?? '-' }}</span>
+                            </div>
+
                             <div>
                                 <small class="text-muted d-block mb-1">
                                     Status
