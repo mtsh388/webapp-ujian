@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\CompleteStudentProfileRequest;
+use App\Models\ClassRoom;
+use App\Models\Student;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+
+class StudentProfileController extends Controller
+{
+    public function edit(): View
+    {
+        $user = request()->user();
+
+        abort_unless($user->hasRole('Siswa'), 403);
+
+        $student = $user->student;
+
+        $classes = ClassRoom::query()
+            ->where('is_active', true)
+            ->whereIn('education_level', ['SD', 'SMP', 'SMA'])
+            ->orderByRaw("FIELD(education_level, 'SD', 'SMP', 'SMA')")
+            ->orderBy('grade_level')
+            ->get();
+
+        return view('students.complete-profile', compact('student', 'classes'));
+    }
+
+    public function update(CompleteStudentProfileRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $data = $request->validated();
+
+        $student = Student::firstOrNew(['user_id' => $user->id]);
+
+        if (!$student->exists) {
+            $student->student_number = 'REG-' . str_pad((string) $user->id, 8, '0', STR_PAD_LEFT);
+            $student->is_active = true;
+        }
+
+        $student->fill([
+            'full_name' => $data['full_name'],
+            'school_name' => $data['school_name'],
+            'phone' => $data['phone'],
+            'education_level' => $data['education_level'],
+            'class_id' => $data['class_id'],
+        ]);
+
+        $student->save();
+
+        $user->forceFill(['name' => $data['full_name']])->save();
+
+        return redirect()
+            ->route('dashboard')
+            ->with('success', 'Profil siswa berhasil disimpan.');
+    }
+}
