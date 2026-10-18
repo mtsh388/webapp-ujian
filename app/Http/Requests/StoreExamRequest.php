@@ -45,7 +45,8 @@ class StoreExamRequest extends FormRequest
             'start_at' => ['nullable', 'required_if:has_duration,1', 'date'],
             'end_at' => ['nullable', 'required_if:has_duration,1', 'date', 'after:start_at'],
             'passing_score' => [
-                'required',
+                'nullable',
+                'required_if:exam_type,ujian',
                 'numeric',
                 'min:0',
                 'max:100',
