@@ -178,7 +178,7 @@
                             <input type="number" step="0.01"
                                    class="form-control @error('passing_score') is-invalid @enderror"
                                    id="passing_score" name="passing_score"
-                                   value="{{ old('passing_score', 75.00) }}" min="0" max="100">
+                                   value="{{ old('passing_score') }}" min="0" max="100">
                             @error('passing_score')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
