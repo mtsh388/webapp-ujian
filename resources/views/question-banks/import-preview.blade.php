@@ -87,6 +87,7 @@
                             </div>
                         @else
                             <div class="text-muted small mb-3">Pilihan: A = Benar, B = Salah</div>
+                            <div class="fw-semibold mb-3">Kunci jawaban: {{ $item['answer'] === 'A' ? 'Benar' : 'Salah' }}</div>
                         @endif
 
                         @if (!empty($item['explanation']))
