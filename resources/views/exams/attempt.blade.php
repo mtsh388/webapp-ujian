@@ -102,6 +102,7 @@
                 </div>
             </div>
 
+            @if ($exam->has_duration)
             <div class="card shadow-sm border-0">
                 <div class="card-body py-2 px-3">
                     <div class="d-flex align-items-center gap-2">
@@ -121,6 +122,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4" role="status">
@@ -275,7 +277,7 @@
 
             const csrfToken = {{ Illuminate\Support\Js::from(csrf_token()) }};
 
-            let remainingSeconds = {{ max(0, (int) $remainingSeconds) }};
+            let remainingSeconds = {{ $exam->has_duration ? max(0, (int) $remainingSeconds) : -1 }};
             let isSubmitting = false;
             let isNavigating = false;
             let shouldPushHistory = true;
@@ -417,7 +419,7 @@
             }
 
             function updateTimer() {
-                if (!timerElement) {
+                if (!timerElement || remainingSeconds < 0) {
                     return;
                 }
 
@@ -936,13 +938,12 @@
                 }
             );
 
-            updateTimer();
+            let timerInterval = null;
 
-            const timerInterval =
-                setInterval(
-                    updateTimer,
-                    1000
-                );
+            if (remainingSeconds >= 0) {
+                updateTimer();
+                timerInterval = setInterval(updateTimer, 1000);
+            }
 
             const fullscreenPromptKey = 'exam-fullscreen-prompt-{{ $attempt->id }}';
             const isResumingExam = @json((bool) session('resume_exam'));
