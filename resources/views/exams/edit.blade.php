@@ -176,10 +176,13 @@
 
                         <div class="col-md-6 mb-3">
                             <label for="has_duration" class="form-label">Pengaturan Durasi <span class="text-danger">*</span></label>
-                            <select class="form-select" id="has_duration" name="has_duration" required>
+                            <select class="form-select @error('has_duration') is-invalid @enderror" id="has_duration" name="has_duration" required>
                                 <option value="1" {{ old('has_duration', (string) (int) $exam->has_duration) === '1' ? 'selected' : '' }}>Menggunakan durasi dan jadwal</option>
                                 <option value="0" {{ old('has_duration', (string) (int) $exam->has_duration) === '0' ? 'selected' : '' }}>Tanpa durasi dan jadwal</option>
                             </select>
+                            @error('has_duration')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6 mb-3">
