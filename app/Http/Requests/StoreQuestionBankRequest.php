@@ -21,13 +21,6 @@ class StoreQuestionBankRequest extends FormRequest
                 'exists:subjects,id',
             ],
 
-            'code' => [
-                'required',
-                'string',
-                'max:100',
-                'unique:question_banks,code',
-            ],
-
             'type' => [
                 'required',
                 Rule::in([
