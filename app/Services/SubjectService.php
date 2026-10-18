@@ -6,44 +6,30 @@ use App\Models\Subject;
 use App\Repositories\SubjectRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SubjectService
 {
     public function __construct(
         protected SubjectRepository $repository
-    )
-    {
+    ) {
     }
 
-    public function getDataTable(
-        Request $request
-    ): array
+    public function getDataTable(Request $request): array
     {
         $query = $this->repository->query();
-
         $total = $query->count();
-
         $search = $request->input('search.value');
 
         if ($search) {
             $query->where(function ($query) use ($search) {
                 $query
-                    ->where(
-                        'name',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'code',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'description',
-                        'like',
-                        "%{$search}%"
-                    );
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('education_level', 'like', "%{$search}%")
+                    ->orWhere('topic', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -52,173 +38,99 @@ class SubjectService
         $columns = [
             0 => 'id',
             1 => 'name',
-            2 => 'code',
-            3 => 'description',
-            4 => 'is_active',
-            5 => 'id',
+            2 => 'education_level',
+            3 => 'topic',
+            4 => 'description',
+            5 => 'is_active',
+            6 => 'id',
         ];
 
-        $columnIndex = (int)$request->input(
-            'order.0.column',
-            1
-        );
-
+        $columnIndex = (int) $request->input('order.0.column', 1);
         $orderColumn = $columns[$columnIndex] ?? 'name';
-
-        $orderDirection = $request->input(
-            'order.0.dir',
-            'asc'
-        );
-
-        $orderDirection = in_array(
-            $orderDirection,
-            ['asc', 'desc'],
-            true
-        )
+        $orderDirection = $request->input('order.0.dir', 'asc');
+        $orderDirection = in_array($orderDirection, ['asc', 'desc'], true)
             ? $orderDirection
             : 'asc';
 
-        $start = max(
-            0,
-            (int)$request->input('start', 0)
-        );
-
-        $length = (int)$request->input(
-            'length',
-            10
-        );
-
-        if ($length < 1) {
-            $length = 10;
-        }
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : $length;
 
         $subjects = $query
-            ->orderBy(
-                $orderColumn,
-                $orderDirection
-            )
+            ->orderBy($orderColumn, $orderDirection)
             ->skip($start)
             ->take($length)
             ->get();
 
-        $data = $subjects
-            ->values()
-            ->map(function (
-                Subject $subject,
-                int     $index
-            ) use ($start) {
-                return [
-                    'no' => $start + $index + 1,
-                    'id' => $subject->id,
-                    'name' => $subject->name,
-                    'code' => $subject->code,
-                    'description' => $subject->description,
-                    'is_active' => $subject->is_active,
-                ];
-            })
-            ->values()
-            ->all();
+        $data = $subjects->values()->map(function (Subject $subject, int $index) use ($start) {
+            return [
+                'no' => $start + $index + 1,
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'education_level' => $subject->education_level,
+                'topic' => $subject->topic,
+                'description' => $subject->description,
+                'is_active' => $subject->is_active,
+            ];
+        })->all();
 
         return [
-            'draw' => (int)$request->input(
-                'draw'
-            ),
+            'draw' => (int) $request->input('draw'),
             'recordsTotal' => $total,
             'recordsFiltered' => $filtered,
             'data' => $data,
         ];
     }
 
-    public function create(
-        array $data
-    ): Subject
+    public function create(array $data): Subject
     {
-        $data['code'] = strtoupper(
-            trim($data['code'])
-        );
-
-        if (
-            $this->repository->existsByCode(
-                $data['code']
-            )
-        ) {
-            throw ValidationException::withMessages([
-                'code' => 'Kode mata pelajaran sudah digunakan.',
-            ]);
-        }
-
+        $data['topic'] = trim($data['topic']);
+        $data['code'] = $this->makeUniqueCode($data['topic']);
         $data['is_active'] = $data['is_active'] ?? true;
 
-        return DB::transaction(
-            function () use ($data) {
-                return $this->repository->create(
-                    $data
-                );
-            }
-        );
+        return DB::transaction(function () use ($data) {
+            return $this->repository->create($data);
+        });
     }
 
-    public function update(
-        Subject $subject,
-        array   $data
-    ): Subject
+    public function update(Subject $subject, array $data): Subject
     {
-        $data['code'] = strtoupper(
-            trim($data['code'])
-        );
-
-        if (
-            $this->repository->existsByCode(
-                $data['code'],
-                $subject->id
-            )
-        ) {
-            throw ValidationException::withMessages([
-                'code' => 'Kode mata pelajaran sudah digunakan.',
-            ]);
-        }
-
+        $data['topic'] = trim($data['topic']);
+        $data['code'] = $this->makeUniqueCode($data['topic'], $subject->id);
         $data['is_active'] = $data['is_active'] ?? false;
 
-        DB::transaction(
-            function () use (
-                $subject,
-                $data
-            ) {
-                $this->repository->update(
-                    $subject,
-                    $data
-                );
-            }
-        );
+        DB::transaction(function () use ($subject, $data) {
+            $this->repository->update($subject, $data);
+        });
 
         return $subject->refresh();
     }
 
-    public function delete(
-        Subject $subject
-    ): bool
+    protected function makeUniqueCode(string $topic, ?int $exceptId = null): string
     {
-        return DB::transaction(
-            function () use ($subject) {
-                return $this->repository->delete(
-                    $subject
-                );
-            }
-        );
+        $base = Str::upper(Str::slug($topic, '-'));
+        $base = substr($base !== '' ? $base : 'TOPIK', 0, 50);
+        $candidate = $base;
+        $suffix = 2;
+
+        while ($this->repository->existsByCode($candidate, $exceptId)) {
+            $ending = '-' . $suffix++;
+            $candidate = substr($base, 0, 50 - strlen($ending)) . $ending;
+        }
+
+        return $candidate;
     }
 
-    public function updateStatus(
-        Subject $subject,
-        bool    $isActive
-    ): Subject
+    public function delete(Subject $subject): bool
     {
-        $this->repository->update(
-            $subject,
-            [
-                'is_active' => $isActive,
-            ]
-        );
+        return DB::transaction(function () use ($subject) {
+            return $this->repository->delete($subject);
+        });
+    }
+
+    public function updateStatus(Subject $subject, bool $isActive): Subject
+    {
+        $this->repository->update($subject, ['is_active' => $isActive]);
 
         return $subject->refresh();
     }
