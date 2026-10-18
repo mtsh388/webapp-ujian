@@ -210,23 +210,23 @@
 
         </div>
     </div>
+    <form action="{{ route('exams.questions.store', $exam->id) }}" method="POST">
+        <div class="modal fade" id="modalAddQuestions" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+                <div class="modal-content">
 
-    <div class="modal fade" id="modalAddQuestions" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
-            <div class="modal-content">
+                    <div class="modal-header border-bottom">
+                        <div>
+                            <h5 class="modal-title mb-1">Tambah Soal dari Bank Soal</h5>
+                            <small class="text-muted">
+                                Mata Pelajaran: {{ $exam->subject->name ?? 'Umum' }}
+                            </small>
+                        </div>
 
-                <div class="modal-header border-bottom">
-                    <div>
-                        <h5 class="modal-title mb-1">Tambah Soal dari Bank Soal</h5>
-                        <small class="text-muted">
-                            Mata Pelajaran: {{ $exam->subject->name ?? 'Umum' }}
-                        </small>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
 
-                <form action="{{ route('exams.questions.store', $exam->id) }}" method="POST">
                     @csrf
 
                     <div class="modal-body">
@@ -290,24 +290,25 @@
                     </div>
 
                     <div class="modal-footer border-top">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-label-secondary mt-3" data-bs-dismiss="modal">
                             Batal
                         </button>
 
                         <button
                             type="submit"
-                            class="btn btn-primary"
+                            class="btn btn-primary mt-3"
                             id="btnSubmitSoal"
                             {{ $availableQuestions->isEmpty() ? 'disabled' : '' }}>
                             <i class="bx bx-save me-1"></i>
                             Simpan Soal Terpilih
                         </button>
                     </div>
-                </form>
 
+
+                </div>
             </div>
         </div>
-    </div>
+    </form>
 @endsection
 
 @section('scripts')

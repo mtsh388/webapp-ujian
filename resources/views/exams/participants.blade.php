@@ -375,14 +375,13 @@
 
         </div>
     </div>
+    <form
+        method="POST"
+        action="{{ route('exams.participants.store', $exam) }}">
+        <div class="modal fade" id="addParticipantModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
 
-    <div class="modal fade" id="addParticipantModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-
-                <form
-                    method="POST"
-                    action="{{ route('exams.participants.store', $exam) }}">
 
                     @csrf
 
@@ -507,7 +506,7 @@
                     <div class="modal-footer border-top">
                         <button
                             type="button"
-                            class="btn btn-label-secondary"
+                            class="btn btn-label-secondary mt-3"
                             data-bs-dismiss="modal">
                             Batal
                         </button>
@@ -515,7 +514,7 @@
                         @if($availableStudents->isNotEmpty())
                             <button
                                 type="submit"
-                                class="btn btn-primary"
+                                class="btn btn-primary mt-3"
                                 id="submitParticipants"
                                 disabled>
                                 <i class="bx bx-user-plus me-1"></i>
@@ -524,10 +523,11 @@
                         @endif
                     </div>
 
-                </form>
+                </div>
             </div>
         </div>
-    </div>
+
+    </form>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const studentSearch = document.querySelector('#studentSearch');
