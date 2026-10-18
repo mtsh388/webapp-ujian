@@ -18,6 +18,10 @@ return new class extends Migration {
             $table->string('topic', 150)->nullable()->after('education_level');
             $table->index(['education_level', 'topic']);
         });
+
+        DB::table('subjects')
+            ->whereNull('topic')
+            ->update(['topic' => DB::raw('name')]);
     }
 
     public function down(): void
