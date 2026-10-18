@@ -134,6 +134,12 @@ class ExamAttemptService
             return false;
         }
 
+        $attempt->loadMissing('exam');
+
+        if (!$attempt->exam->has_duration) {
+            return false;
+        }
+
         $endTime = $this->getAttemptDeadline($attempt);
 
         return now()->greaterThanOrEqualTo($endTime);
@@ -291,6 +297,12 @@ class ExamAttemptService
             return 0;
         }
 
+        $attempt->loadMissing('exam');
+
+        if (!$attempt->exam->has_duration) {
+            return -1;
+        }
+
         $endTime = $this->getAttemptDeadline($attempt);
 
         return max(
@@ -305,7 +317,7 @@ class ExamAttemptService
 
         $deadline = $attempt->started_at
             ->copy()
-            ->addMinutes((int) $attempt->exam->duration_minutes);
+            ->addMinutes((int) ($attempt->exam->duration_minutes ?? 0));
 
         if ($attempt->exam->end_at && $attempt->exam->end_at->lt($deadline)) {
             return $attempt->exam->end_at->copy();
