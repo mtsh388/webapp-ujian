@@ -193,6 +193,14 @@ Route::middleware(['auth', 'password.first'])->group(function () {
                 ->middleware('permission:question.create')
                 ->name('questions.import');
 
+            Route::post('/import/preview', [QuestionBankController::class, 'importPreview'])
+                ->middleware('permission:question.create')
+                ->name('questions.import.preview');
+
+            Route::post('/import/confirm', [QuestionBankController::class, 'importConfirm'])
+                ->middleware('permission:question.create')
+                ->name('questions.import.confirm');
+
             Route::post('/import', [QuestionBankController::class, 'importStore'])
                 ->middleware('permission:question.create')
                 ->name('questions.import.store');
