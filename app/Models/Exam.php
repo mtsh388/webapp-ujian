@@ -13,6 +13,8 @@ class Exam extends Model
     protected $fillable = [
         'subject_id',
         'code',
+        'exam_type',
+        'has_duration',
         'title',
         'description',
         'duration_minutes',
@@ -32,6 +34,7 @@ class Exam extends Model
         return [
             'start_at' => 'datetime',
             'end_at' => 'datetime',
+            'has_duration' => 'boolean',
             'passing_score' => 'decimal:2',
             'shuffle_questions' => 'boolean',
             'shuffle_options' => 'boolean',
