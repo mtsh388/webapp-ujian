@@ -98,6 +98,15 @@
 
                                     <div class="col-md-6">
                                         <div class="text-muted small mb-1">
+                                            Kelas
+                                        </div>
+                                        <div class="fw-semibold">
+                                            {{ $subject->classRoom?->name ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">
                                             Topik
                                         </div>
 
