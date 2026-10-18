@@ -260,46 +260,6 @@ class QuestionBankController extends Controller
         }
     }
 
-    public function importStore(
-        BulkQuestionImportRequest $request
-    ): RedirectResponse
-    {
-        try {
-            $result = $this->bulkImportService->import(
-                file: $request->file('file'),
-                subjectId: $request->integer('subject_id'),
-                difficulty: $request
-                    ->string('difficulty')
-                    ->toString(),
-                defaultScore: $request->float('default_score')
-            );
-
-            return redirect()
-                ->route('questions.index')
-                ->with(
-                    'success',
-                    "{$result['imported']} soal berhasil diimport. " .
-                    "Pilihan Ganda: {$result['multiple_choice']}, " .
-                    "Benar/Salah: {$result['true_false']}."
-                );
-        } catch (\Throwable $e) {
-            Log::error(
-                'Bulk question import failed.',
-                [
-                    'message' => $e->getMessage(),
-                    'exception' => $e,
-                ]
-            );
-
-            return back()
-                ->withInput()
-                ->with(
-                    'error',
-                    $e->getMessage()
-                );
-        }
-    }
-
     public function show(
         QuestionBank $question
     ): View
