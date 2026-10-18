@@ -82,25 +82,9 @@
                                 </div>
 
                                 <div class="col-md-6">
-
-                                    <label class="form-label">
-                                        Kode Soal
-                                    </label>
-
-                                    <input
-                                        type="text"
-                                        name="code"
-                                        class="form-control @error('code') is-invalid @enderror"
-                                        value="{{ old('code', $questionBank->code) }}"
-                                        placeholder="Contoh: MAT-001"
-                                        required>
-
-                                    @error('code')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                    @enderror
-
+                                    <label class="form-label">Kode Soal</label>
+                                    <input type="text" class="form-control bg-lighter" value="{{ $questionBank->code }}" readonly>
+                                    <div class="form-text">Kode dibuat otomatis berdasarkan mata pelajaran, jenjang, dan topik.</div>
                                 </div>
 
                                 <div class="col-md-4">
