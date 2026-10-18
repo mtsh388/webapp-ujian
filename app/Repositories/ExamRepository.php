@@ -29,6 +29,7 @@ class ExamRepository implements ExamRepositoryInterface
     public function getActiveSubjects(): Collection
     {
         return Subject::query()
+            ->with('classRoom')
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
