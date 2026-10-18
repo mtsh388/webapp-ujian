@@ -93,7 +93,8 @@
                     <tr>
                         <th>No</th>
                         <th>Nama Mata Pelajaran</th>
-                        <th>Kode</th>
+                        <th>Jenjang</th>
+                        <th>Topik</th>
                         <th>Deskripsi</th>
                         <th>Status</th>
                         <th>Aksi</th>
@@ -162,35 +163,35 @@
                                 extend: 'print',
                                 text: '<i class="bx bx-printer me-1"></i>Print',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4]
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             },
                             {
                                 extend: 'copy',
                                 text: '<i class="bx bx-copy me-1"></i>Copy',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4]
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="bx bx-file me-1"></i>CSV',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4]
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="bx bx-spreadsheet me-1"></i>Excel',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4]
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4]
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             }
                         ]
@@ -230,18 +231,24 @@
                     },
 
                     {
-                        data: 'code',
-                        name: 'code',
+                        data: 'education_level',
+                        name: 'education_level',
+                        render: function (data) {
+                            return data
+                                ? `<span class="badge bg-label-info">${data}</span>`
+                                : '<span class="text-muted">-</span>';
+                        }
+                    },
+
+                    {
+                        data: 'topic',
+                        name: 'topic',
                         render: function (data) {
                             if (!data) {
                                 return '<span class="text-muted">-</span>';
                             }
 
-                            return `
-                                <span class="badge bg-label-primary">
-                                    ${data}
-                                </span>
-                            `;
+                            return `<span class="badge bg-label-primary">${data}</span>`;
                         }
                     },
 
