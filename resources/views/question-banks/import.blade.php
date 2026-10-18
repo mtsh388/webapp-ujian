@@ -63,6 +63,13 @@
                         </p>
                     </div>
 
+                    <div class="d-flex flex-wrap gap-2">
+                    <a
+                        href="{{ route('questions.import.template') }}"
+                        class="btn btn-outline-primary">
+                        <i class="bx bx-download me-1"></i>
+                        Download Template DOCX
+                    </a>
                     <a
                         href="{{ route('questions.index') }}"
                         class="btn btn-outline-secondary">
@@ -71,6 +78,7 @@
                         Kembali
 
                     </a>
+                    </div>
 
                 </div>
 
