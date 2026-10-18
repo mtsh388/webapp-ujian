@@ -229,7 +229,7 @@ Route::middleware(['auth', 'password.first'])->group(function () {
         ->middleware('permission:exam.violation.view')
         ->name('proctoring.index');
 
-    Route::prefix('ujian')->group(function () {
+    Route::prefix('ujian')->middleware('profile.completed')->group(function () {
 
         // 1. RUTE STATIS (Harus paling atas)
         Route::middleware('permission:exam.view')->group(function () {
