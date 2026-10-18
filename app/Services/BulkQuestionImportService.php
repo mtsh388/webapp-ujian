@@ -952,45 +952,68 @@ class BulkQuestionImportService
             }
 
             if ($inExplanation) {
+                $formattedImages = [];
+                $formattedHtml = $this->convertParagraphToHtml(
+                    $block,
+                    $formattedImages
+                );
+
                 $current['explanation'] =
                     $this->appendHtml(
                         $current['explanation'],
-                        $this->escapeTextAsHtml($text)
+                        $formattedHtml
                     );
 
-                continue;
-            }
-
-            if ($currentOption !== null) {
-                $current['options'][$currentOption]['text'] =
-                    $this->appendHtml(
-                        $current['options'][$currentOption]['text'],
-                        $this->escapeTextAsHtml($text)
+                if (!empty($formattedImages)) {
+                    $current['question_images'] = array_merge(
+                        $current['question_images'],
+                        $formattedImages
                     );
-
-                if (!empty($images)) {
-                    $current['options'][$currentOption]['images'] =
-                        array_merge(
-                            $current['options'][$currentOption]['images'],
-                            $images
-                        );
                 }
 
                 continue;
             }
 
+            if ($currentOption !== null) {
+                $formattedImages = [];
+                $formattedHtml = $this->convertParagraphToHtml(
+                    $block,
+                    $formattedImages
+                );
+
+                $current['options'][$currentOption]['text'] =
+                    $this->appendHtml(
+                        $current['options'][$currentOption]['text'],
+                        $formattedHtml
+                    );
+
+                if (!empty($formattedImages)) {
+                    $current['options'][$currentOption]['images'] = array_merge(
+                        $current['options'][$currentOption]['images'],
+                        $formattedImages
+                    );
+                }
+
+                continue;
+            }
+
+            $formattedImages = [];
+            $formattedHtml = $this->convertParagraphToHtml(
+                $block,
+                $formattedImages
+            );
+
             $current['question'] =
                 $this->appendHtml(
                     $current['question'],
-                    $this->escapeTextAsHtml($text)
+                    $formattedHtml
                 );
 
-            if (!empty($images)) {
-                $current['question_images'] =
-                    array_merge(
-                        $current['question_images'],
-                        $images
-                    );
+            if (!empty($formattedImages)) {
+                $current['question_images'] = array_merge(
+                    $current['question_images'],
+                    $formattedImages
+                );
             }
         }
 
