@@ -20,109 +20,66 @@ class StudentService
 
     public function getDataTable(Request $request): array
     {
-        $query = $this->repository->query();
+        $query = $this->repository->query()->with(['classRoom', 'user']);
+        $total = (clone $this->repository->query())->count();
 
-        $total = $this->repository
-            ->query()
-            ->count();
-
-        $search = trim(
-            $request->input('search.value', '')
-        );
+        $search = trim($request->input('search.value', ''));
 
         if ($search !== '') {
             $query->where(function ($query) use ($search) {
-                $query
-                    ->where('student_number', 'like', "%{$search}%")
-                    ->orWhere('full_name', 'like', "%{$search}%")
-                    ->orWhere('gender', 'like', "%{$search}%")
+                $query->where('full_name', 'like', "%{$search}%")
+                    ->orWhere('school_name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhereHas('classRoom', function ($query) use ($search) {
-                        $query->where('name', 'like', "%{$search}%");
-                    });
+                    ->orWhere('education_level', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', "%{$search}%"))
+                    ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', "%{$search}%"));
             });
         }
 
-        $filtered = $query->count();
+        $filtered = (clone $query)->count();
 
         $columns = [
-            0 => 'id',
-            1 => 'student_number',
-            2 => 'full_name',
-            3 => 'gender',
-            4 => 'class_id',
-            5 => 'phone',
+            0 => 'full_name',
+            1 => 'school_name',
+            2 => 'phone',
+            3 => 'id',
+            4 => 'education_level',
+            5 => 'class_id',
             6 => 'is_active',
             7 => 'id',
         ];
 
-        $columnIndex = (int)$request->input(
-            'order.0.column',
-            2
-        );
-
+        $columnIndex = (int) $request->input('order.0.column', 0);
         $orderColumn = $columns[$columnIndex] ?? 'full_name';
-
-        $orderDirection = $request->input(
-            'order.0.dir',
-            'asc'
-        );
-
-        $orderDirection = in_array(
-            $orderDirection,
-            ['asc', 'desc'],
-            true
-        )
-            ? $orderDirection
+        $orderDirection = in_array($request->input('order.0.dir', 'asc'), ['asc', 'desc'], true)
+            ? $request->input('order.0.dir', 'asc')
             : 'asc';
 
-        $start = max(
-            0,
-            (int)$request->input('start', 0)
-        );
+        $start = max(0, (int) $request->input('start', 0));
+        $length = max(1, (int) $request->input('length', 10));
 
-        $length = (int)$request->input(
-            'length',
-            10
-        );
-
-        if ($length < 1) {
-            $length = 10;
-        }
-
-        $students = $query
-            ->orderBy(
-                $orderColumn,
-                $orderDirection
-            )
+        $students = $query->orderBy($orderColumn, $orderDirection)
             ->skip($start)
             ->take($length)
             ->get();
 
-        $data = $students
-            ->values()
-            ->map(function (
-                Student $student,
-                int     $index
-            ) use ($start) {
-                return [
-                    'no' => $start + $index + 1,
-                    'id' => $student->id,
-                    'student_number' => $student->student_number,
-                    'full_name' => $student->full_name,
-                    'gender' => $student->gender,
-                    'birth_date' => $student->birth_date?->format('Y-m-d'),
-                    'phone' => $student->phone,
-                    'address' => $student->address,
-                    'class_id' => $student->class_id,
-                    'class_name' => $student->classRoom?->name,
-                    'is_active' => $student->is_active,
-                ];
-            })
-            ->all();
+        $data = $students->values()->map(function (Student $student, int $index) use ($start) {
+            return [
+                'no' => $start + $index + 1,
+                'id' => $student->id,
+                'full_name' => $student->full_name,
+                'school_name' => $student->school_name,
+                'phone' => $student->phone,
+                'email' => $student->user?->email,
+                'education_level' => $student->education_level ?: $student->classRoom?->education_level,
+                'class_id' => $student->class_id,
+                'class_name' => $student->classRoom?->name,
+                'is_active' => $student->is_active,
+            ];
+        })->all();
 
         return [
-            'draw' => (int)$request->input('draw'),
+            'draw' => (int) $request->input('draw', 0),
             'recordsTotal' => $total,
             'recordsFiltered' => $filtered,
             'data' => $data,
