@@ -67,16 +67,19 @@ class BimbelSeeder extends Seeder
                 'name' => 'Matematika',
                 'education_level' => 'SMA',
                 'topic' => 'Operasi Hitung Dasar',
+                'grade_level' => 10,
             ],
             [
                 'name' => 'Bahasa Indonesia',
                 'education_level' => 'SMA',
                 'topic' => 'Kata Benda',
+                'grade_level' => 10,
             ],
             [
                 'name' => 'Bahasa Inggris',
                 'education_level' => 'SMA',
                 'topic' => 'Vocabulary Dasar',
+                'grade_level' => 10,
             ],
         ];
 
@@ -85,6 +88,7 @@ class BimbelSeeder extends Seeder
                 'name' => $subjectData['name'],
                 'education_level' => $subjectData['education_level'],
                 'topic' => $subjectData['topic'],
+                'grade_level' => $subjectData['grade_level'],
                 'is_active' => true,
             ]);
         }
