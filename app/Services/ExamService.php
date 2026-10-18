@@ -113,6 +113,8 @@ class ExamService
                     'id' => $exam->id,
                     'code' => $exam->code,
                     'title' => $exam->title,
+                    'exam_type' => $exam->exam_type,
+                    'has_duration' => (bool) $exam->has_duration,
                     'duration_minutes' => $exam->duration_minutes,
                     'subject_name' => $exam->subject?->name,
                     'start_at' => $exam->start_at
