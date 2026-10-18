@@ -113,8 +113,11 @@ class ExamService
                     'id' => $exam->id,
                     'code' => $exam->code,
                     'title' => $exam->title,
-                    'exam_type' => $exam->exam_type,
-                    'has_duration' => (bool) $exam->has_duration,
+                    'exam_type' => $exam->exam_type
+                        ?: ($exam->passing_score === null ? 'trial' : 'ujian'),
+                    'has_duration' => $exam->has_duration !== null
+                        ? (bool) $exam->has_duration
+                        : (bool) ($exam->duration_minutes && $exam->start_at && $exam->end_at),
                     'duration_minutes' => $exam->duration_minutes,
                     'subject_name' => $exam->subject?->name,
                     'start_at' => $exam->start_at
