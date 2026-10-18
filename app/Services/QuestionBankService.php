@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\QuestionBank;
 use App\Models\QuestionOption;
+use App\Models\Subject;
 use App\Repositories\QuestionBankRepositoryInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -326,6 +327,7 @@ class QuestionBankService
                 $data['question_media']
             );
 
+            $data['code'] = $this->generateCodeForSubject((int) $data['subject_id']);
             $questionBank = $this->repository->create($data);
 
             $this->syncOptions(
@@ -361,6 +363,12 @@ class QuestionBankService
                 $data['question_media']
             );
 
+            if ((int) $data['subject_id'] !== (int) $questionBank->subject_id) {
+                $data['code'] = $this->generateCodeForSubject((int) $data['subject_id']);
+            } else {
+                unset($data['code']);
+            }
+
             $this->repository->update(
                 $questionBank,
                 $data
@@ -382,6 +390,25 @@ class QuestionBankService
                 $questionBank->id
             );
         });
+    }
+
+    protected function generateCodeForSubject(int $subjectId): string
+    {
+        $subject = Subject::query()->findOrFail($subjectId);
+        $prefix = Str::upper(Str::slug(implode('-', array_filter([
+            $subject->name,
+            $subject->education_level,
+            $subject->topic,
+        ])), '-'));
+        $prefix = substr($prefix !== '' ? $prefix : 'SOAL', 0, 90);
+        $number = 1;
+
+        do {
+            $code = $prefix . '-' . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+            $number++;
+        } while (QuestionBank::withTrashed()->where('code', $code)->exists());
+
+        return $code;
     }
 
     public function delete(QuestionBank $questionBank): bool
