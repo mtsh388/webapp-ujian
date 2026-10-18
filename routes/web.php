@@ -201,10 +201,6 @@ Route::middleware(['auth', 'password.first'])->group(function () {
                 ->middleware('permission:question.create')
                 ->name('questions.import.confirm');
 
-            Route::post('/import', [QuestionBankController::class, 'importStore'])
-                ->middleware('permission:question.create')
-                ->name('questions.import.store');
-
             Route::delete('/media/{media}', [QuestionBankController::class, 'destroyMedia'])
                 ->middleware('permission:question.update')
                 ->name('questions.media.destroy');
