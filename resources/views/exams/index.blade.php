@@ -213,7 +213,7 @@
                         render: function (data, type, row) {
                             return `
                                 <span>${data}</span><br>
-                                <small class="text-muted"><i class="bx bx-time-five"></i> ${row.duration_minutes} Menit</small>
+                                <small class="text-muted"><i class="bx bx-time-five"></i> ${row.is_timed ? row.duration_minutes + ' Menit' : 'Tanpa Durasi'}</small><br><span class="badge bg-label-info">${row.exam_type === 'trial' ? 'Trial' : 'Ujian'}</span>
                             `;
                         }
                     },
