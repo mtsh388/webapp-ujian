@@ -459,6 +459,28 @@ class BulkQuestionImportService
                 }
             }
 
+            // Word exporters may store answer choices inside grouped shapes or
+            // text boxes nested in a drawing. These text nodes are not direct
+            // children of w:r, so the normal run extraction above misses them.
+            $textBoxNodes = $xpath->query(
+                './/w:txbxContent//w:t',
+                $run
+            );
+
+            foreach ($textBoxNodes as $textBoxNode) {
+                $value = $textBoxNode->nodeValue ?? '';
+                if ($value === '') {
+                    continue;
+                }
+
+                $text .= $value;
+                $html .= htmlspecialchars(
+                    $value,
+                    ENT_QUOTES | ENT_SUBSTITUTE,
+                    'UTF-8'
+                );
+            }
+
             $drawingNodes = $xpath->query(
                 './/a:blip',
                 $run
