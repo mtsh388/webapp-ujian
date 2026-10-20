@@ -106,6 +106,9 @@
                                         </option>
 
                                         <option
+                                            value="multiple_select"
+                                            @selected(old('type', $questionBank->type) === 'multiple_select')>Pilih Semua yang Benar</option>
+                                        <option
                                             value="true_false"
                                             @selected(old('type', $questionBank->type) === 'true_false')>
                                             Benar / Salah
@@ -801,6 +804,10 @@
 
             function enforceCorrectOption(target) {
                 if (!target.classList.contains('correct-option')) {
+                    return;
+                }
+
+                if (document.getElementById('question-type')?.value === 'multiple_select') {
                     return;
                 }
 
