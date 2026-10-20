@@ -328,14 +328,16 @@ class ExamAttemptService
 
     public function answer(
         ExamAttempt $attempt,
-        int         $examQuestionId,
-        ?int        $selectedOptionId
+        int $examQuestionId,
+        ?int $selectedOptionId,
+        ?array $selectedOptionIds = null
     ): ExamAnswer
     {
         $answer = DB::transaction(function () use (
             $attempt,
             $examQuestionId,
-            $selectedOptionId
+            $selectedOptionId,
+            $selectedOptionIds
         ) {
             $lockedAttempt = ExamAttempt::query()
                 ->whereKey($attempt->id)
@@ -354,11 +356,7 @@ class ExamAttemptService
                 return null;
             }
 
-            return $this->answerLocked(
-                $lockedAttempt,
-                $examQuestionId,
-                $selectedOptionId
-            );
+            return $this->answerLocked($lockedAttempt, $examQuestionId, $selectedOptionId, $selectedOptionIds);
         }, 3);
 
         if (!$answer) {
@@ -372,8 +370,9 @@ class ExamAttemptService
 
     protected function answerLocked(
         ExamAttempt $attempt,
-        int         $examQuestionId,
-        ?int        $selectedOptionId
+        int $examQuestionId,
+        ?int $selectedOptionId,
+        ?array $selectedOptionIds = null
     ): ExamAnswer
     {
         $attempt->loadMissing('exam');
@@ -418,8 +417,23 @@ class ExamAttemptService
         }
 
         $selectedOption = null;
+        $selectedOptionIds = array_values(array_unique(array_map('intval', $selectedOptionIds ?? [])));
+        $isCorrect = null;
+        $score = 0;
 
-        if ($selectedOptionId !== null) {
+        if ($examQuestion->type === 'multiple_select') {
+            if ($selectedOptionId !== null && empty($selectedOptionIds)) $selectedOptionIds = [$selectedOptionId];
+            $validOptionIds = $examQuestion->options->pluck('id')->map(fn ($id) => (int) $id)->all();
+            if (array_diff($selectedOptionIds, $validOptionIds)) throw new RuntimeException('Pilihan jawaban tidak valid.');
+            $optionOrder = array_map('intval', $attempt->option_order[(string) $examQuestion->id] ?? $attempt->option_order[$examQuestion->id] ?? []);
+            if (array_diff($selectedOptionIds, $optionOrder)) throw new RuntimeException('Pilihan jawaban tidak termasuk dalam percobaan ujian Anda.');
+            $correctIds = $examQuestion->options->filter(fn ($option) => (bool) $option->is_correct)->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+            $submittedIds = $selectedOptionIds;
+            sort($submittedIds);
+            $isCorrect = !empty($submittedIds) && $submittedIds === $correctIds;
+            $score = $isCorrect ? (float) $examQuestion->score : 0;
+            $selectedOption = $examQuestion->options->firstWhere('id', $selectedOptionIds[0] ?? null);
+        } elseif ($selectedOptionId !== null) {
             $selectedOption = $examQuestion->options
                 ->firstWhere('id', $selectedOptionId);
 
@@ -440,18 +454,20 @@ class ExamAttemptService
             }
         }
 
-        $isCorrect = $selectedOption
-            ? (bool)$selectedOption->is_correct
-            : null;
-
-        $score = $isCorrect
-            ? (float)$examQuestion->score
-            : 0;
+        if ($examQuestion->type !== 'multiple_select') {
+            $isCorrect = $selectedOption ? (bool) $selectedOption->is_correct : null;
+            $score = $isCorrect ? (float) $examQuestion->score : 0;
+            $selectedOptionIds = $selectedOption ? [(int) $selectedOption->id] : [];
+        } elseif (empty($selectedOptionIds)) {
+            $isCorrect = null;
+            $score = 0;
+        }
 
         $answer = $this->repository->saveAnswer([
             'exam_attempt_id' => $attempt->id,
             'exam_question_id' => $examQuestion->id,
             'selected_option_id' => $selectedOption?->id,
+            'selected_option_ids' => $selectedOptionIds,
             'is_correct' => $isCorrect,
             'score' => $score,
             'answered_at' => now(),
