@@ -27,13 +27,19 @@
                             {!! \App\Support\QuestionHtml::sanitize($currentQuestion->question) !!}
                         </div>
 
+                        @if ($currentQuestion->type === 'multiple_select')
+                            <div class="alert alert-info py-2">Pilih semua jawaban yang benar. Jawaban dinilai benar jika seluruh pilihan tepat.</div>
+                        @endif
+
                         <div class="d-flex flex-column gap-3">
 
                             @foreach ($currentQuestion->options as $option)
                                 @php
-                                    $isSelected =
-                                        $currentAnswer &&
-                                        (int) $currentAnswer->selected_option_id === (int) $option->id;
+                                    $selectedOptionIds = $currentAnswer?->selected_option_ids ?? [];
+                                    if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+                                    if (empty($selectedOptionIds) && $currentAnswer?->selected_option_id) $selectedOptionIds = [(int) $currentAnswer->selected_option_id];
+                                    $isSelected = in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
+                                    $isMultiSelect = $currentQuestion->type === 'multiple_select';
                                 @endphp
 
                                 <label
@@ -41,11 +47,12 @@
                                     data-option-wrapper="{{ $option->id }}">
 
                                     <input
-                                        type="radio"
+                                        type="{{ $isMultiSelect ? 'checkbox' : 'radio' }}"
                                         class="form-check-input mt-1 answer-option"
-                                        name="selected_option_id"
+                                        name="{{ $isMultiSelect ? 'selected_option_ids[]' : 'selected_option_id' }}"
                                         value="{{ $option->id }}"
                                         data-question-id="{{ $currentQuestion->id }}"
+                                        data-multiple="{{ $isMultiSelect ? '1' : '0' }}"
                                         {{ $isSelected ? 'checked' : '' }}>
 
                                     <div class="flex-grow-1">
@@ -68,12 +75,11 @@
                         <div
                             id="answerStatus"
                             class="mt-3 small text-muted">
-                            @if ($currentAnswer && $currentAnswer->selected_option_id)
-                                <i class="bx bx-check-circle text-success me-1"></i>
-                                Jawaban tersimpan
+                            @if ($currentAnswer && (!empty($currentAnswer->selected_option_ids) || $currentAnswer->selected_option_id))
+                                <i class="bx bx-check-circle text-success me-1"></i> Jawaban tersimpan
                             @else
                                 <i class="bx bx-info-circle me-1"></i>
-                                Pilih salah satu jawaban
+                                {{ $currentQuestion->type === 'multiple_select' ? 'Pilih satu atau beberapa jawaban' : 'Pilih salah satu jawaban' }}
                             @endif
                         </div>
 
