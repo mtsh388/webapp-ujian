@@ -325,9 +325,46 @@ class BulkQuestionImportService
                 }
             }
 
-            return $hasExplicitHeaders
+            $parserMode = $hasExplicitHeaders ? 'explicit_headers' : 'native_document';
+            $questions = $hasExplicitHeaders
                 ? $this->buildQuestions($blocks)
                 : $this->buildNativeDocumentQuestions($blocks);
+
+            // Include source-block diagnostics when the parser loses the first
+            // question stem, so malformed DOCX structure can be fixed precisely.
+            if (!empty($questions)) {
+                $firstQuestion = $questions[0];
+                $firstQuestionText = trim(strip_tags(html_entity_decode(
+                    (string) ($firstQuestion['question'] ?? ''),
+                    ENT_QUOTES | ENT_HTML5,
+                    'UTF-8'
+                )));
+                if (
+                    $firstQuestionText === '' &&
+                    empty($firstQuestion['question_images']) &&
+                    !preg_match('/<img\\b[^>]*>/iu', (string) ($firstQuestion['question'] ?? ''))
+                ) {
+                    $blockDiagnostics = [];
+                    foreach (array_slice($blocks, 0, 18) as $index => $block) {
+                        $blockDiagnostics[] = [
+                            'index' => $index,
+                            'type' => (string) ($block['type'] ?? ''),
+                            'text' => mb_substr((string) ($block['text'] ?? ''), 0, 240),
+                            'image_count' => count($block['images'] ?? []),
+                            'html_text' => mb_substr(trim(strip_tags((string) ($block['html'] ?? ''))), 0, 160),
+                        ];
+                    }
+
+                    throw new RuntimeException(
+                        'DIAGNOSTIK DOCX - isi soal pertama hilang saat parsing. Mode parser: ' .
+                        $parserMode .
+                        '. Blok sumber: ' .
+                        json_encode($blockDiagnostics, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    );
+                }
+            }
+
+            return $questions;
         } finally {
             $zip->close();
         }
