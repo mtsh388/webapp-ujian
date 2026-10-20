@@ -427,10 +427,10 @@ class BulkQuestionImportService
             }
 
             if (in_array($run->localName, ['oMath', 'oMathPara'], true)) {
-                [$mathText, $mathHtml] = $this->extractOfficeMath($run);
+                $math = $this->extractOfficeMath($run);
 
-                $text .= $mathText;
-                $html .= $mathHtml;
+                $text .= $math['text'];
+                $html .= $math['html'];
 
                 continue;
             }
