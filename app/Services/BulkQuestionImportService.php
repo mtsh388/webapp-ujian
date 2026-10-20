@@ -1079,19 +1079,57 @@ class BulkQuestionImportService
                 $options
             );
 
+            // Some Word exporters produce a segment where the regular stem
+            // collector loses its text blocks. Retry against the full answer
+            // segment, while excluding recognized choices and merged choice
+            // rows such as "34563456".
             $fallbackParts = [];
-            foreach ($stemBlocks as $block) {
+            $fallbackSourceBlocks = !empty($stemBlocks) ? $stemBlocks : $segment;
+
+            if (trim(implode('', array_map(
+                fn ($block) => (string) ($block['text'] ?? ''),
+                $fallbackSourceBlocks
+            ))) === '') {
+                $fallbackSourceBlocks = $segment;
+            }
+
+            foreach ($fallbackSourceBlocks as $block) {
                 if (($block['type'] ?? null) === 'table') {
-                    $fallbackParts[] = (string) ($block['html'] ?? '');
+                    $tableText = trim(strip_tags((string) ($block['html'] ?? '')));
+                    if ($tableText !== '') {
+                        $fallbackParts[] = (string) ($block['html'] ?? '');
+                    }
                     continue;
                 }
 
                 $text = $this->normalizeText((string) ($block['text'] ?? ''));
-                if ($text === '' || str_contains(mb_strtolower($text), 'simulasi pengenalan tka') || str_contains(mb_strtolower($text), 'flexiquiz')) {
+                $lowerText = mb_strtolower($text);
+
+                if (
+                    $text === '' ||
+                    str_contains($lowerText, 'simulasi pengenalan tka') ||
+                    str_contains($lowerText, 'flexiquiz') ||
+                    preg_match('/^jawaban\\s*:/iu', $text)
+                ) {
                     continue;
                 }
 
-                if (in_array($this->normalizeAnswerForMatching($text), $optionTexts, true)) {
+                $normalizedText = $this->normalizeAnswerForMatching($text);
+                $splitChoices = $this->splitNativeMergedOptions($text);
+                $isMergedChoiceRow = count($splitChoices) >= 2 &&
+                    count(array_filter(
+                        $splitChoices,
+                        fn ($choice) => in_array(
+                            $this->normalizeAnswerForMatching($choice),
+                            $optionTexts,
+                            true
+                        )
+                    )) === count($splitChoices);
+
+                if (
+                    in_array($normalizedText, $optionTexts, true) ||
+                    $isMergedChoiceRow
+                ) {
                     continue;
                 }
 
