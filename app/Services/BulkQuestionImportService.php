@@ -55,10 +55,9 @@ class BulkQuestionImportService
             $options = [];
             foreach (($question['options'] ?? []) as $key => $option) {
                 $optionHtml = $option['html'] ?? htmlspecialchars((string) ($option['text'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $optionHtml = preg_replace(
-                    '/<img src="__WORD_[^"]+"[^>]*>/u',
-                    '<span class="badge bg-label-info">[Gambar]</span>',
-                    $optionHtml
+                $optionHtml = $this->renderPreviewImages(
+                    $optionHtml,
+                    $option['images'] ?? []
                 );
 
                 $options[] = [
@@ -69,16 +68,14 @@ class BulkQuestionImportService
                 ];
             }
 
-            $questionHtml = preg_replace(
-                '/<img src="__WORD_[^"]+"[^>]*>/u',
-                '<span class="badge bg-label-info">[Gambar]</span>',
-                (string) $question['question']
+            $questionHtml = $this->renderPreviewImages(
+                (string) $question['question'],
+                $question['question_images'] ?? []
             );
 
-            $explanationHtml = preg_replace(
-                '/<img src="__WORD_[^"]+"[^>]*>/u',
-                '<span class="badge bg-label-info">[Gambar]</span>',
-                (string) $question['explanation']
+            $explanationHtml = $this->renderPreviewImages(
+                (string) $question['explanation'],
+                $question['question_images'] ?? []
             );
 
             $previewQuestions[] = [
@@ -100,6 +97,34 @@ class BulkQuestionImportService
             'true_false' => $trueFalse,
             'questions' => $previewQuestions,
         ];
+    }
+
+    /**
+     * Render extracted DOCX images directly in the import preview. The parser
+     * uses temporary tokens in HTML until images are stored during confirmation.
+     */
+    protected function renderPreviewImages(string $html, array $images): string
+    {
+        foreach ($images as $image) {
+            $token = (string) ($image['token'] ?? '');
+            $content = $image['content'] ?? null;
+
+            if ($token === '' || !is_string($content) || $content === '') {
+                continue;
+            }
+
+            $extension = strtolower((string) ($image['extension'] ?? 'png'));
+            $mimeType = $this->getMimeType($extension);
+            $dataUri = 'data:' . $mimeType . ';base64,' . base64_encode($content);
+
+            $html = str_replace(
+                'src="' . $token . '"',
+                'src="' . $dataUri . '"',
+                $html
+            );
+        }
+
+        return $html;
     }
 
     public function import(
