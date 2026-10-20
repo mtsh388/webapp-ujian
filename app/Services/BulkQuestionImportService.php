@@ -1071,6 +1071,36 @@ class BulkQuestionImportService
             ];
         }
 
+        // Recover stem text if Word's nested drawing/group layout caused the
+        // regular HTML conversion to return no textual content.
+        if (trim(strip_tags($questionHtml)) === '') {
+            $optionTexts = array_map(
+                fn ($option) => $this->normalizeAnswerForMatching((string) ($option['text'] ?? '')),
+                $options
+            );
+
+            $fallbackParts = [];
+            foreach ($stemBlocks as $block) {
+                if (($block['type'] ?? null) === 'table') {
+                    $fallbackParts[] = (string) ($block['html'] ?? '');
+                    continue;
+                }
+
+                $text = $this->normalizeText((string) ($block['text'] ?? ''));
+                if ($text === '' || str_contains(mb_strtolower($text), 'simulasi pengenalan tka') || str_contains(mb_strtolower($text), 'flexiquiz')) {
+                    continue;
+                }
+
+                if (in_array($this->normalizeAnswerForMatching($text), $optionTexts, true)) {
+                    continue;
+                }
+
+                $fallbackParts[] = $this->escapeTextAsHtml($text);
+            }
+
+            $questionHtml = implode('<br>', array_filter($fallbackParts, fn ($part) => trim($part) !== ''));
+        }
+
         $normalizedAnswer = $this->normalizeAnswerForMatching($answerText);
         $answerKeys = [];
 
@@ -1692,9 +1722,12 @@ class BulkQuestionImportService
                     )
                 );
 
+            $hasInlineImage = preg_match('/<img\b[^>]*>/iu', (string) ($question['question'] ?? '')) === 1;
+
             if (
                 $questionText === '' &&
-                empty($question['question_images'])
+                empty($question['question_images']) &&
+                !$hasInlineImage
             ) {
                 throw new RuntimeException(
                     "Soal nomor {$number} tidak memiliki isi."
