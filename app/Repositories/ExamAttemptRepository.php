@@ -94,6 +94,7 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
             ],
             [
                 'selected_option_id' => $data['selected_option_id'] ?? null,
+                'selected_option_ids' => $data['selected_option_ids'] ?? null,
                 'is_correct' => $data['is_correct'] ?? null,
                 'score' => $data['score'] ?? 0,
                 'answered_at' => $data['answered_at'] ?? now(),
