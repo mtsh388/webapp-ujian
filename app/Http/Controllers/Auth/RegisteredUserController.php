@@ -37,6 +37,11 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $user->forceFill([
+            'must_change_password' => false,
+            'password_changed_at' => now(),
+        ])->save();
+
         $role = Role::firstOrCreate([
             'name' => 'Siswa',
             'guard_name' => 'web',
