@@ -652,9 +652,10 @@ class BulkQuestionImportService
 
             return [
                 'text' => $numerator['text'] . '/' . $denominator['text'],
-                'html' => '<span class="question-word-math-fraction"><span class="question-word-math-numerator">' .
+                'html' => '<span class="question-word-math-fraction" style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;vertical-align:middle;line-height:1.05;text-align:center;margin:0 0.08em;white-space:nowrap;">' .
+                    '<span class="question-word-math-numerator" style="display:block;padding:0 0.12em 0.08em;">' .
                     $numerator['html'] .
-                    '</span><span class="question-word-math-divider">/</span><span class="question-word-math-denominator">' .
+                    '</span><span class="question-word-math-divider" aria-hidden="true" style="display:block;align-self:stretch;border-top:1px solid currentColor;height:0;min-width:0.8em;"></span><span class="question-word-math-denominator" style="display:block;padding:0.08em 0.12em 0;">' .
                     $denominator['html'] .
                     '</span></span>',
             ];
