@@ -1767,8 +1767,19 @@ class BulkQuestionImportService
                 empty($question['question_images']) &&
                 !$hasInlineImage
             ) {
+                $diagnostic = [
+                    'question_html' => (string) ($question['question'] ?? ''),
+                    'question_images_count' => count($question['question_images'] ?? []),
+                    'option_texts' => array_map(
+                        fn ($option) => (string) ($option['text'] ?? ''),
+                        $question['options'] ?? []
+                    ),
+                    'type' => $type,
+                ];
+
                 throw new RuntimeException(
-                    "Soal nomor {$number} tidak memiliki isi."
+                    "DIAGNOSTIK impor Word - soal nomor {$number} tidak memiliki isi. Data hasil parsing: " .
+                    json_encode($diagnostic, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                 );
             }
 
