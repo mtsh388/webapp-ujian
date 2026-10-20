@@ -300,6 +300,11 @@ class BulkQuestionImportService
                 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
             );
 
+            $xpath->registerNamespace(
+                'm',
+                'http://schemas.openxmlformats.org/officeDocument/2006/math'
+            );
+
             $bodyNodes = $xpath->query(
                 '/w:document/w:body/*'
             );
@@ -407,13 +412,26 @@ class BulkQuestionImportService
         $html = '';
         $images = [];
 
+        // Office Math (Equation) is stored in m:oMath/m:oMathPara,
+        // not in ordinary w:r/w:t nodes. Include it in document order so
+        // inline equations remain positioned correctly in the question,
+        // options, and the "Jawaban:" paragraph.
         $runs = $xpath->query(
-            './w:r | ./w:hyperlink/w:r',
+            './w:r | ./w:hyperlink/w:r | ./m:oMath | ./m:oMathPara',
             $paragraph
         );
 
         foreach ($runs as $run) {
             if (!$run instanceof DOMElement) {
+                continue;
+            }
+
+            if (in_array($run->localName, ['oMath', 'oMathPara'], true)) {
+                [$mathText, $mathHtml] = $this->extractOfficeMath($run);
+
+                $text .= $mathText;
+                $html .= $mathHtml;
+
                 continue;
             }
 
@@ -563,6 +581,163 @@ class BulkQuestionImportService
         ];
     }
 
+
+    /**
+     * Convert a subset of Office Math Markup Language (OMML) into readable
+     * text for answer matching and HTML for the import preview.
+     *
+     * Fractions are normalized as "numerator/denominator" so a key such as
+     * 2/3 matches an option authored as the same Word Equation, instead of
+     * being flattened into "23".
+     */
+    protected function extractOfficeMath(DOMElement $mathNode): array
+    {
+        return $this->renderOfficeMathNode($mathNode);
+    }
+
+    protected function renderOfficeMathNode(\DOMNode $node): array
+    {
+        if ($node->nodeType === XML_TEXT_NODE) {
+            $value = $node->nodeValue ?? '';
+
+            return [
+                'text' => $value,
+                'html' => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            ];
+        }
+
+        if (!$node instanceof DOMElement) {
+            return ['text' => '', 'html' => ''];
+        }
+
+        $name = $node->localName;
+
+        if ($name === 't') {
+            $value = $node->textContent;
+
+            return [
+                'text' => $value,
+                'html' => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            ];
+        }
+
+        // Property nodes only describe equation formatting; they do not
+        // contribute visible content.
+        if (str_ends_with($name, 'Pr')) {
+            return ['text' => '', 'html' => ''];
+        }
+
+        if ($name === 'f') {
+            $numeratorNode = null;
+            $denominatorNode = null;
+
+            foreach ($node->childNodes as $child) {
+                if (!$child instanceof DOMElement) {
+                    continue;
+                }
+
+                if ($child->localName === 'num') {
+                    $numeratorNode = $child;
+                } elseif ($child->localName === 'den') {
+                    $denominatorNode = $child;
+                }
+            }
+
+            $numerator = $numeratorNode
+                ? $this->renderOfficeMathChildren($numeratorNode)
+                : ['text' => '', 'html' => ''];
+            $denominator = $denominatorNode
+                ? $this->renderOfficeMathChildren($denominatorNode)
+                : ['text' => '', 'html' => ''];
+
+            return [
+                'text' => $numerator['text'] . '/' . $denominator['text'],
+                'html' => '<span class="question-word-math-fraction"><span class="question-word-math-numerator">' .
+                    $numerator['html'] .
+                    '</span><span class="question-word-math-divider">/</span><span class="question-word-math-denominator">' .
+                    $denominator['html'] .
+                    '</span></span>',
+            ];
+        }
+
+        if ($name === 'sSup' || $name === 'sSub') {
+            $baseNode = null;
+            $scriptNode = null;
+
+            foreach ($node->childNodes as $child) {
+                if (!$child instanceof DOMElement) {
+                    continue;
+                }
+
+                if ($child->localName === 'e') {
+                    $baseNode = $child;
+                } elseif ($child->localName === ($name === 'sSup' ? 'sup' : 'sub')) {
+                    $scriptNode = $child;
+                }
+            }
+
+            $base = $baseNode
+                ? $this->renderOfficeMathChildren($baseNode)
+                : ['text' => '', 'html' => ''];
+            $script = $scriptNode
+                ? $this->renderOfficeMathChildren($scriptNode)
+                : ['text' => '', 'html' => ''];
+
+            $tag = $name === 'sSup' ? 'sup' : 'sub';
+
+            return [
+                'text' => $base['text'] . $script['text'],
+                'html' => $base['html'] . '<' . $tag . '>' . $script['html'] . '</' . $tag . '>',
+            ];
+        }
+
+        if ($name === 'rad') {
+            $degreeNode = null;
+            $expressionNode = null;
+
+            foreach ($node->childNodes as $child) {
+                if (!$child instanceof DOMElement) {
+                    continue;
+                }
+
+                if ($child->localName === 'deg') {
+                    $degreeNode = $child;
+                } elseif ($child->localName === 'e') {
+                    $expressionNode = $child;
+                }
+            }
+
+            $degree = $degreeNode
+                ? $this->renderOfficeMathChildren($degreeNode)
+                : ['text' => '', 'html' => ''];
+            $expression = $expressionNode
+                ? $this->renderOfficeMathChildren($expressionNode)
+                : ['text' => '', 'html' => ''];
+
+            return [
+                'text' => ($degree['text'] !== '' ? $degree['text'] : '√') . $expression['text'],
+                'html' => '<span class="question-word-math-radical">' .
+                    ($degree['html'] !== '' ? '<sup>' . $degree['html'] . '</sup>' : '') .
+                    '√' . $expression['html'] . '</span>',
+            ];
+        }
+
+        return $this->renderOfficeMathChildren($node);
+    }
+
+    protected function renderOfficeMathChildren(\DOMNode $node): array
+    {
+        $text = '';
+        $html = '';
+
+        foreach ($node->childNodes as $child) {
+            $part = $this->renderOfficeMathNode($child);
+            $text .= $part['text'];
+            $html .= $part['html'];
+        }
+
+        return ['text' => $text, 'html' => $html];
+    }
 
     protected function extractTableContent(
         DOMElement $table,
