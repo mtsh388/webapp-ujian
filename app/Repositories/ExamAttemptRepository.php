@@ -158,7 +158,12 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
         foreach ($questionIds as $questionId) {
             $answer = $answers->get($questionId);
 
-            if (!$answer || $answer->selected_option_id === null) {
+            $selectedIds = $answer?->selected_option_ids;
+            $hasSelectedOptions = is_array($selectedIds)
+                ? count($selectedIds) > 0
+                : ($answer && $answer->selected_option_id !== null);
+
+            if (!$answer || !$hasSelectedOptions) {
                 $unanswered++;
                 continue;
             }
