@@ -48,6 +48,7 @@
                         <select id="filter_type" class="form-select">
                             <option value="">Semua</option>
                             <option value="multiple_choice">Pilihan Ganda</option>
+                            <option value="multiple_select">Pilih Semua yang Benar</option>
                             <option value="true_false">Benar / Salah</option>
                         </select>
                     </div>
