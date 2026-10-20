@@ -324,6 +324,7 @@ class BulkQuestionImportService
                         'text' => $content['text'],
                         'html' => $content['html'],
                         'images' => $content['images'],
+                        'is_list' => $content['is_list'] ?? false,
                     ];
 
                     continue;
@@ -558,6 +559,7 @@ class BulkQuestionImportService
             'text' => $text,
             'html' => $html,
             'images' => $images,
+            'is_list' => $xpath->query('./w:pPr/w:numPr', $paragraph)->length > 0,
         ];
     }
 
@@ -932,8 +934,13 @@ class BulkQuestionImportService
     protected function buildNativeDocumentQuestions(array $blocks): array
     {
         $normalizedBlocks = [];
+        $consumedAnswerListBlocks = [];
 
-        foreach ($blocks as $block) {
+        foreach ($blocks as $blockIndex => $block) {
+            if (isset($consumedAnswerListBlocks[$blockIndex])) {
+                continue;
+            }
+
             if (($block['type'] ?? null) !== 'paragraph') {
                 $normalizedBlocks[] = $block;
                 continue;
@@ -943,6 +950,33 @@ class BulkQuestionImportService
             if (preg_match('/^(.*?)\bJawaban\s*:\s*(.*)$/isu', $text, $matches)) {
                 $before = trim($matches[1]);
                 $answer = trim($matches[2]);
+
+                // Multi-select keys can be a blank "Jawaban:" paragraph followed
+                // by Word's numbered/bulleted list containing the correct options.
+                if ($answer === '') {
+                    $answerItems = [];
+
+                    for ($nextIndex = $blockIndex + 1; isset($blocks[$nextIndex]); $nextIndex++) {
+                        $nextBlock = $blocks[$nextIndex];
+
+                        if (
+                            ($nextBlock['type'] ?? null) !== 'paragraph' ||
+                            empty($nextBlock['is_list'])
+                        ) {
+                            break;
+                        }
+
+                        $itemText = $this->normalizeText((string) ($nextBlock['text'] ?? ''));
+                        if ($itemText === '') {
+                            continue;
+                        }
+
+                        $answerItems[] = preg_replace('/^\s*[-•]\s*/u', '', $itemText);
+                        $consumedAnswerListBlocks[$nextIndex] = true;
+                    }
+
+                    $answer = implode("\n", $answerItems);
+                }
 
                 if ($before !== '') {
                     $beforeBlock = $block;
