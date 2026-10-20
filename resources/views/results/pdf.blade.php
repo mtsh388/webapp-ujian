@@ -500,10 +500,13 @@
         );
 
         $selectedOptionId = $answer?->selected_option_id;
+        $selectedOptionIds = $answer?->selected_option_ids ?? [];
+        if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+        if (empty($selectedOptionIds) && $selectedOptionId !== null) $selectedOptionIds = [(int) $selectedOptionId];
 
         $selectedOption = $answer?->selectedOption;
 
-        $isAnswered = $selectedOptionId !== null;
+        $isAnswered = !empty($selectedOptionIds) || $selectedOptionId !== null;
 
         $isCorrect = $answer?->is_correct === true;
 
@@ -559,8 +562,7 @@
 
                     @php
                         $isSelected =
-                            $selectedOptionId !== null &&
-                            (int) $selectedOptionId === (int) $option->id;
+                            in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
 
                         $isCorrectOption = (bool) $option->is_correct;
 
