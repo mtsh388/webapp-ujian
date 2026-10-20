@@ -157,9 +157,8 @@
                                 @php
                                     $number = $index + 1;
                                     $questionAnswer = $answers->get($question->id);
-                                    $isAnswered =
-                                        $questionAnswer &&
-                                        $questionAnswer->selected_option_id;
+                                    $isAnswered = $questionAnswer &&
+                                        (!empty($questionAnswer->selected_option_ids) || $questionAnswer->selected_option_id);
                                     $isCurrent = $number === $currentNumber;
                                 @endphp
 
@@ -482,10 +481,7 @@
                 await submitExam(true);
             }
 
-            async function saveAnswer(
-                questionId,
-                selectedOptionId
-            ) {
+            async function saveAnswer(questionId, selectedOptionValue, isMultiple = false) {
                 saveAnswerPromise = (async () => {
 
                     answerStatusElement.innerHTML =
@@ -504,7 +500,7 @@
                                 },
                                 body: JSON.stringify({
                                     exam_question_id: questionId,
-                                    selected_option_id: selectedOptionId
+                                    ...(isMultiple ? { selected_option_ids: selectedOptionValue } : { selected_option_id: selectedOptionValue })
                                 })
                             }
                         );
@@ -619,24 +615,22 @@
                     return;
                 }
 
-                document.querySelectorAll('[data-option-wrapper]').forEach(wrapper => {
-                    wrapper.classList.remove('selected');
-                });
-
+                const isMultiple = option.dataset.multiple === '1';
+                if (isMultiple) {
+                    const wrapper = document.querySelector(`[data-option-wrapper="${option.value}"]`);
+                    wrapper?.classList.toggle('selected', option.checked);
+                    const selectedIds = Array.from(document.querySelectorAll('.answer-option:checked')).map(input => Number(input.value));
+                    if (selectedIds.length) markCurrentQuestionAnswered();
+                    else document.querySelector('.question-number.current')?.classList.remove('answered');
+                    try { await saveAnswer(Number(option.dataset.questionId), selectedIds, true); } catch (error) {}
+                    updateAnsweredCount();
+                    return;
+                }
+                document.querySelectorAll('[data-option-wrapper]').forEach(wrapper => wrapper.classList.remove('selected'));
                 const wrapper = document.querySelector(`[data-option-wrapper="${option.value}"]`);
-                if (wrapper) {
-                    wrapper.classList.add('selected');
-                }
-
+                if (wrapper) wrapper.classList.add('selected');
                 markCurrentQuestionAnswered();
-
-                try {
-                    await saveAnswer(
-                        Number(option.dataset.questionId),
-                        Number(option.value)
-                    );
-                } catch (error) {
-                }
+                try { await saveAnswer(Number(option.dataset.questionId), Number(option.value)); } catch (error) {}
             });
 
             document.addEventListener('click', async function (event) {
