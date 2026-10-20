@@ -177,10 +177,11 @@ class QuestionBankService
                     ),
                 };
 
-                $typeLabel =
-                    $question->type === 'multiple_choice'
-                        ? '<span class="badge bg-label-primary">Pilihan Ganda</span>'
-                        : '<span class="badge bg-label-info">Benar / Salah</span>';
+                $typeLabel = match ($question->type) {
+                    'multiple_choice' => '<span class="badge bg-label-primary">Pilihan Ganda</span>',
+                    'multiple_select' => '<span class="badge bg-label-warning">Pilih Semua yang Benar</span>',
+                    default => '<span class="badge bg-label-info">Benar / Salah</span>',
+                };
 
                 $mediaCount = $question->media->count();
 
