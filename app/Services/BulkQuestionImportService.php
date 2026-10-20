@@ -1706,7 +1706,7 @@ class BulkQuestionImportService
 
             if (
                 $current['type'] === null ||
-                $current['type'] === 'multiple_choice'
+                in_array($current['type'], ['multiple_choice', 'multiple_select'], true)
             ) {
                 $optionResult = $this->extractOptions(
                     $rawText,
@@ -1719,8 +1719,9 @@ class BulkQuestionImportService
                     $optionResult['options']
                     )
                 ) {
-                    $current['type'] =
-                        'multiple_choice';
+                    if ($current['type'] === null) {
+                        $current['type'] = 'multiple_choice';
+                    }
 
                     foreach (
                         $optionResult['options'] as $option
