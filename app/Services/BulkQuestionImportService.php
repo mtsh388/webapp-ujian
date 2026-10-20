@@ -36,15 +36,21 @@ class BulkQuestionImportService
         $this->validateQuestions($questions);
 
         $multipleChoice = 0;
+        $multipleSelect = 0;
         $trueFalse = 0;
         $previewQuestions = [];
 
         foreach ($questions as $index => $question) {
             if ($question['type'] === 'multiple_choice') {
                 $multipleChoice++;
+            } elseif ($question['type'] === 'multiple_select') {
+                $multipleSelect++;
             } else {
                 $trueFalse++;
             }
+
+            $answerKeys = $question['answer_keys']
+                ?? (isset($question['answer']) ? [$question['answer']] : []);
 
             $options = [];
             foreach (($question['options'] ?? []) as $key => $option) {
@@ -58,7 +64,7 @@ class BulkQuestionImportService
                 $options[] = [
                     'key' => $key,
                     'html' => $optionHtml,
-                    'is_correct' => $key === ($question['answer'] ?? null),
+                    'is_correct' => in_array($key, $answerKeys, true),
                     'image_count' => count($option['images'] ?? []),
                 ];
             }
@@ -80,7 +86,8 @@ class BulkQuestionImportService
                 'type' => $question['type'],
                 'question' => $questionHtml,
                 'explanation' => $explanationHtml,
-                'answer' => $question['answer'],
+                'answer' => $question['answer'] ?? null,
+                'answer_keys' => $answerKeys,
                 'options' => $options,
                 'image_count' => count($question['question_images'] ?? []),
             ];
@@ -89,6 +96,7 @@ class BulkQuestionImportService
         return [
             'total' => count($previewQuestions),
             'multiple_choice' => $multipleChoice,
+            'multiple_select' => $multipleSelect,
             'true_false' => $trueFalse,
             'questions' => $previewQuestions,
         ];
@@ -125,6 +133,7 @@ class BulkQuestionImportService
             ) {
                 $imported = 0;
                 $multipleChoice = 0;
+                $multipleSelect = 0;
                 $trueFalse = 0;
 
                 foreach ($questions as $question) {
@@ -167,14 +176,18 @@ class BulkQuestionImportService
                         ]);
                     }
 
-                    if ($question['type'] === 'multiple_choice') {
+                    if (in_array($question['type'], ['multiple_choice', 'multiple_select'], true)) {
                         $this->storeMultipleChoiceOptions(
                             $questionBank->id,
                             $question,
                             $storedFiles
                         );
 
-                        $multipleChoice++;
+                        if ($question['type'] === 'multiple_select') {
+                            $multipleSelect++;
+                        } else {
+                            $multipleChoice++;
+                        }
                     }
 
                     if ($question['type'] === 'true_false') {
@@ -192,6 +205,7 @@ class BulkQuestionImportService
                 return [
                     'imported' => $imported,
                     'multiple_choice' => $multipleChoice,
+                    'multiple_select' => $multipleSelect,
                     'true_false' => $trueFalse,
                 ];
             });
@@ -300,7 +314,20 @@ class BulkQuestionImportService
                 }
             }
 
-            return $this->buildQuestions($blocks);
+            $hasExplicitHeaders = false;
+            foreach ($blocks as $block) {
+                if (
+                    ($block['type'] ?? null) === 'paragraph' &&
+                    $this->parseQuestionHeader($this->normalizeText((string) ($block['text'] ?? ''))) !== null
+                ) {
+                    $hasExplicitHeaders = true;
+                    break;
+                }
+            }
+
+            return $hasExplicitHeaders
+                ? $this->buildQuestions($blocks)
+                : $this->buildNativeDocumentQuestions($blocks);
         } finally {
             $zip->close();
         }
@@ -809,6 +836,292 @@ class BulkQuestionImportService
         }
 
         return $target;
+    }
+
+
+    /**
+     * Parses the source-style TKA DOCX without requiring users to add
+     * artificial SOAL/A-D/JAWABAN markers. The document's own "Jawaban:"
+     * lines delimit question records; the last up-to-four text blocks before
+     * each answer are treated as answer choices.
+     */
+    protected function buildNativeDocumentQuestions(array $blocks): array
+    {
+        $normalizedBlocks = [];
+
+        foreach ($blocks as $block) {
+            if (($block['type'] ?? null) !== 'paragraph') {
+                $normalizedBlocks[] = $block;
+                continue;
+            }
+
+            $text = (string) ($block['text'] ?? '');
+            if (preg_match('/^(.*?)\bJawaban\s*:\s*(.*)$/isu', $text, $matches)) {
+                $before = trim($matches[1]);
+                $answer = trim($matches[2]);
+
+                if ($before !== '') {
+                    $beforeBlock = $block;
+                    $beforeBlock['text'] = $before;
+                    $beforeBlock['html'] = $this->escapeTextAsHtml($before);
+                    $normalizedBlocks[] = $beforeBlock;
+                }
+
+                $answerBlock = [
+                    'type' => 'paragraph',
+                    'text' => 'Jawaban: ' . $answer,
+                    'html' => $this->escapeTextAsHtml('Jawaban: ' . $answer),
+                    'images' => [],
+                ];
+                $normalizedBlocks[] = $answerBlock;
+                continue;
+            }
+
+            $normalizedBlocks[] = $block;
+        }
+
+        $questions = [];
+        $segment = [];
+
+        foreach ($normalizedBlocks as $block) {
+            $text = $this->normalizeText((string) ($block['text'] ?? ''));
+            if (
+                ($block['type'] ?? null) === 'paragraph' &&
+                preg_match('/^Jawaban\s*:\s*(.*)$/isu', $text, $answerMatch)
+            ) {
+                $question = $this->buildNativeQuestionFromSegment(
+                    $segment,
+                    trim($answerMatch[1])
+                );
+
+                if ($question !== null) {
+                    $questions[] = $question;
+                }
+
+                $segment = [];
+                continue;
+            }
+
+            $segment[] = $block;
+        }
+
+        return $questions;
+    }
+
+    protected function buildNativeQuestionFromSegment(
+        array $segment,
+        string $answerText
+    ): ?array {
+        $paragraphs = [];
+
+        foreach ($segment as $block) {
+            if (($block['type'] ?? null) !== 'paragraph') {
+                continue;
+            }
+
+            $text = $this->normalizeText((string) ($block['text'] ?? ''));
+            if ($text === '' && empty($block['images'])) {
+                continue;
+            }
+
+            if (
+                preg_match('/^\d+\s+of\s+\d+$/iu', $text) ||
+                str_contains(mb_strtolower($text), 'simulasi pengenalan tka') ||
+                str_contains(mb_strtolower($text), 'flexiquiz')
+            ) {
+                continue;
+            }
+
+            $paragraphs[] = $block;
+        }
+
+        if (count($paragraphs) < 2) {
+            return null;
+        }
+
+        $optionBlocks = [];
+        $stemBlocks = $paragraphs;
+
+        // The source document has unlabelled choices. In some DOCX paragraphs,
+        // equation choices or numeric choices are merged into one text run.
+        $last = array_pop($stemBlocks);
+        $lastText = $this->normalizeText((string) ($last['text'] ?? ''));
+        $splitLast = $this->splitNativeMergedOptions($lastText);
+
+        if (count($splitLast) >= 2) {
+            foreach ($splitLast as $text) {
+                $optionBlocks[] = [
+                    'type' => 'paragraph',
+                    'text' => $text,
+                    'html' => $this->escapeTextAsHtml($text),
+                    'images' => [],
+                ];
+            }
+        } else {
+            $stemBlocks[] = $last;
+
+            while (count($stemBlocks) > 0 && count($optionBlocks) < 4) {
+                $candidate = array_pop($stemBlocks);
+                $candidateText = $this->normalizeText((string) ($candidate['text'] ?? ''));
+
+                if ($candidateText === '' && empty($candidate['images'])) {
+                    continue;
+                }
+
+                $split = $this->splitNativeMergedOptions($candidateText);
+                if (count($split) > 1) {
+                    foreach (array_reverse($split) as $text) {
+                        array_unshift($optionBlocks, [
+                            'type' => 'paragraph',
+                            'text' => $text,
+                            'html' => $this->escapeTextAsHtml($text),
+                            'images' => [],
+                        ]);
+                    }
+                    break;
+                }
+
+                array_unshift($optionBlocks, $candidate);
+
+                // The option rows in this source document are usually short.
+                if (count($optionBlocks) >= 4) {
+                    break;
+                }
+
+                if (
+                    preg_match('/^(?:pilih semua jawaban benar|jawaban benar lebih dari satu|berikut ini|tentukan benar atau salah)/iu', $candidateText)
+                ) {
+                    array_shift($optionBlocks);
+                    $stemBlocks[] = $candidate;
+                    break;
+                }
+            }
+        }
+
+        if (count($optionBlocks) < 2) {
+            return null;
+        }
+
+        $isMulti = false;
+        foreach ($stemBlocks as $block) {
+            $text = mb_strtolower((string) ($block['text'] ?? ''));
+            if (str_contains($text, 'pilih semua jawaban benar') || str_contains($text, 'jawaban benar lebih dari satu')) {
+                $isMulti = true;
+                break;
+            }
+        }
+
+        // Preserve tables and images in the question stem.
+        $questionHtml = '';
+        $questionImages = [];
+        foreach ($stemBlocks as $block) {
+            if (($block['type'] ?? null) === 'table') {
+                $questionHtml = $this->appendHtml($questionHtml, (string) ($block['html'] ?? ''));
+                $questionImages = array_merge($questionImages, $block['images'] ?? []);
+                continue;
+            }
+
+            $formattedImages = [];
+            $html = $this->convertParagraphToHtml($block, $formattedImages);
+            $questionHtml = $this->appendHtml($questionHtml, $html);
+            $questionImages = array_merge($questionImages, $formattedImages);
+        }
+
+        $options = [];
+        foreach (array_values($optionBlocks) as $index => $block) {
+            $key = chr(65 + $index);
+            $optionImages = [];
+            if (($block['type'] ?? null) === 'table') {
+                $optionHtml = (string) ($block['html'] ?? '');
+                $optionText = strip_tags($optionHtml);
+            } else {
+                $optionText = $this->normalizeText((string) ($block['text'] ?? ''));
+                $optionHtml = $this->convertParagraphToHtml($block, $optionImages);
+            }
+
+            $options[$key] = [
+                'key' => $key,
+                'text' => $optionText,
+                'html' => $optionHtml !== '' ? $optionHtml : $this->escapeTextAsHtml($optionText),
+                'images' => $optionImages,
+            ];
+        }
+
+        $normalizedAnswer = $this->normalizeAnswerForMatching($answerText);
+        $answerKeys = [];
+
+        foreach ($options as $key => $option) {
+            $normalizedOption = $this->normalizeAnswerForMatching((string) $option['text']);
+            if ($normalizedOption === '') {
+                continue;
+            }
+
+            if (
+                $normalizedAnswer !== '' &&
+                ($normalizedAnswer === $normalizedOption || str_contains($normalizedAnswer, $normalizedOption))
+            ) {
+                $answerKeys[] = $key;
+            }
+        }
+
+        if (!$isMulti && count($answerKeys) > 1) {
+            // Avoid false matches such as "5" matching "15%".
+            $exactMatches = [];
+            foreach ($options as $key => $option) {
+                if ($this->normalizeAnswerForMatching((string) $option['text']) === $normalizedAnswer) {
+                    $exactMatches[] = $key;
+                }
+            }
+            $answerKeys = count($exactMatches) === 1 ? $exactMatches : [];
+        }
+
+        return [
+            'type' => $isMulti ? 'multiple_select' : 'multiple_choice',
+            'question' => $questionHtml,
+            'question_images' => $questionImages,
+            'options' => $options,
+            'answer' => $answerKeys[0] ?? null,
+            'answer_keys' => $answerKeys,
+            'explanation' => '',
+        ];
+    }
+
+    protected function splitNativeMergedOptions(string $text): array
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return [];
+        }
+
+        if (preg_match('/^(?:[1-6]){8}$/u', preg_replace('/\s+/u', '', $text), $m)) {
+            $compact = preg_replace('/\s+/u', '', $text);
+            if (substr($compact, 0, 4) === substr($compact, 4, 4)) {
+                return str_split(substr($compact, 0, 4));
+            }
+        }
+
+        $equationParts = preg_split('/(?=y\s*=)/iu', $text, -1, PREG_SPLIT_NO_EMPTY);
+        if (count($equationParts) >= 2) {
+            return array_values(array_filter(array_map('trim', $equationParts)));
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/u', $text);
+        if (count($lines) > 1) {
+            $lines = array_values(array_filter(array_map('trim', $lines), fn ($line) => $line !== ''));
+            if (count($lines) >= 2 && count($lines) <= 4) {
+                return $lines;
+            }
+        }
+
+        return [$text];
+    }
+
+    protected function normalizeAnswerForMatching(string $text): string
+    {
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = mb_strtolower($text);
+        $text = preg_replace('/[\s\p{P}\p{Z}]+/u', '', $text);
+        return trim($text);
     }
 
     protected function buildQuestions(
@@ -1331,6 +1644,7 @@ class BulkQuestionImportService
                     $type,
                     [
                         'multiple_choice',
+                        'multiple_select',
                         'true_false',
                     ],
                     true
@@ -1363,21 +1677,12 @@ class BulkQuestionImportService
                 );
             }
 
-            if ($type === 'multiple_choice') {
-                foreach (
-                    ['A', 'B', 'C', 'D'] as $key
-                ) {
-                    if (
-                        !isset(
-                            $question['options'][$key]
-                        )
-                    ) {
-                        throw new RuntimeException(
-                            "Soal nomor {$number} tidak memiliki pilihan {$key}."
-                        );
-                    }
+            if (in_array($type, ['multiple_choice', 'multiple_select'], true)) {
+                if (count($question['options'] ?? []) < 2) {
+                    throw new RuntimeException("Soal nomor {$number} harus memiliki minimal dua pilihan.");
+                }
 
-                    $option = $question['options'][$key];
+                foreach (($question['options'] ?? []) as $key => $option) {
 
                     $optionText = trim(
                         strip_tags(
@@ -1421,16 +1726,11 @@ class BulkQuestionImportService
                     );
                 }
 
-                if (
-                    !in_array(
-                        $question['answer'] ?? null,
-                        ['A', 'B', 'C', 'D'],
-                        true
-                    )
-                ) {
-                    throw new RuntimeException(
-                        "Jawaban soal nomor {$number} tidak valid."
-                    );
+                $answerKeys = $question['answer_keys']
+                    ?? (isset($question['answer']) ? [$question['answer']] : []);
+
+                if (!empty($answerKeys) && array_diff($answerKeys, array_keys($question['options'] ?? []))) {
+                    throw new RuntimeException("Kunci jawaban soal nomor {$number} tidak cocok dengan pilihan yang tersedia.");
                 }
 
                 continue;
@@ -1546,8 +1846,10 @@ class BulkQuestionImportService
     {
         $sortOrder = 1;
 
-        foreach (['A', 'B', 'C', 'D'] as $key) {
-            $option = $question['options'][$key];
+        $answerKeys = $question['answer_keys']
+            ?? (isset($question['answer']) ? [$question['answer']] : []);
+
+        foreach ($question['options'] as $key => $option) {
 
             $initialContent = trim(
                 (string)($option['html'] ?? '')
@@ -1567,9 +1869,7 @@ class BulkQuestionImportService
                 'question_bank_id' => $questionBankId,
                 'option_key' => $option['key'],
                 'option_text' => $initialContent,
-                'is_correct' => (
-                    $option['key'] === $question['answer']
-                ),
+                'is_correct' => in_array($option['key'], $answerKeys, true),
                 'sort_order' => $sortOrder,
             ]);
 
