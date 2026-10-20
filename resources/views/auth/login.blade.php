@@ -202,13 +202,15 @@
                             <button
                                 class="btn btn-primary d-grid w-100"
                                 type="submit">
-
                                 Login
-
                             </button>
                         </div>
 
                     </form>
+
+                    <p class="text-center mb-0">
+                        Belum punya akun? <a href="{{ route('register') }}" class="text-decoration-none fw-semibold">Daftar sekarang</a>
+                    </p>
 
                 </div>
             </div>
