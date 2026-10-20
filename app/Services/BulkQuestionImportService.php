@@ -1198,6 +1198,27 @@ class BulkQuestionImportService
             $questionHtml = implode('<br>', array_filter($fallbackParts, fn ($part) => trim($part) !== ''));
         }
 
+        // Recovery for DOCX layouts where the question stem is accidentally
+        // classified as option A and the actual choices follow it. This can
+        // happen when equations or inline math are split into separate runs.
+        if (trim(strip_tags($questionHtml)) === '' && count($options) >= 3) {
+            $firstOptionText = $this->normalizeText((string) ($options['A']['text'] ?? ''));
+            $looksLikeStem = mb_strlen($firstOptionText) >= 35 &&
+                preg_match('/[?…]|\\b(?:nilai dari|suatu persamaan|perhatikan|diketahui|besar|tentukan)\\b/iu', $firstOptionText);
+
+            if ($looksLikeStem) {
+                $questionHtml = $this->escapeTextAsHtml($firstOptionText);
+                unset($options['A']);
+                $reindexedOptions = [];
+                foreach (array_values($options) as $index => $option) {
+                    $key = chr(65 + $index);
+                    $option['key'] = $key;
+                    $reindexedOptions[$key] = $option;
+                }
+                $options = $reindexedOptions;
+            }
+        }
+
         $normalizedAnswer = $this->normalizeAnswerForMatching($answerText);
         $answerKeys = [];
 
