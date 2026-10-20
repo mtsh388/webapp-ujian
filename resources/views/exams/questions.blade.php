@@ -147,7 +147,7 @@
                             <td>
                                     <span
                                         class="badge bg-label-{{ $q->type === 'multiple_choice' ? 'info' : 'warning' }}">
-                                        {{ $q->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah' }}
+                                        {{ $q->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($q->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah') }}
                                     </span>
                             </td>
 
@@ -266,7 +266,7 @@
                                         <td>
                                                 <span
                                                     class="badge bg-label-{{ $avail->type === 'multiple_choice' ? 'info' : 'warning' }}">
-                                                    {{ $avail->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah' }}
+                                                    {{ $avail->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($avail->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah') }}
                                                 </span>
                                         </td>
 
