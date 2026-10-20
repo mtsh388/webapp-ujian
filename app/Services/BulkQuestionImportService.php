@@ -2157,10 +2157,6 @@ class BulkQuestionImportService
                     throw new RuntimeException("Soal pilihan ganda kompleks nomor {$number} harus memiliki minimal dua kunci jawaban, misalnya JAWABAN: A, C.");
                 }
 
-                if (empty($answerKeys)) {
-                    throw new RuntimeException("Kunci jawaban soal nomor {$number} belum diisi.");
-                }
-
                 if (array_diff($answerKeys, array_keys($question['options'] ?? []))) {
                     throw new RuntimeException("Kunci jawaban soal nomor {$number} tidak cocok dengan pilihan yang tersedia.");
                 }
