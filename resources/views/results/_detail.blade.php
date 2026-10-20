@@ -518,13 +518,16 @@
                                 $answer = $answers->get($question->id);
 
                                 $selectedOptionId = $answer?->selected_option_id;
+                                $selectedOptionIds = $answer?->selected_option_ids ?? [];
+                                if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+                                if (empty($selectedOptionIds) && $selectedOptionId !== null) $selectedOptionIds = [(int) $selectedOptionId];
 
                                 $selectedOption = $answer?->selectedOption;
 
                                 $correctOption = $question->options
                                     ->firstWhere('is_correct', true);
 
-                                $isAnswered = $selectedOptionId !== null;
+                                $isAnswered = !empty($selectedOptionIds) || $selectedOptionId !== null;
 
                                 $isCorrect = $answer?->is_correct === true;
                             @endphp
@@ -586,8 +589,7 @@
                                         @foreach ($question->options as $option)
 
                                             @php
-                                                $isSelected = $selectedOptionId !== null
-                                                    && (int) $selectedOptionId === (int) $option->id;
+                                                $isSelected = in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
 
                                                 $isCorrectOption = (bool) $option->is_correct;
 
@@ -884,7 +886,7 @@
                                     @php
                                         $answer = $answers->get($question->id);
 
-                                        $answered = $answer?->selected_option_id !== null;
+                                        $answered = !empty($answer?->selected_option_ids) || $answer?->selected_option_id !== null;
 
                                         $correct = $answer?->is_correct === true;
                                     @endphp
