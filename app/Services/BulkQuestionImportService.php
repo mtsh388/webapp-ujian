@@ -959,6 +959,14 @@ class BulkQuestionImportService
         $splitLast = $this->splitNativeMergedOptions($lastText);
 
         if (count($splitLast) >= 2) {
+            // A Word paragraph can contain both a figure and OCR text for
+            // answer choices. Keep the figure with the question stem.
+            if (!empty($last['images'])) {
+                $last['text'] = '';
+                $last['html'] = '';
+                $stemBlocks[] = $last;
+            }
+
             foreach ($splitLast as $text) {
                 $optionBlocks[] = [
                     'type' => 'paragraph',
