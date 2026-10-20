@@ -42,6 +42,12 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card h-100"><div class="card-body">
+                    <div class="text-muted mb-1">Pilih Semua yang Benar</div>
+                    <div class="fs-3 fw-semibold">{{ $preview['multiple_select'] ?? 0 }}</div>
+                </div></div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100"><div class="card-body">
                     <div class="text-muted mb-1">Benar / Salah</div>
                     <div class="fs-3 fw-semibold">{{ $preview['true_false'] }}</div>
                 </div></div>
@@ -59,7 +65,10 @@
                     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div class="fw-semibold">Soal {{ $item['number'] }}</div>
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-label-primary">{{ $item['type'] === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah' }}</span>
+                            <span class="badge bg-label-primary">{{ $item['type'] === 'multiple_select' ? 'Pilih Semua yang Benar' : ($item['type'] === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah') }}</span>
+                            @if (empty($item['answer_keys']))
+                                <span class="badge bg-warning text-dark">Kunci tidak terbaca — periksa sebelum dipakai</span>
+                            @endif
                             @if ($item['image_count'] > 0)
                                 <span class="badge bg-label-info">{{ $item['image_count'] }} gambar pada soal</span>
                             @endif
@@ -87,7 +96,11 @@
                             </div>
                         @else
                             <div class="text-muted small mb-3">Pilihan: A = Benar, B = Salah</div>
-                            <div class="fw-semibold mb-3">Kunci jawaban: {{ $item['answer'] === 'A' ? 'Benar' : 'Salah' }}</div>
+                            <div class="fw-semibold mb-3">Kunci jawaban: {{ $item['answer'] === 'A' ? 'Benar' : ($item['answer'] === 'B' ? 'Salah' : 'Belum teridentifikasi') }}</div>
+                        @endif
+
+                        @if (empty($item['options']) && empty($item['answer_keys']))
+                            <div class="alert alert-warning py-2">Kunci jawaban tidak teridentifikasi. Periksa manual sebelum menambahkan soal ini ke ujian.</div>
                         @endif
 
                         @if (!empty($item['explanation']))
