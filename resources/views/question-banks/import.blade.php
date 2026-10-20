@@ -367,6 +367,31 @@ Pembahasan...</code></pre>
                                 <div class="mb-4">
 
                                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                        <div class="fw-semibold">Pilihan Ganda Kompleks (lebih dari satu jawaban)</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-copy-example="example-pilihan-ganda-kompleks">
+                                            <i class="bx bx-copy me-1"></i>Salin Contoh
+                                        </button>
+                                    </div>
+
+                                    <pre class="bg-white rounded p-3 mb-0 border"><code id="example-pilihan-ganda-kompleks">SOAL 2 [PILIHAN_GANDA_KOMPLEKS]
+
+Pilih semua jawaban yang benar!
+
+A. Indonesia berada di Asia Tenggara.
+B. Matahari terbit dari barat.
+C. 2 + 2 = 4.
+D. Air membeku pada suhu 100°C.
+
+JAWABAN: A, C
+
+PEMBAHASAN:
+Pernyataan A dan C benar, sedangkan B dan D salah.</code></pre>
+
+                                </div>
+
+                                <div class="mb-4">
+
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                                         <div class="fw-semibold">Benar / Salah</div>
                                         <button type="button" class="btn btn-sm btn-outline-primary" data-copy-example="example-benar-salah">
                                             <i class="bx bx-copy me-1"></i>Salin Contoh
@@ -442,13 +467,18 @@ Pernyataan benar.</code></pre>
 
                                     <li class="mb-2">
                                         Gunakan
-                                        <code>[PILIHAN_GANDA]</code>
+                                        <code>[PILIHAN_GANDA]</code>,
+                                        <code>[PILIHAN_GANDA_KOMPLEKS]</code>,
                                         atau
                                         <code>[BENAR_SALAH]</code>.
                                     </li>
 
                                     <li class="mb-2">
                                         Pilihan ganda wajib memiliki A-D.
+                                    </li>
+
+                                    <li class="mb-2">
+                                        Pilihan ganda kompleks wajib memiliki minimal dua jawaban benar, ditulis seperti <code>JAWABAN: A, C</code>.
                                     </li>
 
                                     <li class="mb-2">
