@@ -330,11 +330,11 @@
                                 <div class="alert alert-primary mb-4">
 
                                     <div class="fw-semibold mb-2">
-                                        Tipe soal ditentukan di DOCX.
+                                        Dokumen Word asli dapat langsung diunggah.
                                     </div>
 
                                     <div>
-                                        Tidak perlu memilih jenis soal pada form.
+                                        Importer mencoba mengenali format soal TKA tanpa meminta Anda mengubah dokumen. Format template SOAL/JAWABAN lama juga tetap didukung. Selalu periksa preview sebelum konfirmasi.
                                     </div>
 
                                 </div>
