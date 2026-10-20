@@ -1648,15 +1648,16 @@ class BulkQuestionImportService
 
             if (
                 preg_match(
-                    '/^\s*JAWABAN\s*[:.]?\s*([A-D])(?:\s+(.*))?$/iu',
+                    '/^\s*JAWABAN\s*[:.]?\s*([A-D](?:\s*[,;]\s*[A-D])*)(?:\s+(.*))?$/iu',
                     $text,
                     $matches
                 )
             ) {
-                $current['answer'] =
-                    strtoupper(
-                        trim($matches[1])
-                    );
+                $answerKeys = preg_split('/\s*[,;]\s*/u', strtoupper(trim($matches[1])));
+                $answerKeys = array_values(array_unique(array_filter($answerKeys, fn ($key) => in_array($key, ['A', 'B', 'C', 'D'], true))));
+
+                $current['answer_keys'] = $answerKeys;
+                $current['answer'] = count($answerKeys) === 1 ? $answerKeys[0] : null;
 
                 $remaining = isset($matches[2])
                     ? $this->normalizeText($matches[2])
@@ -1837,7 +1838,7 @@ class BulkQuestionImportService
     {
         if (
             !preg_match(
-                '/^SOAL(?:\s+\d+)?\s*(?:\[(PILIHAN_GANDA|BENAR_SALAH)\])?\s*[:.]?\s*(.*?)$/iu',
+                '/^SOAL(?:\s+\d+)?\s*(?:\[(PILIHAN_GANDA_KOMPLEKS|PILIHAN_GANDA|BENAR_SALAH)\])?\s*[:.]?\s*(.*?)$/iu',
                 $text,
                 $matches
             )
@@ -1854,6 +1855,7 @@ class BulkQuestionImportService
             )
             ) {
                 'PILIHAN_GANDA' => 'multiple_choice',
+                'PILIHAN_GANDA_KOMPLEKS' => 'multiple_select',
                 'BENAR_SALAH' => 'true_false',
                 default => null,
             };
@@ -1877,6 +1879,7 @@ class BulkQuestionImportService
                 $question['type'],
                 [
                     'multiple_choice',
+                    'multiple_select',
                     'true_false',
                 ],
                 true
@@ -2150,7 +2153,15 @@ class BulkQuestionImportService
                 $answerKeys = $question['answer_keys']
                     ?? (isset($question['answer']) ? [$question['answer']] : []);
 
-                if (!empty($answerKeys) && array_diff($answerKeys, array_keys($question['options'] ?? []))) {
+                if ($type === 'multiple_select' && count($answerKeys) < 2) {
+                    throw new RuntimeException("Soal pilihan ganda kompleks nomor {$number} harus memiliki minimal dua kunci jawaban, misalnya JAWABAN: A, C.");
+                }
+
+                if (empty($answerKeys)) {
+                    throw new RuntimeException("Kunci jawaban soal nomor {$number} belum diisi.");
+                }
+
+                if (array_diff($answerKeys, array_keys($question['options'] ?? []))) {
                     throw new RuntimeException("Kunci jawaban soal nomor {$number} tidak cocok dengan pilihan yang tersedia.");
                 }
 
