@@ -915,6 +915,16 @@ class BulkQuestionImportService
         $paragraphs = [];
 
         foreach ($segment as $block) {
+            if (($block['type'] ?? null) === 'table') {
+                $paragraphs[] = [
+                    'type' => 'table',
+                    'text' => trim(strip_tags((string) ($block['html'] ?? ''))),
+                    'html' => (string) ($block['html'] ?? ''),
+                    'images' => $block['images'] ?? [],
+                ];
+                continue;
+            }
+
             if (($block['type'] ?? null) !== 'paragraph') {
                 continue;
             }
@@ -966,6 +976,11 @@ class BulkQuestionImportService
 
                 if ($candidateText === '' && empty($candidate['images'])) {
                     continue;
+                }
+
+                if (($candidate['type'] ?? null) === 'table') {
+                    $stemBlocks[] = $candidate;
+                    break;
                 }
 
                 $split = $this->splitNativeMergedOptions($candidateText);
@@ -1032,8 +1047,9 @@ class BulkQuestionImportService
             $key = chr(65 + $index);
             $optionImages = [];
             if (($block['type'] ?? null) === 'table') {
-                $optionHtml = (string) ($block['html'] ?? '');
-                $optionText = strip_tags($optionHtml);
+                $questionHtml = $this->appendHtml($questionHtml, (string) ($block['html'] ?? ''));
+                $questionImages = array_merge($questionImages, $block['images'] ?? []);
+                continue;
             } else {
                 $optionText = $this->normalizeText((string) ($block['text'] ?? ''));
                 $optionHtml = $this->convertParagraphToHtml($block, $optionImages);
