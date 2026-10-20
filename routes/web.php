@@ -16,7 +16,7 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
-Route::middleware(['auth', 'password.first'])->group(function () {
+Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
