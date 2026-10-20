@@ -316,11 +316,11 @@
                             <div class="card-header bg-transparent border-0 p-4">
 
                                 <h5 class="mb-1">
-                                    Format DOCX
+                                    Contoh Format DOCX
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Gunakan struktur berikut pada file Word.
+                                    Salin contoh berikut ke Microsoft Word, sesuaikan isi soal, lalu simpan sebagai file .docx.
                                 </p>
 
                             </div>
@@ -341,11 +341,14 @@
 
                                 <div class="mb-4">
 
-                                    <div class="fw-semibold mb-2">
-                                        Pilihan Ganda
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                        <div class="fw-semibold">Pilihan Ganda</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-copy-example="example-pilihan-ganda">
+                                            <i class="bx bx-copy me-1"></i>Salin Contoh
+                                        </button>
                                     </div>
 
-                                    <pre class="bg-white rounded p-3 mb-0 border"><code>SOAL 1 [PILIHAN_GANDA]
+                                    <pre class="bg-white rounded p-3 mb-0 border"><code id="example-pilihan-ganda">SOAL 1 [PILIHAN_GANDA]
 
 Pertanyaan...
 
@@ -363,11 +366,14 @@ Pembahasan...</code></pre>
 
                                 <div class="mb-4">
 
-                                    <div class="fw-semibold mb-2">
-                                        Benar / Salah
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                        <div class="fw-semibold">Benar / Salah</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-copy-example="example-benar-salah">
+                                            <i class="bx bx-copy me-1"></i>Salin Contoh
+                                        </button>
                                     </div>
 
-                                    <pre class="bg-white rounded p-3 mb-0 border"><code>SOAL 2 [BENAR_SALAH]
+                                    <pre class="bg-white rounded p-3 mb-0 border"><code id="example-benar-salah">SOAL 2 [BENAR_SALAH]
 
 Indonesia berada di Asia Tenggara.
 
@@ -380,18 +386,35 @@ Pernyataan benar.</code></pre>
 
                                 <div>
 
-                                    <div class="fw-semibold mb-2">
-                                        Mixed Type
+                                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                        <div class="fw-semibold">Campuran Jenis Soal</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-copy-example="example-campuran">
+                                            <i class="bx bx-copy me-1"></i>Salin Contoh
+                                        </button>
                                     </div>
 
-                                    <pre class="bg-white rounded p-3 mb-0 border"><code>SOAL 1 [PILIHAN_GANDA]
-...
+                                    <pre class="bg-white rounded p-3 mb-0 border"><code id="example-campuran">SOAL 1 [PILIHAN_GANDA]
+
+Pertanyaan pilihan ganda...
+
+A. Pilihan A
+B. Pilihan B
+C. Pilihan C
+D. Pilihan D
+
+JAWABAN: B
+
+PEMBAHASAN:
+Pembahasan soal pertama.
 
 SOAL 2 [BENAR_SALAH]
-...
 
-SOAL 3 [PILIHAN_GANDA]
-...</code></pre>
+Indonesia berada di Asia Tenggara.
+
+JAWABAN: A
+
+PEMBAHASAN:
+Pernyataan benar.</code></pre>
 
                                 </div>
 
@@ -462,18 +485,43 @@ SOAL 3 [PILIHAN_GANDA]
                 'form[action="{{ route('questions.import.preview') }}"]'
             );
 
-            const button = document.getElementById('btn-import');
+            const importButton = document.getElementById('btn-import');
 
-            if (!form || !button) {
-                return;
+            if (form && importButton) {
+                form.addEventListener('submit', function () {
+                    importButton.disabled = true;
+                    importButton.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span>' +
+                        'Memproses...';
+                });
             }
 
-            form.addEventListener('submit', function () {
-                button.disabled = true;
+            document.querySelectorAll('[data-copy-example]').forEach(function (button) {
+                button.addEventListener('click', async function () {
+                    const example = document.getElementById(button.dataset.copyExample);
 
-                button.innerHTML =
-                    '<span class="spinner-border spinner-border-sm me-1"></span>' +
-                    'Memproses...';
+                    if (!example) {
+                        return;
+                    }
+
+                    const originalText = button.innerHTML;
+
+                    try {
+                        await navigator.clipboard.writeText(example.innerText);
+                        button.innerHTML = '<i class="bx bx-check me-1"></i>Tersalin';
+                    } catch (error) {
+                        const range = document.createRange();
+                        range.selectNodeContents(example);
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        button.innerHTML = 'Pilih lalu salin';
+                    }
+
+                    window.setTimeout(function () {
+                        button.innerHTML = originalText;
+                    }, 1800);
+                });
             });
         });
     </script>
