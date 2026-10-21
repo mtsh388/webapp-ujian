@@ -55,10 +55,10 @@ return new class extends Migration
         }
 
         $duplicateCodes = DB::table('subjects')
-            ->selectRaw('UPPER(code) as normalized_code, COUNT(*) as total')
+            ->selectRaw('UPPER(TRIM(code)) as normalized_code, COUNT(*) as total')
             ->whereNotNull('code')
             ->where('code', '<>', '')
-            ->groupByRaw('UPPER(code)')
+            ->groupByRaw('UPPER(TRIM(code))')
             ->havingRaw('COUNT(*) > 1')
             ->pluck('normalized_code');
 
