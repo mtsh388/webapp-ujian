@@ -1166,6 +1166,33 @@ class BulkQuestionImportService
                 continue;
             }
 
+            if (
+                preg_match(
+                    '/^(.+?)(?=(?:Mengapa|Apa yang membuat)\b)/iu',
+                    $text,
+                    $sourceMatch,
+                    PREG_OFFSET_CAPTURE
+                )
+                && preg_match('/^Sumber\s*:/iu', $text)
+            ) {
+                $splitOffset = (int) $sourceMatch[0][1];
+                $sourceText = trim(substr($text, 0, $splitOffset));
+                $questionText = trim(substr($text, $splitOffset));
+
+                if ($sourceText !== '' && $questionText !== '') {
+                    $sourceBlock = $block;
+                    $sourceBlock['text'] = $sourceText;
+                    $sourceBlock['html'] = $this->escapeTextAsHtml($sourceText);
+                    $questionBlock = $block;
+                    $questionBlock['text'] = $questionText;
+                    $questionBlock['html'] = $this->escapeTextAsHtml($questionText);
+                    $questionBlock['images'] = [];
+                    $paragraphs[] = $sourceBlock;
+                    $paragraphs[] = $questionBlock;
+                    continue;
+                }
+            }
+
             $paragraphs[] = $block;
         }
 
@@ -1237,7 +1264,7 @@ class BulkQuestionImportService
             $index++;
 
             $marker = preg_match(
-                '/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i',
+                '/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i',
                 $stemText
             ) ? 'statement_true_false' : '';
             $markerIndex = $marker === 'statement_true_false' ? $index - 1 : $index;
@@ -1251,7 +1278,7 @@ class BulkQuestionImportService
                     break;
                 }
 
-                if (preg_match('/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $markerText)) {
+                if (preg_match('/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $markerText)) {
                     $marker = 'statement_true_false';
                     $markerIndex = $lookahead;
                     break;
@@ -1420,12 +1447,6 @@ class BulkQuestionImportService
                 $index++;
             }
 
-            if (count($options) !== 4) {
-                throw new RuntimeException(
-                    'Format TKA/FlexiQuiz memerlukan empat pilihan jawaban untuk soal pilihan ganda: ' . strip_tags($stemText)
-                );
-            }
-
             if ($answerText === '') {
                 if ($index < $count) {
                     [$nextPrefix, $nextAnswer] = $this->splitFlexiAnswer(
@@ -1439,6 +1460,12 @@ class BulkQuestionImportService
                 }
             }
 
+            if (count($options) < 2) {
+                throw new RuntimeException(
+                    'Pilihan jawaban tidak cukup untuk soal: ' . strip_tags($stemText)
+                );
+            }
+
             $answerKey = $this->matchFlexiAnswerKey($answerText, $options);
 
             if ($answerKey === null) {
@@ -1447,14 +1474,33 @@ class BulkQuestionImportService
                 );
             }
 
-            $questions[] = [
-                'type' => 'multiple_choice',
-                'question' => $questionHtml,
-                'question_images' => $questionImages,
-                'options' => $options,
-                'answer' => $answerKey,
-                'explanation' => '',
-            ];
+            if (count($options) === 4) {
+                $questions[] = [
+                    'type' => 'multiple_choice',
+                    'question' => $questionHtml,
+                    'question_images' => $questionImages,
+                    'options' => $options,
+                    'answer' => $answerKey,
+                    'explanation' => '',
+                ];
+            } else {
+                foreach ($options as $key => $option) {
+                    $optionPrompt = $this->appendHtml(
+                        $questionHtml,
+                        '<p>Apakah pilihan berikut merupakan jawaban yang tepat?</p>'
+                    );
+                    $optionPrompt = $this->appendHtml(
+                        $optionPrompt,
+                        '<blockquote>' . $option['html'] . '</blockquote>'
+                    );
+
+                    $questions[] = $this->makeFlexiTrueFalseQuestion(
+                        $optionPrompt,
+                        $key === $answerKey ? 'A' : 'B',
+                        array_merge($questionImages, $option['images'] ?? [])
+                    );
+                }
+            }
         }
 
         if (empty($questions)) {
@@ -1483,7 +1529,11 @@ class BulkQuestionImportService
                 return true;
             }
 
-            if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban|tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $candidate)) {
+            if ($this->isFlexiQuizQuestionStem($candidate)) {
+                break;
+            }
+
+            if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban|tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $candidate)) {
                 for ($answerLookahead = $lookahead + 1; $answerLookahead < $limit; $answerLookahead++) {
                     if ($this->containsFlexiAnswer($this->normalizeText((string) ($paragraphs[$answerLookahead]['text'] ?? '')))) {
                         return true;
@@ -1491,9 +1541,6 @@ class BulkQuestionImportService
                 }
             }
 
-            if ($this->isFlexiQuizQuestionStem($candidate) && !$this->containsFlexiAnswer($candidate)) {
-                break;
-            }
         }
 
         return false;
@@ -1510,7 +1557,7 @@ class BulkQuestionImportService
         }
 
         return preg_match(
-            '/^(Apa|Apakah|Mengapa|Bagaimana|Siapa|Kepada siapa|Kata manakah|Kalimat manakah|Pernyataan manakah|Informasi yang|Nada dan suasana|Berdasarkan teks|Tentukanlah|Tentukan|Pesan apa|Apa sajakah|Apa saja|Alat apa|Hal apa|Yang menjadi|Yang paling tepat|Makna dari|Apa makna|Manakah|Informasi yang tidak tepat|Apa yang)/iu',
+            '/^(Apa|Apakah|Mengapa|Bagaimana|Siapa|Kepada siapa|Kata manakah|Kalimat manakah|Pernyataan manakah|Informasi yang|Nada dan suasana|Berdasarkan teks|Setelah membaca|Tentukanlah|Tentukan|Pesan apa|Apa sajakah|Apa saja|Alat apa|Hal apa|Yang menjadi|Yang paling tepat|Makna dari|Apa makna|Manakah|Informasi yang tidak tepat|Apa yang)/iu',
             $text
         ) === 1;
     }
