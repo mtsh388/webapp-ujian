@@ -99,22 +99,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-4">
-                            <label for="subject_code" class="form-label fw-semibold">
-                                Kode Mata Pelajaran
-                            </label>
-                            <input
-                                type="text"
-                                id="subject_code"
-                                class="form-control font-monospace"
-                                value=""
-                                placeholder="Dibuat otomatis saat disimpan"
-                                readonly
-                            >
-                            <div class="form-text">Kode dibuat otomatis berdasarkan jenjang, kelas, dan topik.</div>
-                        </div>
-
-                        <div class="col-12">
+                                                <div class="col-12">
                             <label for="description" class="form-label fw-semibold">
                                 Deskripsi
                             </label>
