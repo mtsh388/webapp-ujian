@@ -251,9 +251,9 @@
                                     @foreach($subjects as $subject)
                                         <option
                                             value="{{ $subject->id }}"
-                                            data-search="{{ strtolower($subject->name . ' ' . ($subject->topic ?? '')) }}"
+                                            data-search="{{ strtolower($subject->name . ' Kelas ' . ($subject->grade_level ?? '') . ' ' . ($subject->education_level ?? '') . ' ' . ($subject->topic ?? '')) }}"
                                             {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
-                                            {{ $subject->name }}@if ($subject->topic) ({{ $subject->topic }})@endif
+                                            {{ $subject->name }} - Kelas {{ $subject->grade_level ?? '-' }}@if ($subject->topic) - {{ $subject->topic }}@endif
                                         </option>
                                     @endforeach
                                 </select>
