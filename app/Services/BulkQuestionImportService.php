@@ -25,6 +25,7 @@ class BulkQuestionImportService
 
     public function preview(UploadedFile $file): array
     {
+        $isLegacyFormat = $this->isLegacyTemplateFormat($file);
         $questions = $this->parseDocument($file);
 
         if (empty($questions)) {
@@ -90,6 +91,12 @@ class BulkQuestionImportService
             'total' => count($previewQuestions),
             'multiple_choice' => $multipleChoice,
             'true_false' => $trueFalse,
+            'format' => $isLegacyFormat ? 'template' : 'flexiquiz',
+            'conversion_notes' => $isLegacyFormat ? [] : [
+                'Soal Benar/Salah dengan beberapa pernyataan dipecah menjadi satu soal per pernyataan agar tetap kompatibel dengan penilaian ujian yang ada.',
+                'Soal dengan lebih dari satu jawaban benar diubah menjadi beberapa soal Benar/Salah per pilihan. Periksa kembali hasil konversi sebelum mengonfirmasi impor.',
+                'Teks bacaan yang terdeteksi disertakan pada pertanyaan terkait. Format ini tidak mengubah skema jawaban yang sudah digunakan sistem.',
+            ],
             'questions' => $previewQuestions,
         ];
     }
@@ -201,6 +208,32 @@ class BulkQuestionImportService
             }
 
             throw $e;
+        }
+    }
+
+    protected function isLegacyTemplateFormat(UploadedFile $file): bool
+    {
+        $zip = new ZipArchive();
+
+        if ($zip->open($file->getRealPath()) !== true) {
+            return false;
+        }
+
+        try {
+            $documentXml = $zip->getFromName('word/document.xml');
+
+            if (!$documentXml) {
+                return false;
+            }
+
+            $text = html_entity_decode(strip_tags($documentXml), ENT_QUOTES | ENT_XML1, 'UTF-8');
+
+            return preg_match(
+                '/SOAL(?:\s+\d+)?\s*\[(?:PILIHAN_GANDA|BENAR_SALAH)\]/iu',
+                $text
+            ) === 1;
+        } finally {
+            $zip->close();
         }
     }
 
@@ -1267,7 +1300,7 @@ class BulkQuestionImportService
                         $itemHtml = $this->flexiBlockHtml($item['block'], $itemImages);
                         $statementHtml = $this->appendHtml(
                             $questionHtml,
-                            $this->appendHtml('<p>' . htmlspecialchars($item['text'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>', $itemHtml)
+                            $itemHtml
                         );
 
                         $questions[] = $this->makeFlexiTrueFalseQuestion(
@@ -1393,7 +1426,7 @@ class BulkQuestionImportService
             $questions[] = [
                 'type' => 'multiple_choice',
                 'question' => $questionHtml,
-                'question_images' => array_merge($questionImages, $optionImages),
+                'question_images' => $questionImages,
                 'options' => $options,
                 'answer' => $answerKey,
                 'explanation' => '',
