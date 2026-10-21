@@ -5,11 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CompleteStudentProfileRequest;
 use App\Models\ClassRoom;
 use App\Models\Student;
+use App\Services\ExamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class StudentProfileController extends Controller
 {
+    public function __construct(
+        protected ExamService $examService
+    ) {
+    }
+
     public function edit(): View
     {
         $user = request()->user();
@@ -49,6 +55,8 @@ class StudentProfileController extends Controller
         ]);
 
         $student->save();
+
+        $this->examService->assignStudentToAutoExams($student->fresh('classRoom'));
 
         $user->forceFill(['name' => $data['full_name']])->save();
 
