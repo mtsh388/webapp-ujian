@@ -302,6 +302,20 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto_assign_new_students"
+                                       name="auto_assign_new_students" value="1"
+                                       {{ old('auto_assign_new_students', false) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="auto_assign_new_students">
+                                    Tambahkan Siswa Baru Otomatis
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Siswa aktif yang kelas dan jenjangnya sesuai dengan mata pelajaran akan otomatis menjadi peserta setelah ujian dipublikasikan.
+                            </div>
+                        </div>
+
                         <!-- Status & Checkbox Pengaturan -->
                         <div class="col-md-6 mb-3">
                             <label for="status" class="form-label">Status Ujian</label>
