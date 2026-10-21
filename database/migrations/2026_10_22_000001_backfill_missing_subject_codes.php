@@ -9,17 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         $subjects = DB::table('subjects')
-            ->whereNull('code')
-            ->orWhereRaw("TRIM(code) = ''")
+            ->where(function ($query) {
+                $query->whereNull('code')
+                    ->orWhereRaw("TRIM(code) = ''");
+            })
             ->orderBy('id')
-            ->get(['id', 'name', 'education_level', 'grade_level', 'topic', 'code']);
+            ->get(['id', 'name', 'education_level', 'grade_level', 'topic']);
 
-        $usedCodes = DB::table('subjects')
-            ->whereNotNull('code')
-            ->whereRaw("TRIM(code) <> ''")
-            ->pluck('code')
-            ->mapWithKeys(fn ($code) => [strtoupper(trim((string) $code) => true])
-            ->all();
+        $usedCodes = [];
+
+        foreach (DB::table('subjects')->whereNotNull('code')->whereRaw("TRIM(code) <> ''")->pluck('code') as $existingCode) {
+            $usedCodes[strtoupper(trim((string) $existingCode))] = true;
+        }
 
         foreach ($subjects as $subject) {
             $level = preg_replace('/[^A-Z0-9]/', '', strtoupper(trim((string) $subject->education_level))) ?: 'UMUM';
@@ -49,10 +50,7 @@ return new class extends Migration
                 $normalizedCode = strtoupper($code);
             } while (isset($usedCodes[$normalizedCode]));
 
-            DB::table('subjects')
-                ->where('id', $subject->id)
-                ->update(['code' => $code]);
-
+            DB::table('subjects')->where('id', $subject->id)->update(['code' => $code]);
             $usedCodes[$normalizedCode] = true;
         }
     }
