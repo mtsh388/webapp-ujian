@@ -51,7 +51,7 @@ return new class extends Migration
 
             $level = $this->normalizeLevel($subject->education_level);
             $grade = $this->normalizeGrade($subject->grade_level);
-            $topic = (string) ($subject->topic ?: $subject->name ?: 'TOPIK');
+            $topic = (string) ($subject->name ?: $subject->topic ?: 'TOPIK');
             $prefix = $level . '-' . $grade . '-' . $this->abbreviation($topic);
             $number = 1;
 
