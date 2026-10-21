@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Services\ExamAttemptService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,21 +19,12 @@ class ResultController extends Controller
 
     public function index(): View
     {
-        $student = auth()->user()->student;
-
-        if (!$student) {
-            abort(403, 'Akun ini tidak terhubung dengan data siswa.');
-        }
+        abort_unless(auth()->user()->can('result.view'), 403);
 
         $attempts = ExamAttempt::query()
-            ->with([
-                'exam',
-            ])
-            ->where('student_id', $student->id)
-            ->whereIn('status', [
-                'submitted',
-                'expired',
-            ])
+            ->with(['exam', 'student'])
+            ->whereIn('status', ['submitted', 'expired'])
+            ->whereNotNull('submitted_at')
             ->whereHas('exam', function ($query) {
                 $query->where(function ($query) {
                     $query->where('show_result_immediately', true)
@@ -40,12 +32,51 @@ class ResultController extends Controller
                 });
             })
             ->latest('submitted_at')
-            ->paginate(10);
+            ->paginate(15);
 
-        return view(
-            'results.index',
-            compact('attempts')
+        return view('results.index', compact('attempts'));
+    }
+
+    public function ranking(Exam $exam): View
+    {
+        abort_unless(auth()->user()->can('result.view'), 403);
+
+        abort_unless(
+            $exam->show_result_immediately || $exam->status === 'closed',
+            403,
+            'Ranking belum tersedia untuk ujian ini.'
         );
+
+        $attempts = ExamAttempt::query()
+            ->with('student.classRoom')
+            ->where('exam_id', $exam->id)
+            ->whereIn('status', ['submitted', 'expired'])
+            ->whereNotNull('submitted_at')
+            ->orderByDesc('score')
+            ->orderBy('duration_seconds')
+            ->orderBy('submitted_at')
+            ->get();
+
+        $rank = 0;
+        $position = 0;
+        $previousScore = null;
+        $previousDuration = null;
+
+        foreach ($attempts as $attempt) {
+            $position++;
+            $score = (float) $attempt->score;
+            $duration = (int) ($attempt->duration_seconds ?? PHP_INT_MAX);
+
+            if ($previousScore === null || $score !== $previousScore || $duration !== $previousDuration) {
+                $rank = $position;
+            }
+
+            $attempt->setAttribute('rank', $rank);
+            $previousScore = $score;
+            $previousDuration = $duration;
+        }
+
+        return view('results.ranking', compact('exam', 'attempts'));
     }
 
     public function show(
@@ -221,6 +252,10 @@ class ResultController extends Controller
         ExamAttempt $attempt
     ): void
     {
+        if (auth()->user()->can('result.view')) {
+            return;
+        }
+
         $student = auth()->user()->student;
 
         if (!$student) {
