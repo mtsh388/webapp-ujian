@@ -153,20 +153,13 @@
                             <input
                                 type="text"
                                 id="code"
-                                name="code"
-                                value="{{ old('code', $classRoom->code) }}"
-                                class="form-control @error('code') is-invalid @enderror"
-                                placeholder="Contoh: X-IPA-01"
-                                required>
+                                class="form-control"
+                                value="{{ $classRoom->code }}"
+                                readonly>
 
-
-                            @error('code')
-
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-
-                            @enderror
+                            <small class="text-muted">
+                                Kode dibuat otomatis saat kelas ditambahkan dan tidak berubah saat data diedit.
+                            </small>
 
 
                         </div>
