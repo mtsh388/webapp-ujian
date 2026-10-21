@@ -218,7 +218,14 @@
             }
 
             const $context = jQuery(context || document);
-            const $selects = $context.find('select').addBack('select');
+
+            if ($context.closest('.swal2-container').length || $context.is('.swal2-container')) {
+                return;
+            }
+
+            const $selects = $context.find('select').addBack('select').filter(function () {
+                return !jQuery(this).closest('.swal2-container').length;
+            });
 
             $selects.each(function () {
                 const $select = jQuery(this);
@@ -507,7 +514,7 @@
             const observer = new MutationObserver(function (mutations) {
                 mutations.forEach(function (mutation) {
                     mutation.addedNodes.forEach(function (node) {
-                        if (node.nodeType !== Node.ELEMENT_NODE) {
+                        if (node.nodeType !== Node.ELEMENT_NODE || node.matches('.swal2-container') || node.closest('.swal2-container')) {
                             return;
                         }
 
@@ -522,7 +529,9 @@
                 });
             });
 
-            observer.observe(document.documentElement, {
+            const appRoot = document.querySelector('.layout-wrapper') || document.body;
+
+            observer.observe(appRoot, {
                 childList: true,
                 subtree: true
             });
