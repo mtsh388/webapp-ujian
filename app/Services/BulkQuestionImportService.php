@@ -300,7 +300,14 @@ class BulkQuestionImportService
                 }
             }
 
-            return $this->buildQuestions($blocks);
+            $hasLegacyHeaders = collect($blocks)->contains(function (array $block): bool {
+                return ($block['type'] ?? null) === 'paragraph'
+                    && $this->parseQuestionHeader($this->normalizeText((string) ($block['text'] ?? ''))) !== null;
+            });
+
+            return $hasLegacyHeaders
+                ? $this->buildQuestions($blocks)
+                : $this->buildFlexiQuizQuestions($blocks);
         } finally {
             $zip->close();
         }
@@ -1109,6 +1116,416 @@ class BulkQuestionImportService
         }
 
         return $questions;
+    }
+
+    protected function buildFlexiQuizQuestions(array $blocks): array
+    {
+        $paragraphs = [];
+
+        foreach ($blocks as $block) {
+            if (($block['type'] ?? null) !== 'paragraph') {
+                continue;
+            }
+
+            $text = $this->normalizeText((string) ($block['text'] ?? ''));
+
+            if ($text === '' || preg_match('/^FlexiQuiz\s*-\s*Editor/i', $text)) {
+                continue;
+            }
+
+            $paragraphs[] = $block;
+        }
+
+        $questions = [];
+        $context = [];
+        $count = count($paragraphs);
+        $index = 0;
+
+        while ($index < $count) {
+            $text = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
+
+            if (preg_match('/^Bacalah\b/iu', $text)) {
+                $context = [];
+
+                while ($index < $count) {
+                    $candidate = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
+
+                    if ($this->isFlexiQuizQuestionStem($candidate)) {
+                        break;
+                    }
+
+                    if (!preg_match('/^FlexiQuiz\s*-\s*Editor/i', $candidate)) {
+                        $context[] = $paragraphs[$index];
+                    }
+
+                    $index++;
+                }
+
+                if ($index >= $count) {
+                    break;
+                }
+
+                $text = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
+            }
+
+            if (!$this->isFlexiQuizQuestionStem($text)) {
+                $index++;
+                continue;
+            }
+
+            $stemBlock = $paragraphs[$index];
+            $stemText = $text;
+            $stemHtml = $this->flexiBlockHtml($stemBlock, $stemImages);
+            $contextHtml = '';
+            $contextImages = [];
+
+            foreach ($context as $contextBlock) {
+                $contextHtml = $this->appendHtml(
+                    $contextHtml,
+                    $this->flexiBlockHtml($contextBlock, $contextImages)
+                );
+            }
+
+            $questionHtml = $contextHtml !== ''
+                ? $this->appendHtml($contextHtml, $stemHtml)
+                : $stemHtml;
+
+            $questionImages = array_merge($contextImages, $stemImages ?? []);
+            $index++;
+
+            $marker = '';
+            $markerIndex = $index;
+
+            for ($lookahead = $index; $lookahead < min($count, $index + 3); $lookahead++) {
+                $markerText = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
+
+                if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban/i', $markerText)) {
+                    $marker = 'multiple_select';
+                    $markerIndex = $lookahead;
+                    break;
+                }
+
+                if (preg_match('/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $markerText)) {
+                    $marker = 'statement_true_false';
+                    $markerIndex = $lookahead;
+                    break;
+                }
+
+                if ($this->isFlexiQuizQuestionStem($markerText)) {
+                    break;
+                }
+            }
+
+            if ($marker !== '') {
+                $index = $markerIndex + 1;
+                $items = [];
+                $answerText = '';
+
+                while ($index < $count) {
+                    $itemBlock = $paragraphs[$index];
+                    $itemText = $this->normalizeText((string) ($itemBlock['text'] ?? ''));
+
+                    if ($this->isFlexiQuizQuestionStem($itemText) && !$this->containsFlexiAnswer($itemText)) {
+                        break;
+                    }
+
+                    [$itemPrefix, $itemAnswer] = $this->splitFlexiAnswer($itemText);
+
+                    if ($itemPrefix !== '') {
+                        $items[] = [
+                            'text' => $itemPrefix,
+                            'block' => $itemBlock,
+                        ];
+                    }
+
+                    if ($itemAnswer !== null) {
+                        $answerText = $itemAnswer;
+                        $index++;
+                        break;
+                    }
+
+                    $index++;
+                }
+
+                if ($answerText === '' || empty($items)) {
+                    throw new RuntimeException(
+                        'Format TKA/FlexiQuiz tidak dapat membaca kunci jawaban setelah soal: ' . strip_tags($stemText)
+                    );
+                }
+
+                if ($marker === 'statement_true_false') {
+                    $truthValues = $this->parseFlexiTruthValues($answerText);
+
+                    if (count($truthValues) !== count($items)) {
+                        throw new RuntimeException(
+                            'Jumlah jawaban Benar/Salah tidak sesuai dengan jumlah pernyataan pada soal: ' . strip_tags($stemText)
+                        );
+                    }
+
+                    foreach ($items as $itemIndex => $item) {
+                        $itemImages = [];
+                        $itemHtml = $this->flexiBlockHtml($item['block'], $itemImages);
+                        $statementHtml = $this->appendHtml(
+                            $questionHtml,
+                            $this->appendHtml('<p>' . htmlspecialchars($item['text'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>', $itemHtml)
+                        );
+
+                        $questions[] = $this->makeFlexiTrueFalseQuestion(
+                            $statementHtml,
+                            $truthValues[$itemIndex] ? 'A' : 'B',
+                            array_merge($questionImages, $itemImages)
+                        );
+                    }
+
+                    continue;
+                }
+
+                foreach ($items as $item) {
+                    $itemImages = [];
+                    $itemHtml = $this->flexiBlockHtml($item['block'], $itemImages);
+                    $normalizedAnswer = $this->normalizeFlexiComparable($answerText);
+                    $normalizedOption = $this->normalizeFlexiComparable($item['text']);
+                    $isCorrect = $normalizedOption !== ''
+                        && str_contains($normalizedAnswer, $normalizedOption);
+
+                    if (!$isCorrect) {
+                        foreach ($this->splitFlexiAnswerItems($answerText) as $answerItem) {
+                            $normalizedAnswerItem = $this->normalizeFlexiComparable($answerItem);
+
+                            if ($normalizedAnswerItem !== '' && (
+                                str_contains($normalizedAnswerItem, $normalizedOption)
+                                || str_contains($normalizedOption, $normalizedAnswerItem)
+                            )) {
+                                $isCorrect = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    $prompt = $this->appendHtml(
+                        $questionHtml,
+                        '<p>Apakah pernyataan berikut termasuk jawaban yang benar?</p>'
+                    );
+                    $prompt = $this->appendHtml(
+                        $prompt,
+                        '<blockquote>' . $itemHtml . '</blockquote>'
+                    );
+
+                    $questions[] = $this->makeFlexiTrueFalseQuestion(
+                        $prompt,
+                        $isCorrect ? 'A' : 'B',
+                        array_merge($questionImages, $itemImages)
+                    );
+                }
+
+                continue;
+            }
+
+            $options = [];
+            $answerText = '';
+            $optionImages = [];
+            $optionCount = 0;
+
+            while ($index < $count && $optionCount < 4) {
+                $optionBlock = $paragraphs[$index];
+                $optionText = $this->normalizeText((string) ($optionBlock['text'] ?? ''));
+
+                if ($this->isFlexiQuizQuestionStem($optionText) && !$this->containsFlexiAnswer($optionText)) {
+                    break;
+                }
+
+                [$optionPrefix, $itemAnswer] = $this->splitFlexiAnswer($optionText);
+
+                if ($optionPrefix !== '') {
+                    $optionImagesForBlock = [];
+                    $optionHtml = $this->flexiBlockHtml($optionBlock, $optionImagesForBlock);
+                    if ($itemAnswer !== null) {
+                        $optionHtml = $this->escapeTextAsHtml($optionPrefix);
+                    }
+
+                    $key = chr(65 + $optionCount);
+                    $options[$key] = [
+                        'key' => $key,
+                        'text' => $optionPrefix,
+                        'html' => $optionHtml,
+                        'images' => $optionImagesForBlock,
+                    ];
+                    $optionImages = array_merge($optionImages, $optionImagesForBlock);
+                    $optionCount++;
+                }
+
+                if ($itemAnswer !== null) {
+                    $answerText = $itemAnswer;
+                    $index++;
+                    break;
+                }
+
+                $index++;
+            }
+
+            if (count($options) !== 4) {
+                throw new RuntimeException(
+                    'Format TKA/FlexiQuiz memerlukan empat pilihan jawaban untuk soal pilihan ganda: ' . strip_tags($stemText)
+                );
+            }
+
+            if ($answerText === '') {
+                if ($index < $count) {
+                    [$nextPrefix, $nextAnswer] = $this->splitFlexiAnswer(
+                        $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''))
+                    );
+
+                    if ($nextAnswer !== null) {
+                        $answerText = $nextAnswer;
+                        $index++;
+                    }
+                }
+            }
+
+            $answerKey = $this->matchFlexiAnswerKey($answerText, $options);
+
+            if ($answerKey === null) {
+                throw new RuntimeException(
+                    'Kunci jawaban tidak cocok dengan pilihan pada soal: ' . strip_tags($stemText)
+                );
+            }
+
+            $questions[] = [
+                'type' => 'multiple_choice',
+                'question' => $questionHtml,
+                'question_images' => array_merge($questionImages, $optionImages),
+                'options' => $options,
+                'answer' => $answerKey,
+                'explanation' => '',
+            ];
+        }
+
+        if (empty($questions)) {
+            throw new RuntimeException(
+                'Tidak ditemukan soal pada format TKA/FlexiQuiz. Pastikan setiap soal diikuti pilihan jawaban dan bagian Jawaban.'
+            );
+        }
+
+        return $questions;
+    }
+
+    protected function isFlexiQuizQuestionStem(string $text): bool
+    {
+        if ($text === '' || preg_match('/^Bacalah\b|^Teks\s+\d+\b|^Sumber\s*:/iu', $text)) {
+            return false;
+        }
+
+        if (preg_match('/\?|\.\.\.\s*$/u', $text)) {
+            return true;
+        }
+
+        return preg_match(
+            '/^(Apa|Apakah|Mengapa|Bagaimana|Siapa|Kepada siapa|Kata manakah|Kalimat manakah|Pernyataan manakah|Informasi yang|Nada dan suasana|Berdasarkan teks|Setelah membaca|Tentukanlah|Tentukan|Pesan apa|Apa sajakah|Apa saja|Alat apa|Hal apa|Yang menjadi|Yang paling tepat|Makna dari|Apa makna|Manakah|Informasi yang tidak tepat|Apa yang|Mengapa|Dilihat dari)/iu',
+            $text
+        ) === 1;
+    }
+
+    protected function flexiBlockHtml(array $block, array &$images): string
+    {
+        $images = [];
+        $html = $this->convertParagraphToHtml($block, $images);
+
+        if ($html === '') {
+            $html = $this->escapeTextAsHtml((string) ($block['text'] ?? ''));
+        }
+
+        return $html;
+    }
+
+    protected function splitFlexiAnswer(string $text): array
+    {
+        if (!preg_match('/\bJawaban\s*:\s*/iu', $text, $matches, PREG_OFFSET_CAPTURE)) {
+            return [$this->normalizeText($text), null];
+        }
+
+        $offset = $matches[0][1];
+        $prefix = $this->normalizeText(substr($text, 0, $offset));
+        $answer = $this->normalizeText(substr($text, $offset + strlen($matches[0][0])));
+
+        return [$prefix, $answer];
+    }
+
+    protected function containsFlexiAnswer(string $text): bool
+    {
+        return preg_match('/\bJawaban\s*:/iu', $text) === 1;
+    }
+
+    protected function parseFlexiTruthValues(string $answer): array
+    {
+        preg_match_all('/\b(Benar|Salah)\b/iu', $answer, $matches);
+
+        return array_map(
+            fn (string $value): bool => mb_strtolower($value) === 'benar',
+            $matches[1] ?? []
+        );
+    }
+
+    protected function splitFlexiAnswerItems(string $answer): array
+    {
+        $answer = preg_replace('/^\s*[-•]\s*/mu', '', $answer);
+        $items = preg_split('/\s*[-•]\s*/u', $answer) ?: [];
+
+        return array_values(array_filter(
+            array_map(fn (string $item): string => trim($item), $items),
+            fn (string $item): bool => $item !== ''
+        ));
+    }
+
+    protected function normalizeFlexiComparable(string $text): string
+    {
+        $text = mb_strtolower(strip_tags(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $text = preg_replace('/[^\pL\pN]+/u', ' ', $text);
+
+        return trim(preg_replace('/\s+/u', ' ', $text));
+    }
+
+    protected function matchFlexiAnswerKey(string $answer, array $options): ?string
+    {
+        $answer = trim($answer);
+
+        if (preg_match('/^[A-D]$/iu', $answer)) {
+            return strtoupper($answer);
+        }
+
+        $normalizedAnswer = $this->normalizeFlexiComparable($answer);
+
+        foreach ($options as $key => $option) {
+            $normalizedOption = $this->normalizeFlexiComparable((string) ($option['text'] ?? ''));
+
+            if ($normalizedAnswer !== '' && $normalizedAnswer === $normalizedOption) {
+                return $key;
+            }
+        }
+
+        foreach ($options as $key => $option) {
+            $normalizedOption = $this->normalizeFlexiComparable((string) ($option['text'] ?? ''));
+
+            if ($normalizedAnswer !== '' && $normalizedOption !== '' && (
+                str_contains($normalizedAnswer, $normalizedOption)
+                || str_contains($normalizedOption, $normalizedAnswer)
+            )) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    protected function makeFlexiTrueFalseQuestion(string $question, string $answer, array $images): array
+    {
+        return [
+            'type' => 'true_false',
+            'question' => $question,
+            'question_images' => $images,
+            'options' => [],
+            'answer' => $answer,
+            'explanation' => '',
+        ];
     }
 
     protected function parseQuestionHeader(
