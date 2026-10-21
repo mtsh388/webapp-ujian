@@ -27,6 +27,7 @@ class Exam extends Model
         'show_result_immediately',
         'show_correct_answers',
         'status',
+        'auto_assign_new_students',
     ];
 
     protected function casts(): array
@@ -40,6 +41,7 @@ class Exam extends Model
             'shuffle_options' => 'boolean',
             'show_result_immediately' => 'boolean',
             'show_correct_answers' => 'boolean',
+            'auto_assign_new_students' => 'boolean',
         ];
     }
 
