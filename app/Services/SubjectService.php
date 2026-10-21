@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Services;
+namespace App\\Services;
 
-use App\Models\Subject;
-use App\Repositories\SubjectRepository;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use App\\Models\\Subject;
+use App\\Repositories\\SubjectRepository;
+use Illuminate\\Http\\Request;
+use Illuminate\\Support\\Facades\\DB;
+use Illuminate\\Support\\Str;
 
 class SubjectService
 {
@@ -86,7 +86,7 @@ class SubjectService
 
     public function create(array $data): Subject
     {
-        $data = $this->normalizeSubjectData($data);
+        $data = $this->normalizeSubjectData($data, true);
         $data['is_active'] = $data['is_active'] ?? true;
 
         return DB::transaction(function () use ($data) {
@@ -106,12 +106,17 @@ class SubjectService
         return $subject->refresh();
     }
 
-    private function normalizeSubjectData(array $data): array
+    private function normalizeSubjectData(array $data, bool $creating = false): array
     {
         $data['name'] = trim((string) $data['name']);
         $data['education_level'] = strtoupper(trim((string) $data['education_level']));
         $data['grade_level'] = (int) $data['grade_level'];
-        $data['topic'] = $data['name'];
+
+        if (array_key_exists('topic', $data)) {
+            $data['topic'] = trim((string) $data['topic']);
+        } elseif ($creating) {
+            $data['topic'] = $data['name'];
+        }
 
         return $data;
     }
@@ -141,7 +146,7 @@ class SubjectService
             $normalizedCode = strtoupper(trim($existingCode));
             $usedCodes[$normalizedCode] = true;
 
-            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\d+)$/i', $normalizedCode, $matches)) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\\d+)$/i', $normalizedCode, $matches)) {
                 $nextNumber = max($nextNumber, ((int) $matches[1]) + 1);
             }
         }
