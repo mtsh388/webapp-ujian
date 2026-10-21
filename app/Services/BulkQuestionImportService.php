@@ -2112,6 +2112,26 @@ class BulkQuestionImportService
             $questionImages = array_merge($contextImages, $stemImages ?? []);
             $index++;
 
+            // In this DOCX, the superscript x/y is extracted in a paragraph
+            // before its visual base "Jika 3". Keep that continuation in the
+            // question stem instead of accidentally importing it as option A.
+            if (
+                preg_match('/^x\\s*\\/\\s*y\\b/iu', $stemText)
+                && $index < $count
+            ) {
+                $continuationText = $this->normalizeText((string)($paragraphs[$index]['text'] ?? ''));
+
+                if (preg_match('/^Jika\\s+3\\b/iu', $continuationText)) {
+                    $continuationBlock = $paragraphs[$index];
+                    $continuationImages = [];
+                    $continuationHtml = $this->flexiBlockHtml($continuationBlock, $continuationImages);
+                    $questionHtml = $this->appendHtml($continuationHtml, $questionHtml);
+                    $questionImages = array_merge($continuationImages, $questionImages);
+                    $stemText = $continuationText . ' ' . $stemText;
+                    $index++;
+                }
+            }
+
             $marker = preg_match(
                 '/tentukan.*benar\\s+atau\\s+salah|tentukan\\s+setuju\\s+atau\\s+tidak\\s+setuju|setuju\\s+atau\\s+tidak\\s+setuju\\s+untuk\\s+setiap\\s+pernyataan|pilih\\s+jawaban\\s+benar\\s+atau\\s+salah|pilihan\\s+benar\\s+atau\\s+salah|benar\\s+atau\\s+salah\\s+pada\\s+setiap\\s+pernyataan/i',
                 $stemText
