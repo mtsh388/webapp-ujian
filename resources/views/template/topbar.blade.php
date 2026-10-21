@@ -21,7 +21,7 @@
             <li class="nav-item me-3">
 
                 <span class="fw-semibold">
-                    Sistem Ujian Bimbel
+                    QSEE
                 </span>
 
             </li>
