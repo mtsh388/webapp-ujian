@@ -39,6 +39,7 @@ class BulkQuestionImportService
         $multipleChoice = 0;
         $multipleSelect = 0;
         $trueFalse = 0;
+        $statementTrueFalse = 0;
         $previewQuestions = [];
 
         foreach ($questions as $index => $question) {
@@ -46,6 +47,8 @@ class BulkQuestionImportService
                 $multipleChoice++;
             } elseif ($question['type'] === 'multiple_select') {
                 $multipleSelect++;
+            } elseif ($question['type'] === 'statement_true_false') {
+                $statementTrueFalse++;
             } else {
                 $trueFalse++;
             }
@@ -96,9 +99,10 @@ class BulkQuestionImportService
             'multiple_choice' => $multipleChoice,
             'multiple_select' => $multipleSelect,
             'true_false' => $trueFalse,
+            'statement_true_false' => $statementTrueFalse,
             'format' => $isLegacyFormat ? 'template' : 'flexiquiz',
             'conversion_notes' => $isLegacyFormat ? [] : [
-                'Soal Benar/Salah dengan beberapa pernyataan dipecah menjadi satu soal per pernyataan agar tetap kompatibel dengan penilaian ujian yang ada.',
+                'Soal Benar/Salah dengan beberapa pernyataan tetap menjadi satu soal. Setiap pernyataan memiliki pilihan Benar dan Salah.',
                 'Soal dengan lebih dari satu jawaban benar diubah menjadi beberapa soal Benar/Salah per pilihan. Periksa kembali hasil konversi sebelum mengonfirmasi impor.',
                 'Soal dengan dua atau tiga pilihan juga dikonversi menjadi soal Benar/Salah per pilihan karena bank soal saat ini menggunakan empat pilihan untuk Pilihan Ganda.',
                 'Teks bacaan yang terdeteksi disertakan pada pertanyaan terkait. Format ini tidak mengubah skema jawaban yang sudah digunakan sistem.',
@@ -168,6 +172,7 @@ class BulkQuestionImportService
                 $multipleChoice = 0;
                 $multipleSelect = 0;
                 $trueFalse = 0;
+                $statementTrueFalse = 0;
 
                 foreach ($questions as $question) {
                     $code = $this->codeGenerator->generate($subject);
@@ -209,7 +214,7 @@ class BulkQuestionImportService
                         ]);
                     }
 
-                    if (in_array($question['type'], ['multiple_choice', 'multiple_select'], true)) {
+                    if (in_array($question['type'], ['multiple_choice', 'multiple_select', 'statement_true_false'], true)) {
                         $this->storeMultipleChoiceOptions(
                             $questionBank->id,
                             $question,
@@ -218,6 +223,8 @@ class BulkQuestionImportService
 
                         if ($question['type'] === 'multiple_select') {
                             $multipleSelect++;
+                        } elseif ($question['type'] === 'statement_true_false') {
+                            $statementTrueFalse++;
                         } else {
                             $multipleChoice++;
                         }
@@ -240,6 +247,7 @@ class BulkQuestionImportService
                     'multiple_choice' => $multipleChoice,
                     'multiple_select' => $multipleSelect,
                     'true_false' => $trueFalse,
+                    'statement_true_false' => $statementTrueFalse,
                 ];
             });
         } catch (\Throwable $e) {
@@ -2097,26 +2105,49 @@ class BulkQuestionImportService
                     $truthValues = $this->parseFlexiTruthValues($answerText);
                     $items = $this->splitFlexiCombinedStatements($items, count($truthValues));
 
-                    if (count($truthValues) !== count($items)) {
+                    if (count($truthValues) !== count($items) || count($items) < 2) {
                         throw new RuntimeException(
                             'Jumlah jawaban Benar/Salah tidak sesuai dengan jumlah pernyataan pada soal: ' . strip_tags($stemText)
                         );
                     }
 
+                    $statementOptions = [];
+                    $answerKeys = [];
+
                     foreach ($items as $itemIndex => $item) {
+                        $statementNumber = $itemIndex + 1;
+                        $trueKey = 'S' . $statementNumber . 'T';
+                        $falseKey = 'S' . $statementNumber . 'F';
                         $itemImages = [];
                         $itemHtml = $this->flexiBlockHtml($item['block'], $itemImages);
-                        $statementHtml = $this->appendHtml(
-                            $questionHtml,
-                            $itemHtml
-                        );
+                        $statementText = $this->normalizeText((string)($item['text'] ?? ''));
 
-                        $questions[] = $this->makeFlexiTrueFalseQuestion(
-                            $statementHtml,
-                            $truthValues[$itemIndex] ? 'A' : 'B',
-                            array_merge($questionImages, $itemImages)
-                        );
+                        $statementOptions[$trueKey] = [
+                            'key' => $trueKey,
+                            'text' => $statementText,
+                            'html' => $itemHtml,
+                            'images' => $itemImages,
+                        ];
+
+                        $statementOptions[$falseKey] = [
+                            'key' => $falseKey,
+                            'text' => $statementText,
+                            'html' => $this->escapeTextAsHtml($statementText),
+                            'images' => [],
+                        ];
+
+                        $answerKeys[] = $truthValues[$itemIndex] ? $trueKey : $falseKey;
                     }
+
+                    $questions[] = [
+                        'type' => 'statement_true_false',
+                        'question' => $questionHtml,
+                        'question_images' => $questionImages,
+                        'options' => $statementOptions,
+                        'answer_keys' => $answerKeys,
+                        'answer' => null,
+                        'explanation' => '',
+                    ];
 
                     continue;
                 }
@@ -2548,6 +2579,7 @@ class BulkQuestionImportService
                 [
                     'multiple_choice',
                     'multiple_select',
+                    'statement_true_false',
                     'true_false',
                 ],
                 true
@@ -2769,7 +2801,7 @@ class BulkQuestionImportService
                 );
             }
 
-            if (in_array($type, ['multiple_choice', 'multiple_select'], true)) {
+            if (in_array($type, ['multiple_choice', 'multiple_select', 'statement_true_false'], true)) {
                 if (count($question['options'] ?? []) < 2) {
                     throw new RuntimeException("Soal nomor {$number} harus memiliki minimal dua pilihan.");
                 }
@@ -2804,13 +2836,11 @@ class BulkQuestionImportService
 
                 }
 
-                $unexpectedOptions =
-                    array_diff(
-                        array_keys(
-                            $question['options']
-                        ),
-                        ['A', 'B', 'C', 'D']
-                    );
+                $allowedOptionKeys = $type === 'statement_true_false'
+                    ? array_filter(array_keys($question['options']), fn($key) => preg_match('/^S[1-9][0-9]*[TF]$/', (string) $key) === 1)
+                    : array_intersect(array_keys($question['options']), ['A', 'B', 'C', 'D']);
+
+                $unexpectedOptions = array_diff(array_keys($question['options']), $allowedOptionKeys);
 
                 if (!empty($unexpectedOptions)) {
                     throw new RuntimeException(
@@ -2823,6 +2853,25 @@ class BulkQuestionImportService
 
                 if ($type === 'multiple_select' && count($answerKeys) < 2) {
                     throw new RuntimeException("Soal pilihan ganda kompleks nomor {$number} harus memiliki minimal dua kunci jawaban, misalnya JAWABAN: A, C.");
+                }
+
+                if ($type === 'statement_true_false') {
+                    $groups = [];
+                    foreach (array_keys($question['options'] ?? []) as $optionKey) {
+                        if (preg_match('/^S([1-9][0-9]*)([TF])$/', (string) $optionKey, $matches)) {
+                            $groups[$matches[1]][$matches[2]] = true;
+                        }
+                    }
+
+                    foreach ($groups as $group) {
+                        if (empty($group['T']) || empty($group['F'])) {
+                            throw new RuntimeException("Setiap pernyataan pada soal nomor {$number} harus memiliki pilihan Benar dan Salah.");
+                        }
+                    }
+
+                    if (count($groups) < 2 || count($answerKeys) !== count($groups)) {
+                        throw new RuntimeException("Kunci jawaban soal pernyataan nomor {$number} tidak sesuai dengan jumlah pernyataan.");
+                    }
                 }
 
                 if (array_diff($answerKeys, array_keys($question['options'] ?? []))) {
