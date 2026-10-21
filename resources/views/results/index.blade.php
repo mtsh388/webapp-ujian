@@ -152,12 +152,20 @@
                                     </td>
 
                                     <td>
-                                        <a
-                                            href="{{ route('results.show', $attempt->id) }}"
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="Lihat hasil">
-                                            <i class="bx bx-show"></i>
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <a
+                                                href="{{ route('results.show', $attempt->id) }}"
+                                                class="btn btn-sm btn-outline-primary"
+                                                title="Lihat hasil">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                            <a
+                                                href="{{ route('results.ranking', $attempt->exam_id) }}"
+                                                class="btn btn-sm btn-outline-success"
+                                                title="Ranking ujian">
+                                                <i class="bx bx-trophy"></i>
+                                            </a>
+                                        </div>
                                     </td>
 
                                 </tr>
