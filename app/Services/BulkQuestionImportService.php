@@ -1179,11 +1179,19 @@ class BulkQuestionImportService
 
             if (preg_match('/^Bacalah\b/iu', $text)) {
                 $context = [];
+                $seenSource = false;
 
                 while ($index < $count) {
                     $candidate = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
 
-                    if ($this->isFlexiQuizQuestionStem($candidate)) {
+                    if (preg_match('/^Sumber\s*:/iu', $candidate)) {
+                        $seenSource = true;
+                        $context[] = $paragraphs[$index];
+                        $index++;
+                        continue;
+                    }
+
+                    if ($seenSource && $this->isFlexiQuizQuestionStem($candidate)) {
                         break;
                     }
 
