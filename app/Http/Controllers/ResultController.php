@@ -53,6 +53,7 @@ class ResultController extends Controller
             ->whereIn('status', ['submitted', 'expired'])
             ->whereNotNull('submitted_at')
             ->orderByDesc('score')
+            ->orderByRaw('CASE WHEN duration_seconds IS NULL THEN 1 ELSE 0 END')
             ->orderBy('duration_seconds')
             ->orderBy('submitted_at')
             ->get();
