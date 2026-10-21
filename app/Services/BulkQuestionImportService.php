@@ -413,27 +413,13 @@ class BulkQuestionImportService
                 $questions = $this->buildQuestions($blocks);
                 $parserMode = 'explicit_headers';
             } else {
-                $hasFlexiQuizQuestions = false;
-
-                foreach ($blocks as $block) {
-                    if (
-                        ($block['type'] ?? null) === 'paragraph' &&
-                        $this->isFlexiQuizQuestionStem(
-                            $this->normalizeText((string)($block['text'] ?? ''))
-                        )
-                    ) {
-                        $hasFlexiQuizQuestions = true;
-                        break;
-                    }
-                }
-
-                if ($hasFlexiQuizQuestions) {
-                    $questions = $this->buildFlexiQuizQuestions($blocks);
-                    $parserMode = 'flexiquiz';
-                } else {
-                    $questions = $this->buildNativeDocumentQuestions($blocks);
-                    $parserMode = 'native_document';
-                }
+                // Source-style TKA/FlexiQuiz DOCX files use each "Jawaban:"
+                // line as the reliable boundary between questions. Do not select
+                // a parser based on punctuation in the stem: exported math,
+                // image-only questions, and numeric choices often lose that
+                // punctuation during DOCX text extraction.
+                $questions = $this->buildNativeDocumentQuestions($blocks);
+                $parserMode = 'native_document';
             }
 
             if (!empty($questions)) {
@@ -1271,6 +1257,55 @@ class BulkQuestionImportService
                     }
 
                     $answer = implode("\n", $answerItems);
+                } elseif (preg_match('/^\\s*[-•]\\s*/u', $answer)) {
+                    // Some FlexiQuiz exports put the first selected multi-select
+                    // answer on the "Jawaban:" paragraph, then repeat the remaining
+                    // selected answers in following paragraphs. Consume only those
+                    // paragraphs that exactly match choices already seen.
+                    $answerItems = [preg_replace('/^\\s*[-•]\\s*/u', '', $answer)];
+                    $knownOptionTexts = [];
+
+                    for ($previousIndex = 0; $previousIndex <= $blockIndex; $previousIndex++) {
+                        $previousBlock = $blocks[$previousIndex];
+                        if (($previousBlock['type'] ?? null) !== 'paragraph') {
+                            continue;
+                        }
+
+                        $previousText = $this->normalizeText((string)($previousBlock['text'] ?? ''));
+                        if ($previousIndex === $blockIndex) {
+                            $previousText = $before;
+                        }
+                        if ($previousText !== '') {
+                            $knownOptionTexts[$this->normalizeAnswerForMatching($previousText)] = true;
+                        }
+                    }
+
+                    for ($nextIndex = $blockIndex + 1; isset($blocks[$nextIndex]); $nextIndex++) {
+                        $nextBlock = $blocks[$nextIndex];
+                        if (($nextBlock['type'] ?? null) !== 'paragraph') {
+                            break;
+                        }
+
+                        $itemText = $this->normalizeText((string)($nextBlock['text'] ?? ''));
+                        if ($itemText === '') {
+                            if (!empty($nextBlock['is_list'])) {
+                                $consumedAnswerListBlocks[$nextIndex] = true;
+                                continue;
+                            }
+                            break;
+                        }
+
+                        $cleanItemText = preg_replace('/^\\s*[-•]\\s*/u', '', $itemText);
+                        $normalizedItem = $this->normalizeAnswerForMatching($cleanItemText);
+                        if ($normalizedItem === '' || !isset($knownOptionTexts[$normalizedItem])) {
+                            break;
+                        }
+
+                        $answerItems[] = $cleanItemText;
+                        $consumedAnswerListBlocks[$nextIndex] = true;
+                    }
+
+                    $answer = implode("\n", $answerItems);
                 }
 
                 if ($before !== '') {
@@ -1361,6 +1396,77 @@ class BulkQuestionImportService
 
         if (count($paragraphs) < 2) {
             return null;
+        }
+
+        // A number of TKA items are presented as a table of statements with
+        // four answer combinations (e.g. "BENAR, BENAR, SALAH"). Preserve the
+        // three statements as one statement_true_false question instead of
+        // treating the combinations as ordinary A-D options.
+        $statementRows = [];
+        foreach ($paragraphs as $paragraph) {
+            if (($paragraph['type'] ?? null) !== 'table') {
+                continue;
+            }
+
+            $rows = $this->extractNativeStatementRows((string)($paragraph['html'] ?? ''));
+            if (count($rows) >= 2) {
+                $statementRows = $rows;
+                break;
+            }
+        }
+
+        $truthValues = $this->parseFlexiTruthValues($answerText);
+        if (
+            count($statementRows) >= 2
+            && count($truthValues) === count($statementRows)
+        ) {
+            $promptBlocks = array_slice($paragraphs, 0, max(0, count($paragraphs) - 4));
+            $questionHtml = '';
+            $questionImages = [];
+            foreach ($promptBlocks as $block) {
+                if (($block['type'] ?? null) === 'table') {
+                    continue;
+                }
+
+                $blockImages = [];
+                $blockHtml = $this->convertParagraphToHtml($block, $blockImages);
+                $questionHtml = $this->appendHtml($questionHtml, $blockHtml);
+                $questionImages = array_merge($questionImages, $blockImages);
+            }
+
+            $statementOptions = [];
+            $answerKeys = [];
+            foreach ($statementRows as $statementIndex => $statementText) {
+                $statementNumber = $statementIndex + 1;
+                $trueKey = 'S' . $statementNumber . 'T';
+                $falseKey = 'S' . $statementNumber . 'F';
+                $statementHtml = $this->escapeTextAsHtml($statementText);
+
+                $statementOptions[$trueKey] = [
+                    'key' => $trueKey,
+                    'text' => $statementText,
+                    'html' => $statementHtml,
+                    'images' => [],
+                ];
+                $statementOptions[$falseKey] = [
+                    'key' => $falseKey,
+                    'text' => $statementText,
+                    'html' => $statementHtml,
+                    'images' => [],
+                ];
+
+                $answerKeys[] = $truthValues[$statementIndex] ? $trueKey : $falseKey;
+            }
+
+            return [
+                'type' => 'statement_true_false',
+                'question' => $questionHtml,
+                'question_images' => $questionImages,
+                'options' => $statementOptions,
+                'answer' => null,
+                'answer_keys' => $answerKeys,
+                'explanation' => '',
+            ];
         }
 
         $optionBlocks = [];
@@ -1611,6 +1717,65 @@ class BulkQuestionImportService
             'answer_keys' => $answerKeys,
             'explanation' => '',
         ];
+    }
+
+    /**
+     * Extract statement rows only from tables with the expected Benar/Salah
+     * header. Other tables (data tables, charts, and equations) remain part
+     * of the question stem.
+     */
+    protected function extractNativeStatementRows(string $html): array
+    {
+        if (trim($html) === '') {
+            return [];
+        }
+
+        $dom = new DOMDocument();
+        $previousErrorState = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="UTF-8">' . $html,
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousErrorState);
+
+        if (!$loaded) {
+            return [];
+        }
+
+        $xpath = new DOMXPath($dom);
+        $rows = $xpath->query('//table//tr');
+        $tableRows = [];
+
+        foreach ($rows as $row) {
+            $cells = $xpath->query('./th|./td', $row);
+            $cellTexts = [];
+            foreach ($cells as $cell) {
+                $cellTexts[] = $this->normalizeText((string)($cell->textContent ?? ''));
+            }
+            if (!empty($cellTexts)) {
+                $tableRows[] = $cellTexts;
+            }
+        }
+
+        $header = implode(' ', $tableRows[0] ?? []);
+        if (
+            !preg_match('/pernyataan/iu', $header)
+            || !preg_match('/benar/iu', $header)
+            || !preg_match('/salah/iu', $header)
+        ) {
+            return [];
+        }
+
+        $statements = [];
+        foreach (array_slice($tableRows, 1) as $row) {
+            $statement = $this->normalizeText((string)($row[0] ?? ''));
+            if ($statement !== '') {
+                $statements[] = $statement;
+            }
+        }
+
+        return $statements;
     }
 
     protected function splitNativeMergedOptions(string $text): array
