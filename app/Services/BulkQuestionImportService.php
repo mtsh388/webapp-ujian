@@ -2178,13 +2178,21 @@ class BulkQuestionImportService
                 [$optionPrefix, $itemAnswer] = $this->splitFlexiAnswer($optionText);
 
                 if ($optionPrefix !== '') {
+                    $key = chr(65 + $optionCount);
+                    $optionLabelPattern = '/^' . preg_quote($key, '/') . '\\s*[.)、:：-]\\s*/u';
+                    $hasOptionLabel = preg_match($optionLabelPattern, $optionPrefix) === 1;
+
+                    if ($hasOptionLabel) {
+                        $optionPrefix = preg_replace($optionLabelPattern, '', $optionPrefix, 1);
+                    }
+
                     $optionImagesForBlock = [];
                     $optionHtml = $this->flexiBlockHtml($optionBlock, $optionImagesForBlock);
-                    if ($itemAnswer !== null) {
+
+                    if ($itemAnswer !== null || $hasOptionLabel) {
                         $optionHtml = $this->escapeTextAsHtml($optionPrefix);
                     }
 
-                    $key = chr(65 + $optionCount);
                     $options[$key] = [
                         'key' => $key,
                         'text' => $optionPrefix,
