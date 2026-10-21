@@ -1527,7 +1527,7 @@ class BulkQuestionImportService
 
     protected function splitFlexiAnswer(string $text): array
     {
-        if (!preg_match('/\bJawaban\s*:\s*/iu', $text, $matches, PREG_OFFSET_CAPTURE)) {
+        if (!preg_match('/Jawaban\s*:\s*/iu', $text, $matches, PREG_OFFSET_CAPTURE)) {
             return [$this->normalizeText($text), null];
         }
 
@@ -1540,7 +1540,7 @@ class BulkQuestionImportService
 
     protected function containsFlexiAnswer(string $text): bool
     {
-        return preg_match('/\bJawaban\s*:/iu', $text) === 1;
+        return preg_match('/Jawaban\s*:/iu', $text) === 1;
     }
 
     protected function parseFlexiTruthValues(string $answer): array
