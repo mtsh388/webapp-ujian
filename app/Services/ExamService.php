@@ -356,7 +356,7 @@ class ExamService
                 }
 
                 if (
-                    in_array($questionBank->type, ['multiple_choice', 'multiple_select'], true) &&
+                    in_array($questionBank->type, ['multiple_choice', 'multiple_select', 'statement_true_false'], true) &&
                     !$questionBank->options->contains(
                         fn($option) => (bool)$option->is_correct
                     )
