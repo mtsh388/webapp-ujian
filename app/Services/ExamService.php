@@ -347,7 +347,7 @@ class ExamService
 
             foreach ($questionBanks as $questionBank) {
                 if (
-                    in_array($questionBank->type, ['multiple_choice', 'multiple_select'], true) &&
+                    in_array($questionBank->type, ['multiple_choice', 'multiple_select', 'statement_true_false'], true) &&
                     $questionBank->options->isEmpty()
                 ) {
                     throw new \RuntimeException(
