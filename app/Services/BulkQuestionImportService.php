@@ -1306,9 +1306,16 @@ class BulkQuestionImportService
                     [$itemPrefix, $itemAnswer] = $this->splitFlexiAnswer($itemText);
 
                     if ($itemPrefix !== '') {
+                        $itemContentBlock = $itemBlock;
+
+                        if ($itemAnswer !== null) {
+                            $itemContentBlock['text'] = $itemPrefix;
+                            $itemContentBlock['html'] = $this->escapeTextAsHtml($itemPrefix);
+                        }
+
                         $items[] = [
                             'text' => $itemPrefix,
-                            'block' => $itemBlock,
+                            'block' => $itemContentBlock,
                         ];
                     }
 
