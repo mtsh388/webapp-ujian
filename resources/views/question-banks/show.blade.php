@@ -161,7 +161,7 @@
                         </span>
 
                             <span class="badge bg-label-info">
-                            {{ $questionBank->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah') }}
+                            {{ $questionBank->type === 'statement_true_false' ? 'Benar / Salah per Pernyataan' : ($questionBank->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah')) }}
                         </span>
 
                             <span class="badge
