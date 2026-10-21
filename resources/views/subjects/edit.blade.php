@@ -96,22 +96,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-4">
-                            <label for="subject_code" class="form-label fw-semibold">
-                                Kode Mata Pelajaran
-                            </label>
-                            <input
-                                type="text"
-                                id="subject_code"
-                                class="form-control font-monospace"
-                                value="{{ $subject->code }}"
-                                placeholder="Kode mata pelajaran"
-                                readonly
-                            >
-                            <div class="form-text">Kode dibuat saat data pertama kali disimpan dan tidak berubah saat data diedit.</div>
-                        </div>
-
-                        <div class="col-12">
+                                                <div class="col-12">
                             <label for="description" class="form-label fw-semibold">
                                 Deskripsi
                             </label>
