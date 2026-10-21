@@ -1992,6 +1992,7 @@ class BulkQuestionImportService
 
             $stemBlock = $paragraphs[$index];
             $stemText = $text;
+            $stemImages = [];
             $stemHtml = $this->flexiBlockHtml($stemBlock, $stemImages);
             $contextHtml = '';
             $contextImages = [];
