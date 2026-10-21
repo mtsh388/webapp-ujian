@@ -303,27 +303,53 @@
                         name: 'id',
                         searchable: false,
                         orderable: false,
-                        render: function (id) {
+                        render: function (id, type, row) {
+                            const status = row.status || 'draft';
                             return `
                                 <div class="dropdown">
-                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-label="Aksi ujian">
                                         <i class="bx bx-dots-vertical-rounded"></i>
                                     </button>
-                                    <div class="dropdown-menu">
+                                    <div class="dropdown-menu dropdown-menu-end">
                                         <a class="dropdown-item" href="/ujian/${id}/soal"><i class="bx bx-list-ol me-1"></i> Kelola Soal</a>
                                         <a class="dropdown-item" href="/ujian/${id}/peserta"><i class="bx bx-group me-1"></i> Peserta</a>
                                         <div class="dropdown-divider"></div>
-                                        @can('exam.update')
-                            <a class="dropdown-item text-primary" href="/ujian/${id}/edit"><i class="bx bx-edit-alt me-1"></i> Edit</a>
+                                        @can('exam.publish')
+                                        ${status !== 'published' ? `
+                                            <form method="POST" action="/ujian/${id}/publish">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item text-success"><i class="bx bx-check-circle me-1"></i> Publish</button>
+                                            </form>
+                                        ` : ''}
                                         @endcan
-                            @can('exam.delete')
-                            <button type="button" class="dropdown-item text-danger" onclick="deleteExam(${id})">
+                                        @can('exam.update')
+                                        ${status !== 'draft' ? `
+                                            <form method="POST" action="/ujian/${id}/draft">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item text-secondary"><i class="bx bx-file me-1"></i> Draft</button>
+                                            </form>
+                                        ` : ''}
+                                        @endcan
+                                        @can('exam.close')
+                                        ${status !== 'closed' ? `
+                                            <form method="POST" action="/ujian/${id}/close">
+                                                @csrf
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bx bx-lock me-1"></i> Close</button>
+                                            </form>
+                                        ` : ''}
+                                        @endcan
+                                        <div class="dropdown-divider"></div>
+                                        @can('exam.update')
+                                        <a class="dropdown-item text-primary" href="/ujian/${id}/edit"><i class="bx bx-edit-alt me-1"></i> Edit</a>
+                                        @endcan
+                                        @can('exam.delete')
+                                        <button type="button" class="dropdown-item text-danger" onclick="deleteExam(${id})">
                                             <i class="bx bx-trash me-1"></i> Hapus
                                         </button>
                                         @endcan
-                            </div>
-                        </div>
-`;
+                                    </div>
+                                </div>
+                            `;
                         }
                     }
                 ],
