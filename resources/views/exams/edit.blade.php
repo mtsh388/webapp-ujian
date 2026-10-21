@@ -405,6 +405,25 @@
                 <div class="card-body pt-4">
 
                     <div class="row">
+                        <div class="col-12 mb-4">
+                            <div class="form-check form-switch">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="auto_assign_new_students"
+                                    name="auto_assign_new_students"
+                                    value="1"
+                                    {{ old('auto_assign_new_students', $exam->auto_assign_new_students) ? 'checked' : '' }}
+                                >
+                                <label class="form-check-label fw-semibold" for="auto_assign_new_students">
+                                    Tambahkan Siswa Baru Otomatis
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Siswa aktif yang kelas dan jenjangnya sesuai dengan mata pelajaran akan otomatis menjadi peserta setelah ujian dipublikasikan. Saat opsi diaktifkan, siswa yang sudah ada dan cocok juga akan disinkronkan.
+                            </div>
+                        </div>
+
                         <div class="col-md-6 mb-4">
                             <label for="status" class="form-label">
                                 Status Ujian
