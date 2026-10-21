@@ -159,6 +159,11 @@ class QuestionHtml
 
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
 
+        // Relative paths are common for files saved under public/storage.
+        if ($scheme === '') {
+            return true;
+        }
+
         return in_array($scheme, ['http', 'https'], true);
     }
 }
