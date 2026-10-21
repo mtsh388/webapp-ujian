@@ -60,8 +60,13 @@
                     : 'Nilai KKM / Lulus <span class="text-muted">(Opsional untuk Trial)</span>';
             }
 
-            selector.addEventListener('change', toggleDurationFields);
-            examTypeSelector.addEventListener('change', togglePassingScore);
+            if (window.jQuery) {
+                jQuery(selector).on('change.examSettings', toggleDurationFields);
+                jQuery(examTypeSelector).on('change.examSettings', togglePassingScore);
+            } else {
+                selector.addEventListener('change', toggleDurationFields);
+                examTypeSelector.addEventListener('change', togglePassingScore);
+            }
             toggleDurationFields();
             togglePassingScore();
         });
