@@ -101,7 +101,7 @@ class SubjectService
     {
         $data['name'] = trim($data['name']);
         $data['education_level'] = strtoupper(trim($data['education_level']));
-        $data['topic'] = $data['name'];
+        $data['topic'] = $subject->topic ?: $data['name'];
         $data['is_active'] = $data['is_active'] ?? false;
 
         DB::transaction(fn () => $this->repository->update($subject, $data));
