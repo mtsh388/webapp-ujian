@@ -16,6 +16,18 @@
 
     <ul class="menu-inner py-1">
 
+        @if(auth()->user()->hasRole('Siswa'))
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Data Siswa</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('students.profile.*') ? 'active' : '' }}">
+                <a href="{{ route('students.profile.edit') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Data Siswa</div>
+                </a>
+            </li>
+        @endif
+
         @can('dashboard.view')
             <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <a href="{{ route('dashboard') }}" class="menu-link">
