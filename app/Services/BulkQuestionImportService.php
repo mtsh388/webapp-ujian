@@ -1201,27 +1201,59 @@ class BulkQuestionImportService
                 $before = trim($matches[1]);
                 $answer = trim($matches[2]);
 
-                // Multi-select keys can be a blank "Jawaban:" paragraph followed
-                // by Word's numbered/bulleted list containing the correct options.
+                // Multi-select keys can follow a blank "Jawaban:" as a Word list.
+                // Some DOCX exporters omit list metadata, so also recognize following
+                // paragraphs whose text matches an option already present in the question.
                 if ($answer === '') {
                     $answerItems = [];
+                    $knownOptionTexts = [];
+
+                    for ($previousIndex = 0; $previousIndex <= $blockIndex; $previousIndex++) {
+                        $previousBlock = $blocks[$previousIndex];
+
+                        if (($previousBlock['type'] ?? null) !== 'paragraph') {
+                            continue;
+                        }
+
+                        $previousText = $this->normalizeText((string)($previousBlock['text'] ?? ''));
+                        if ($previousIndex === $blockIndex) {
+                            $previousText = $before;
+                        }
+
+                        if ($previousText === '') {
+                            continue;
+                        }
+
+                        $knownOptionTexts[$this->normalizeAnswerForMatching($previousText)] = true;
+                    }
 
                     for ($nextIndex = $blockIndex + 1; isset($blocks[$nextIndex]); $nextIndex++) {
                         $nextBlock = $blocks[$nextIndex];
 
-                        if (
-                            ($nextBlock['type'] ?? null) !== 'paragraph' ||
-                            empty($nextBlock['is_list'])
-                        ) {
+                        if (($nextBlock['type'] ?? null) !== 'paragraph') {
                             break;
                         }
 
                         $itemText = $this->normalizeText((string)($nextBlock['text'] ?? ''));
                         if ($itemText === '') {
-                            continue;
+                            if (!empty($nextBlock['is_list'])) {
+                                $consumedAnswerListBlocks[$nextIndex] = true;
+                                continue;
+                            }
+
+                            break;
                         }
 
-                        $answerItems[] = preg_replace('/^\s*[-•]\s*/u', '', $itemText);
+                        $cleanItemText = preg_replace('/^\s*[-•]\s*/u', '', $itemText);
+                        $normalizedItem = $this->normalizeAnswerForMatching($cleanItemText);
+                        $matchesExistingText = $normalizedItem !== ''
+                            && isset($knownOptionTexts[$normalizedItem]);
+
+                        if (empty($nextBlock['is_list']) && !$matchesExistingText) {
+                            break;
+                        }
+
+                        $answerItems[] = $cleanItemText;
                         $consumedAnswerListBlocks[$nextIndex] = true;
                     }
 
