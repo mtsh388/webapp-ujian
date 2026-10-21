@@ -105,32 +105,7 @@
 
 
 
-                        <div class="col-md-6">
-
-
-                            <label for="code" class="form-label">
-                                Kode Kelas
-                            </label>
-
-
-                            <input
-                                type="text"
-                                id="code"
-                                class="form-control"
-                                value=""
-                                placeholder="Dibuat otomatis saat disimpan"
-                                readonly>
-
-                            <small class="text-muted">
-                                Kode dibuat otomatis berdasarkan jenjang dan tingkat kelas.
-                            </small>
-
-
-                        </div>
-
-
-
-                        <div class="col-md-6">
+                                                <div class="col-md-6">
                             <label for="education_level" class="form-label">Jenjang Pendidikan</label>
                             <select id="education_level" name="education_level" class="form-select @error('education_level') is-invalid @enderror" required>
                                 <option value="">Pilih Jenjang</option>
