@@ -201,7 +201,7 @@
                                         contenteditable="true"
                                         role="textbox"
                                         aria-multiline="true"
-                                        data-placeholder="Tuliskan pertanyaan di sini...">{!! \\App\\Support\\QuestionHtml::sanitize(old('question', $questionBank->question)) !!}</div>
+                                        data-placeholder="Tuliskan pertanyaan di sini...">{!! \App\Support\QuestionHtml::sanitize(old('question', $questionBank->question)) !!}</div>
                                     <textarea name="question" id="question-content" class="d-none">{{ old('question', $questionBank->question) }}</textarea>
                                     <div class="form-text mt-2">
                                         Untuk soal kombinasi Benar/Salah, pilih tipe <strong>Pilihan Ganda</strong>, isi empat opsi kombinasi, lalu tandai satu opsi yang benar.
