@@ -180,7 +180,8 @@ class QuestionBankService
                 $typeLabel = match ($question->type) {
                     'multiple_choice' => '<span class="badge bg-label-primary">Pilihan Ganda</span>',
                     'multiple_select' => '<span class="badge bg-label-warning">Pilih Semua yang Benar</span>',
-                    default => '<span class="badge bg-label-info">Benar / Salah</span>',
+                    'statement_true_false' => '<span class="badge bg-label-info">Benar / Salah per Pernyataan</span>',
+                    default => '<span class="badge bg-label-secondary">Benar / Salah</span>',
                 };
 
                 $mediaCount = $question->media->count();
