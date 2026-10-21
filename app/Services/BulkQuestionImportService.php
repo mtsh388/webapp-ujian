@@ -1221,10 +1221,12 @@ class BulkQuestionImportService
             $contextImages = [];
 
             foreach ($context as $contextBlock) {
+                $blockImages = [];
                 $contextHtml = $this->appendHtml(
                     $contextHtml,
-                    $this->flexiBlockHtml($contextBlock, $contextImages)
+                    $this->flexiBlockHtml($contextBlock, $blockImages)
                 );
+                $contextImages = array_merge($contextImages, $blockImages);
             }
 
             $questionHtml = $contextHtml !== ''
