@@ -89,6 +89,8 @@
             updateSelectedPreview();
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
             const selector = document.getElementById('has_duration');
             const examTypeSelector = document.getElementById('exam_type');
             const passingScore = document.getElementById('passing_score');
