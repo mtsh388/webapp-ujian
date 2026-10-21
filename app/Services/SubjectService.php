@@ -1,12 +1,12 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use App\\Models\\Subject;
-use App\\Repositories\\SubjectRepository;
-use Illuminate\\Http\\Request;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Support\\Str;
+use App\Models\Subject;
+use App\Repositories\SubjectRepository;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class SubjectService
 {
@@ -146,7 +146,7 @@ class SubjectService
             $normalizedCode = strtoupper(trim($existingCode));
             $usedCodes[$normalizedCode] = true;
 
-            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\\d+)$/i', $normalizedCode, $matches)) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '-(\d+)$/i', $normalizedCode, $matches)) {
                 $nextNumber = max($nextNumber, ((int) $matches[1]) + 1);
             }
         }
