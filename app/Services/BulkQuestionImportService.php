@@ -95,6 +95,7 @@ class BulkQuestionImportService
             'conversion_notes' => $isLegacyFormat ? [] : [
                 'Soal Benar/Salah dengan beberapa pernyataan dipecah menjadi satu soal per pernyataan agar tetap kompatibel dengan penilaian ujian yang ada.',
                 'Soal dengan lebih dari satu jawaban benar diubah menjadi beberapa soal Benar/Salah per pilihan. Periksa kembali hasil konversi sebelum mengonfirmasi impor.',
+                'Soal dengan dua atau tiga pilihan juga dikonversi menjadi soal Benar/Salah per pilihan karena bank soal saat ini menggunakan empat pilihan untuk Pilihan Ganda.',
                 'Teks bacaan yang terdeteksi disertakan pada pertanyaan terkait. Format ini tidak mengubah skema jawaban yang sudah digunakan sistem.',
             ],
             'questions' => $previewQuestions,
@@ -1175,7 +1176,7 @@ class BulkQuestionImportService
                 )
                 && preg_match('/^Sumber\s*:/iu', $text)
             ) {
-                $splitOffset = (int) $sourceMatch[0][1];
+                $splitOffset = strlen((string) ($sourceMatch[1][0] ?? ''));
                 $sourceText = trim(substr($text, 0, $splitOffset));
                 $questionText = trim(substr($text, $splitOffset));
 
