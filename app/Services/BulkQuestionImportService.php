@@ -1294,8 +1294,19 @@ class BulkQuestionImportService
                     );
                 }
 
+                $truthValues = $this->parseFlexiTruthValues($answerText);
+
+                if (
+                    $marker === 'multiple_select'
+                    && count($truthValues) > 1
+                    && count($this->splitFlexiAnswerItems($answerText)) <= 1
+                ) {
+                    $marker = 'statement_true_false';
+                }
+
                 if ($marker === 'statement_true_false') {
                     $truthValues = $this->parseFlexiTruthValues($answerText);
+                    $items = $this->splitFlexiCombinedStatements($items, count($truthValues));
 
                     if (count($truthValues) !== count($items)) {
                         throw new RuntimeException(
@@ -1458,7 +1469,7 @@ class BulkQuestionImportService
             return false;
         }
 
-        $limit = min(count($paragraphs), $index + 13);
+        $limit = min(count($paragraphs), $index + 7);
 
         for ($lookahead = $index + 1; $lookahead < $limit; $lookahead++) {
             $candidate = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
@@ -1537,6 +1548,76 @@ class BulkQuestionImportService
             fn (string $value): bool => mb_strtolower($value) === 'benar',
             $matches[1] ?? []
         );
+    }
+
+    protected function splitFlexiCombinedStatements(array $items, int $expected): array
+    {
+        if (count($items) !== 1 || $expected < 2) {
+            return $items;
+        }
+
+        $text = trim((string) ($items[0]['text'] ?? ''));
+        $firstWord = strtok($text, " \t\n\r");
+
+        if (!$firstWord) {
+            return $items;
+        }
+
+        preg_match_all(
+            '/(?<!\pL)' . preg_quote($firstWord, '/') . '(?!\pL)/iu',
+            $text,
+            $matches,
+            PREG_OFFSET_CAPTURE
+        );
+
+        if (count($matches[0] ?? []) !== $expected) {
+            $parts = preg_split('/(?:\r?\n|[;|])+/u', $text) ?: [];
+
+            if (count($parts) === $expected) {
+                return array_map(function (string $part) use ($items): array {
+                    $part = trim($part);
+                    $block = $items[0]['block'];
+                    $block['text'] = $part;
+                    $block['html'] = $this->escapeTextAsHtml($part);
+                    $block['images'] = [];
+
+                    return [
+                        'text' => $part,
+                        'block' => $block,
+                    ];
+                }, $parts);
+            }
+
+            return $items;
+        }
+
+        $offsets = array_map(
+            fn (array $match): int => (int) $match[1],
+            $matches[0]
+        );
+        $parts = [];
+
+        for ($i = 0; $i < count($offsets); $i++) {
+            $start = $offsets[$i];
+            $end = $offsets[$i + 1] ?? strlen($text);
+            $part = trim(substr($text, $start, $end - $start));
+
+            if ($part === '') {
+                continue;
+            }
+
+            $block = $items[0]['block'];
+            $block['text'] = $part;
+            $block['html'] = $this->escapeTextAsHtml($part);
+            $block['images'] = [];
+
+            $parts[] = [
+                'text' => $part,
+                'block' => $block,
+            ];
+        }
+
+        return count($parts) === $expected ? $parts : $items;
     }
 
     protected function splitFlexiAnswerItems(string $answer): array
