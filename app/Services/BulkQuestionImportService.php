@@ -1234,10 +1234,13 @@ class BulkQuestionImportService
             $questionImages = array_merge($contextImages, $stemImages ?? []);
             $index++;
 
-            $marker = '';
+            $marker = preg_match(
+                '/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i',
+                $stemText
+            ) ? 'statement_true_false' : '';
             $markerIndex = $index;
 
-            for ($lookahead = $index; $lookahead < min($count, $index + 3); $lookahead++) {
+            for ($lookahead = $index; $marker === '' && $lookahead < min($count, $index + 3); $lookahead++) {
                 $markerText = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
 
                 if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban/i', $markerText)) {
@@ -1469,7 +1472,7 @@ class BulkQuestionImportService
             return false;
         }
 
-        $limit = min(count($paragraphs), $index + 7);
+        $limit = min(count($paragraphs), $index + 10);
 
         for ($lookahead = $index + 1; $lookahead < $limit; $lookahead++) {
             $candidate = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
