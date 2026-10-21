@@ -65,18 +65,21 @@ class BimbelSeeder extends Seeder
         $subjects = [
             [
                 'name' => 'Matematika',
+                'code' => 'SMA-10-MAT-001',
                 'education_level' => 'SMA',
                 'topic' => 'Operasi Hitung Dasar',
                 'grade_level' => 10,
             ],
             [
                 'name' => 'Bahasa Indonesia',
+                'code' => 'SMA-10-BI-001',
                 'education_level' => 'SMA',
                 'topic' => 'Kata Benda',
                 'grade_level' => 10,
             ],
             [
                 'name' => 'Bahasa Inggris',
+                'code' => 'SMA-10-BI-002',
                 'education_level' => 'SMA',
                 'topic' => 'Vocabulary Dasar',
                 'grade_level' => 10,
@@ -86,6 +89,7 @@ class BimbelSeeder extends Seeder
         foreach ($subjects as $subjectData) {
             Subject::create([
                 'name' => $subjectData['name'],
+                'code' => $subjectData['code'],
                 'education_level' => $subjectData['education_level'],
                 'topic' => $subjectData['topic'],
                 'grade_level' => $subjectData['grade_level'],
