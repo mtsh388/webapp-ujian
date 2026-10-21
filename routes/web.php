@@ -285,8 +285,19 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             ->name('exams.show');
 
         Route::delete('/{exam}', [ExamController::class, 'destroy'])->middleware('permission:exam.delete')->name('exams.destroy');
-        Route::post('/{exam}/publish', [ExamController::class, 'publish'])->middleware('permission:exam.publish')->name('exams.publish');
-        Route::post('/{exam}/close', [ExamController::class, 'close'])->middleware('permission:exam.close')->name('exams.close');
+        Route::middleware('role:Admin|Tentor')->group(function () {
+            Route::post('/{exam}/publish', [ExamController::class, 'publish'])
+                ->middleware('permission:exam.publish')
+                ->name('exams.publish');
+
+            Route::post('/{exam}/draft', [ExamController::class, 'draft'])
+                ->middleware('permission:exam.update')
+                ->name('exams.draft');
+
+            Route::post('/{exam}/close', [ExamController::class, 'close'])
+                ->middleware('permission:exam.close')
+                ->name('exams.close');
+        });
 
         Route::middleware('permission:exam.take')->group(function () {
             Route::post('/{exam}/mulai', [ExamAttemptController::class, 'start'])
