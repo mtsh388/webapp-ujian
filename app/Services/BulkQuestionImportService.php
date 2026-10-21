@@ -350,6 +350,11 @@ class BulkQuestionImportService
                 'http://schemas.openxmlformats.org/officeDocument/2006/math'
             );
 
+            $xpath->registerNamespace(
+                'v',
+                'urn:schemas-microsoft-com:vml'
+            );
+
             $bodyNodes = $xpath->query(
                 '/w:document/w:body/*'
             );
@@ -602,8 +607,11 @@ class BulkQuestionImportService
                 );
             }
 
+            // DOCX may store images as modern DrawingML (a:blip) or
+            // legacy VML (v:imagedata). Support both so images inserted by
+            // different Word versions/exporters are extracted into preview.
             $drawingNodes = $xpath->query(
-                './/a:blip',
+                './/a:blip | .//v:imagedata',
                 $run
             );
 
@@ -612,10 +620,12 @@ class BulkQuestionImportService
                     continue;
                 }
 
-                $relationId = $node->getAttributeNS(
-                    'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-                    'embed'
-                );
+                $relationNamespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+                $relationId = $node->getAttributeNS($relationNamespace, 'embed');
+
+                if ($relationId === '') {
+                    $relationId = $node->getAttributeNS($relationNamespace, 'id');
+                }
 
                 if (
                     !$relationId ||
