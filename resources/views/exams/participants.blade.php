@@ -417,6 +417,26 @@
                                 </div>
                             </div>
                         @else
+                            <div class="alert alert-label-info mb-3">
+                                <i class="bx bx-filter-alt me-1"></i>
+                                Daftar siswa dibatasi pada jenjang {{ $exam->subject->education_level ?? '-' }}
+                                kelas {{ $exam->subject->grade_level ?? '-' }} sesuai mata pelajaran ujian.
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="studentClassFilter" class="form-label">
+                                    Filter Kelas
+                                </label>
+                                <select id="studentClassFilter" class="form-select">
+                                    <option value="">Semua kelas yang sesuai</option>
+                                    @foreach($availableStudents->pluck('classRoom')->filter()->unique('id')->sortBy('grade_level') as $classRoom)
+                                        <option value="{{ $classRoom->id }}">
+                                            {{ $classRoom->name }} ({{ $classRoom->education_level }} - Kelas {{ $classRoom->grade_level }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="studentSearch" class="form-label">
                                     Cari Siswa
@@ -455,7 +475,8 @@
                                     @foreach($availableStudents as $student)
                                         <div
                                             class="student-item p-3 border-bottom"
-                                            data-search="{{ strtolower($student->full_name . ' ' . $student->student_number) }}">
+                                            data-class-id="{{ $student->class_id }}"
+                                            data-search="{{ strtolower($student->full_name . ' ' . $student->student_number . ' ' . ($student->user?->email ?? '')) }}">
 
                                             <div class="form-check">
                                                 <input
@@ -531,6 +552,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const studentSearch = document.querySelector('#studentSearch');
+            const studentClassFilter = document.querySelector('#studentClassFilter');
             const selectAllStudents = document.querySelector('#selectAllStudents');
             const studentCheckboxes = Array.from(
                 document.querySelectorAll('.student-checkbox')
@@ -567,31 +589,37 @@
                 }
             }
 
-            if (studentSearch) {
-                studentSearch.addEventListener('input', function () {
-                    const keyword = this.value.toLowerCase().trim();
-                    let visibleCount = 0;
+            function filterStudents() {
+                const keyword = studentSearch ? studentSearch.value.toLowerCase().trim() : '';
+                const selectedClassId = studentClassFilter ? studentClassFilter.value : '';
+                let visibleCount = 0;
 
-                    document.querySelectorAll('.student-item').forEach(function (item) {
-                        const searchText = item.dataset.search || '';
-                        const isVisible = searchText.includes(keyword);
+                document.querySelectorAll('.student-item').forEach(function (item) {
+                    const searchText = item.dataset.search || '';
+                    const matchesSearch = searchText.includes(keyword);
+                    const matchesClass = !selectedClassId || item.dataset.classId === selectedClassId;
+                    const isVisible = matchesSearch && matchesClass;
 
-                        item.style.display = isVisible ? '' : 'none';
+                    item.style.display = isVisible ? '' : 'none';
 
-                        if (isVisible) {
-                            visibleCount++;
-                        }
-                    });
-
-                    if (noSearchResult) {
-                        noSearchResult.classList.toggle(
-                            'd-none',
-                            visibleCount > 0
-                        );
+                    if (isVisible) {
+                        visibleCount++;
                     }
-
-                    updateSelection();
                 });
+
+                if (noSearchResult) {
+                    noSearchResult.classList.toggle('d-none', visibleCount > 0);
+                }
+
+                updateSelection();
+            }
+
+            if (studentSearch) {
+                studentSearch.addEventListener('input', filterStudents);
+            }
+
+            if (studentClassFilter) {
+                studentClassFilter.addEventListener('change', filterStudents);
             }
 
             if (selectAllStudents) {
