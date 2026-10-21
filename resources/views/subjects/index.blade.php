@@ -92,10 +92,10 @@
                     <thead>
                     <tr>
                         <th>No</th>
-                        <th>Nama Mata Pelajaran</th>
+                        <th>Kode</th>
+                        <th>Topik</th>
                         <th>Jenjang</th>
                         <th>Kelas</th>
-                        <th>Topik</th>
                         <th>Deskripsi</th>
                         <th>Status</th>
                         <th>Aksi</th>
@@ -135,7 +135,7 @@
                 ],
 
                 order: [
-                    [1, 'asc']
+                    [2, 'asc']
                 ],
 
                 responsive: true,
@@ -208,6 +208,16 @@
                     },
 
                     {
+                        data: 'code',
+                        name: 'code',
+                        render: function (data) {
+                            return data
+                                ? `<code>${data}</code>`
+                                : '<span class="text-muted">-</span>';
+                        }
+                    },
+
+                    {
                         data: 'name',
                         name: 'name',
                         render: function (data) {
@@ -248,18 +258,6 @@
                             return data
                                 ? `<span class="badge bg-label-secondary">Kelas ${data}</span>`
                                 : '<span class="text-muted">-</span>';
-                        }
-                    },
-
-                    {
-                        data: 'topic',
-                        name: 'topic',
-                        render: function (data) {
-                            if (!data) {
-                                return '<span class="text-muted">-</span>';
-                            }
-
-                            return `<span class="badge bg-label-primary">${data}</span>`;
                         }
                     },
 
