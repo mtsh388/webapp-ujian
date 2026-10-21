@@ -202,7 +202,13 @@ class ExamService
                 ->repository
                 ->generateUniqueCode($prefix);
 
-            return $this->repository->create($data);
+            $exam = $this->repository->create($data);
+
+            if ($exam->auto_assign_new_students && $exam->status === 'published') {
+                $this->syncAutoAssignedParticipants($exam);
+            }
+
+            return $exam;
         });
     }
 
@@ -210,7 +216,13 @@ class ExamService
     {
         return DB::transaction(function () use ($exam, $data) {
             $exam->update($data);
-            return $exam->fresh();
+            $exam = $exam->fresh(['subject']);
+
+            if ($exam->auto_assign_new_students && $exam->status === 'published') {
+                $this->syncAutoAssignedParticipants($exam);
+            }
+
+            return $exam;
         });
     }
 
@@ -540,6 +552,81 @@ class ExamService
                     ]);
             }
         });
+    }
+
+    public function assignStudentToAutoExams(Student $student): void
+    {
+        if (!$student->is_active) {
+            return;
+        }
+
+        $classRoom = $student->classRoom;
+
+        if (!$classRoom || !$classRoom->is_active) {
+            return;
+        }
+
+        $examIds = Exam::query()
+            ->where('status', 'published')
+            ->where('auto_assign_new_students', true)
+            ->whereHas('subject', function ($query) use ($classRoom) {
+                $query
+                    ->where('education_level', $classRoom->education_level)
+                    ->where('grade_level', $classRoom->grade_level);
+            })
+            ->pluck('id');
+
+        if ($examIds->isEmpty()) {
+            return;
+        }
+
+        $now = now();
+        $rows = $examIds->map(fn ($examId) => [
+            'exam_id' => $examId,
+            'student_id' => $student->id,
+            'assigned_at' => $now,
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        DB::table('exam_participants')->insertOrIgnore($rows);
+    }
+
+    private function syncAutoAssignedParticipants(Exam $exam): void
+    {
+        $exam->loadMissing('subject');
+        $subject = $exam->subject;
+
+        if (!$subject || $exam->status !== 'published' || !$exam->auto_assign_new_students) {
+            return;
+        }
+
+        $studentIds = Student::query()
+            ->where('is_active', true)
+            ->whereHas('classRoom', function ($query) use ($subject) {
+                $query
+                    ->where('is_active', true)
+                    ->where('education_level', $subject->education_level)
+                    ->where('grade_level', $subject->grade_level);
+            })
+            ->pluck('id');
+
+        if ($studentIds->isEmpty()) {
+            return;
+        }
+
+        $now = now();
+        $rows = $studentIds->map(fn ($studentId) => [
+            'exam_id' => $exam->id,
+            'student_id' => $studentId,
+            'assigned_at' => $now,
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        DB::table('exam_participants')->insertOrIgnore($rows);
     }
 
     public function toggleParticipantStatus(
