@@ -277,6 +277,7 @@ class ExamController extends Controller
     public function publish(Exam $exam)
     {
         $exam->forceFill(['status' => 'published'])->save();
+        $this->examService->syncAutoAssignedParticipants($exam->fresh('subject'));
 
         return redirect()
             ->route('exams.index')
