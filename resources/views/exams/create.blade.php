@@ -22,12 +22,6 @@
             background: rgba(105, 108, 255, .12);
             font-size: 1.5rem;
         }
-        .subject-search-group .input-group-text {
-            border-right: 0;
-        }
-        .subject-search-group input {
-            border-left: 0;
-        }
         .subject-selected-preview {
             padding: .75rem .85rem;
             border: 1px solid rgba(113, 221, 55, .3);
@@ -38,57 +32,6 @@
             .subject-picker-card { padding: .85rem; }
         }
     </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const subjectSearch = document.getElementById('subject_search');
-            const subjectSelect = document.getElementById('subject_id');
-            const clearSubjectSearch = document.getElementById('clear_subject_search');
-            const selectedPreview = document.getElementById('subject-selected-preview');
-            const selectedName = document.getElementById('subject-selected-name');
-            const emptyState = document.getElementById('subject-empty-state');
-
-            function filterSubjects() {
-                const query = subjectSearch.value.trim().toLocaleLowerCase('id');
-                let visibleCount = 0;
-
-                Array.from(subjectSelect.options).forEach(function (option, index) {
-                    if (index === 0) {
-                        option.hidden = false;
-                        return;
-                    }
-
-                    const searchText = (option.dataset.search || option.textContent).toLocaleLowerCase('id');
-                    const matches = !query || searchText.includes(query);
-                    option.hidden = !matches;
-                    if (matches) visibleCount++;
-                });
-
-                emptyState.classList.toggle('d-none', visibleCount > 0);
-                if (subjectSelect.selectedOptions[0] && subjectSelect.selectedOptions[0].value &&
-                    subjectSelect.selectedOptions[0].hidden) {
-                    subjectSelect.value = '';
-                    updateSelectedPreview();
-                }
-            }
-
-            function updateSelectedPreview() {
-                const option = subjectSelect.selectedOptions[0];
-                const hasSelection = option && option.value !== '';
-                selectedPreview.classList.toggle('d-none', !hasSelection);
-                selectedName.textContent = hasSelection ? option.textContent.trim() : '';
-            }
-
-            subjectSearch.addEventListener('input', filterSubjects);
-            subjectSelect.addEventListener('change', updateSelectedPreview);
-            clearSubjectSearch.addEventListener('click', function () {
-                subjectSearch.value = '';
-                filterSubjects();
-                subjectSearch.focus();
-            });
-
-            updateSelectedPreview();
-        });
-    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const selector = document.getElementById('has_duration');
@@ -225,25 +168,13 @@
                                         <i class="bx bx-book-open"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <label for="subject_search" class="form-label fw-semibold mb-1">
+                                        <label for="subject_id" class="form-label fw-semibold mb-1">
                                             Mata Pelajaran <span class="text-danger">*</span>
                                         </label>
-                                        <div class="small text-muted">Cari lalu pilih mata pelajaran untuk ujian ini.</div>
+                                        <div class="small text-muted">Pilih mata pelajaran untuk ujian ini.</div>
                                     </div>
                                     <span class="badge bg-label-primary">{{ $subjects->count() }} tersedia</span>
                                 </div>
-
-                                <div class="input-group subject-search-group mb-2">
-                                    <span class="input-group-text bg-white"><i class="bx bx-search"></i></span>
-                                    <input type="search" class="form-control" id="subject_search"
-                                           placeholder="Cari nama mata pelajaran atau topik..."
-                                           autocomplete="off" aria-describedby="subject-search-help">
-                                    <button class="btn btn-outline-secondary" type="button" id="clear_subject_search"
-                                            aria-label="Bersihkan pencarian" title="Bersihkan pencarian">
-                                        <i class="bx bx-x"></i>
-                                    </button>
-                                </div>
-                                <div id="subject-search-help" class="form-text mb-2">Ketik untuk menyaring pilihan di bawah.</div>
 
                                 <select class="form-select @error('subject_id') is-invalid @enderror"
                                         id="subject_id" name="subject_id" required>
@@ -251,7 +182,6 @@
                                     @foreach($subjects as $subject)
                                         <option
                                             value="{{ $subject->id }}"
-                                            data-search="{{ strtolower($subject->name . ' Kelas ' . ($subject->grade_level ?? '') . ' ' . ($subject->education_level ?? '') . ' ' . ($subject->topic ?? '')) }}"
                                             {{ old('subject_id') == $subject->id ? 'selected' : '' }}>
                                             {{ $subject->name }} - Kelas {{ $subject->grade_level ?? '-' }}@if ($subject->topic) - {{ $subject->topic }}@endif
                                         </option>
@@ -269,9 +199,6 @@
                                             <div class="fw-semibold text-break" id="subject-selected-name"></div>
                                         </div>
                                     </div>
-                                </div>
-                                <div id="subject-empty-state" class="small text-muted mt-2 d-none">
-                                    <i class="bx bx-info-circle me-1"></i>Tidak ada mata pelajaran yang cocok dengan pencarian.
                                 </div>
                             </div>
                         </div>
