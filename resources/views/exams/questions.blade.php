@@ -133,7 +133,7 @@
                         <label for="searchAssignedQuestions" class="form-label">Cari soal dalam ujian</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bx bx-search"></i></span>
-                            <input type="search" id="searchAssignedQuestions" class="form-control" placeholder="Cari kode, tipe, pertanyaan, atau bobot..." autocomplete="off">
+                            <input type="search" id="searchAssignedQuestions" class="form-control" placeholder="Cari tipe, pertanyaan, atau bobot..." autocomplete="off">
                         </div>
                     </div>
                     <div class="col-12 col-md-5 text-md-end">
@@ -390,6 +390,7 @@
                             checkbox.checked = checkAll.checked;
                         }
                     });
+                    checkAll.indeterminate = false;
 
                     updateSubmitButton();
                 });
@@ -398,9 +399,13 @@
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function () {
                     if (checkAll) {
-                        const checkedCount = checkboxes.filter(item => item.checked).length;
-                        checkAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
-                        checkAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+                        const visibleCheckboxes = checkboxes.filter(item => {
+                            const row = item.closest('.available-question-row');
+                            return row && !row.classList.contains('d-none');
+                        });
+                        const checkedCount = visibleCheckboxes.filter(item => item.checked).length;
+                        checkAll.checked = visibleCheckboxes.length > 0 && checkedCount === visibleCheckboxes.length;
+                        checkAll.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
                     }
 
                     updateSubmitButton();
