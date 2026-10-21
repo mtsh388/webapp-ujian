@@ -1913,24 +1913,83 @@ class BulkQuestionImportService
         $paragraphs = [];
 
         foreach ($blocks as $block) {
-            if (($block['type'] ?? null) !== 'paragraph') {
+            $blockType = (string)($block['type'] ?? '');
+
+            // FlexiQuiz exports statement-based Benar/Salah questions as a
+            // Word table. Convert only tables with the expected statement
+            // header into paragraph-like items; unrelated tables stay ignored
+            // by the question parser and are preserved separately in context.
+            if ($blockType === 'table') {
+                $tableHtml = (string)($block['html'] ?? '');
+                $tableDom = new DOMDocument();
+                $previousErrorState = libxml_use_internal_errors(true);
+                $loaded = $tableDom->loadHTML(
+                    '<?xml encoding="UTF-8">' . $tableHtml,
+                    LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+                );
+                libxml_clear_errors();
+                libxml_use_internal_errors($previousErrorState);
+
+                if ($loaded) {
+                    $tableXPath = new DOMXPath($tableDom);
+                    $rows = $tableXPath->query('//table//tr');
+                    $tableRows = [];
+
+                    foreach ($rows as $row) {
+                        $cells = $tableXPath->query('./th|./td', $row);
+                        $cellTexts = [];
+                        foreach ($cells as $cell) {
+                            $cellTexts[] = $this->normalizeText((string)($cell->textContent ?? ''));
+                        }
+                        if (!empty($cellTexts)) {
+                            $tableRows[] = ['cells' => $cells, 'texts' => $cellTexts];
+                        }
+                    }
+
+                    $headerText = implode(' ', $tableRows[0]['texts'] ?? []);
+                    $isStatementTable = preg_match('/pernyataan/iu', $headerText)
+                        && preg_match('/benar/iu', $headerText)
+                        && preg_match('/salah/iu', $headerText);
+
+                    if ($isStatementTable) {
+                        foreach (array_slice($tableRows, 1) as $tableRow) {
+                            $statementText = $this->normalizeText((string)($tableRow['texts'][0] ?? ''));
+                            if ($statementText === '') {
+                                continue;
+                            }
+
+                            $paragraphs[] = [
+                                'type' => 'paragraph',
+                                'text' => $statementText,
+                                'html' => $this->escapeTextAsHtml($statementText),
+                                'images' => [],
+                                'is_list' => false,
+                            ];
+                        }
+                    }
+                }
+
+                continue;
+            }
+
+            if ($blockType !== 'paragraph') {
                 continue;
             }
 
             $text = $this->normalizeText((string)($block['text'] ?? ''));
 
-            if ($text === '' || preg_match('/^FlexiQuiz\s*-\s*Editor/i', $text)) {
+            if ($text === '' || preg_match('/^FlexiQuiz\\s*-\\s*Editor/i', $text)) {
                 continue;
             }
 
             if (
                 preg_match(
-                    '/^(.+?)(?=(?:Mengapa|Apa yang membuat)\b)/iu',
+                    '/^(.+?)(?=(?:Mengapa|Apa yang membuat)\\b)/iu',
                     $text,
                     $sourceMatch,
                     PREG_OFFSET_CAPTURE
                 )
-                && preg_match('/^Sumber\s*:/iu', $text)
+                && preg_match('/^Sumber\\s*:/iu', $text)
             ) {
                 $splitOffset = strlen((string)($sourceMatch[1][0] ?? ''));
                 $sourceText = trim(substr($text, 0, $splitOffset));
@@ -2055,6 +2114,17 @@ class BulkQuestionImportService
                 while ($index < $count) {
                     $itemBlock = $paragraphs[$index];
                     $itemText = $this->normalizeText((string)($itemBlock['text'] ?? ''));
+
+                    // FlexiQuiz may print the possible Benar/Salah sequences
+                    // between the statement table and the final answer key.
+                    // These are answer choices, not additional statements.
+                    if (
+                        $marker === 'statement_true_false'
+                        && preg_match('/^(?:Benar|Salah)(?:\\s*,\\s*(?:Benar|Salah)){1,}$/iu', $itemText)
+                    ) {
+                        $index++;
+                        continue;
+                    }
 
                     if ($this->isFlexiQuestionCandidate($paragraphs, $index) && !$this->containsFlexiAnswer($itemText)) {
                         break;
