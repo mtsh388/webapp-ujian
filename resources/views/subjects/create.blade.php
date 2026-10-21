@@ -33,7 +33,7 @@
 
                         <div class="col-md-4">
                             <label for="name" class="form-label fw-semibold">
-                                Nama Mata Pelajaran
+                                Topik
                                 <span class="text-danger">*</span>
                             </label>
 
@@ -96,23 +96,18 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label for="topic" class="form-label fw-semibold">
-                                Topik <span class="text-danger">*</span>
+                            <label for="subject_code" class="form-label fw-semibold">
+                                Kode Mata Pelajaran
                             </label>
                             <input
                                 type="text"
-                                name="topic"
-                                id="topic"
-                                class="form-control @error('topic') is-invalid @enderror"
-                                value="{{ old('topic', $subject->topic ?? '') }}"
-                                placeholder="Contoh: Pecahan"
-                                maxlength="150"
-                                required
+                                id="subject_code"
+                                class="form-control font-monospace"
+                                value=""
+                                placeholder="Dibuat otomatis saat disimpan"
+                                readonly
                             >
-                            @error('topic')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                            <div class="form-text">Topik menjadi dasar pengelompokan materi dan pembentukan kode soal otomatis.</div>
+                            <div class="form-text">Kode dibuat otomatis berdasarkan jenjang, kelas, dan topik.</div>
                         </div>
 
                         <div class="col-12">
