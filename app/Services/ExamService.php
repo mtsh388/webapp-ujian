@@ -496,6 +496,11 @@ class ExamService
                     'is_active',
                     true
                 )
+                ->whereHas('classRoom', function ($query) use ($exam) {
+                    $query
+                        ->where('education_level', $exam->subject?->education_level)
+                        ->where('grade_level', $exam->subject?->grade_level);
+                })
                 ->get();
 
             if (
@@ -503,7 +508,7 @@ class ExamService
                 count($studentIds)
             ) {
                 throw new \RuntimeException(
-                    'Salah satu siswa tidak ditemukan atau tidak aktif.'
+                    'Salah satu siswa tidak aktif atau tidak sesuai dengan jenjang dan kelas mata pelajaran ujian.'
                 );
             }
 
