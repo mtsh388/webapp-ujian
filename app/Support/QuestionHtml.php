@@ -148,10 +148,17 @@ class QuestionHtml
             return false;
         }
 
+        // Allow safe embedded image data and HTTP(S) URLs only.
+        if (preg_match('/^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+\/]+=*$/i', $url)) {
+            return true;
+        }
+
         if (str_starts_with($url, '/')) {
             return true;
         }
 
-        return strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https';
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true);
     }
 }
