@@ -479,6 +479,7 @@ class BulkQuestionImportService
         $text = '';
         $html = '';
         $images = [];
+        $seenImageHashes = [];
 
         // Office Math (Equation) is stored in m:oMath/m:oMathPara,
         // not in ordinary w:r/w:t nodes. Include it in document order so
@@ -636,6 +637,12 @@ class BulkQuestionImportService
                         PATHINFO_EXTENSION
                     )
                 );
+
+                $imageHash = hash('sha256', $imageContent);
+                if (isset($seenImageHashes[$imageHash])) {
+                    continue;
+                }
+                $seenImageHashes[$imageHash] = true;
 
                 $images[] = [
                     'content' => $imageContent,
@@ -1759,6 +1766,27 @@ class BulkQuestionImportService
         }
 
         $header = implode(' ', $tableRows[0] ?? []);
+
+        // Some DOCX-to-HTML fragments have table markup that libxml repairs
+        // unexpectedly. Retry with a simple row/cell extraction before giving up.
+        if (empty($tableRows) || !preg_match('/pernyataan/iu', $header)) {
+            $tableRows = [];
+            preg_match_all('/<tr\\b[^>]*>(.*?)<\\/tr>/isu', $html, $rowMatches);
+            foreach ($rowMatches[1] ?? [] as $rowHtml) {
+                preg_match_all('/<(?:td|th)\\b[^>]*>(.*?)<\\/(?:td|th)>/isu', $rowHtml, $cellMatches);
+                $cellTexts = [];
+                foreach ($cellMatches[1] ?? [] as $cellHtml) {
+                    $cellTexts[] = $this->normalizeText(
+                        html_entity_decode(strip_tags($cellHtml), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+                    );
+                }
+                if (!empty($cellTexts)) {
+                    $tableRows[] = $cellTexts;
+                }
+            }
+            $header = implode(' ', $tableRows[0] ?? []);
+        }
+
         if (
             !preg_match('/pernyataan/iu', $header)
             || !preg_match('/benar/iu', $header)
