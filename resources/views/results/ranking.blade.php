@@ -12,14 +12,48 @@
                         <p class="card-subtitle text-muted mb-0">{{ $exam->title }} · {{ $exam->code }}</p>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <div id="rankingExportButtons"></div>
-                        <a href="{{ route('results.index') }}" class="btn btn-outline-secondary">
-                            <i class="bx bx-arrow-back me-1"></i>Kembali ke Hasil Ujian
-                        </a>
+                        @if ($isRankingManager)
+                            <div id="rankingExportButtons"></div>
+                            <a href="{{ route('results.index') }}" class="btn btn-outline-secondary">
+                                <i class="bx bx-arrow-back me-1"></i>Kembali ke Hasil Ujian
+                            </a>
+                        @else
+                            <a href="{{ route('results.my') }}" class="btn btn-outline-secondary">
+                                <i class="bx bx-arrow-back me-1"></i>Kembali ke Hasil Saya
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
-            <div class="card-body border-bottom">
+            @if (!$isRankingManager)
+                <div class="card-body border-bottom">
+                    @if ($myRanking)
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="text-muted small">Peringkat Anda</div>
+                                <div class="fs-3 fw-bold">#{{ $myRanking->rank_position }} <span class="fs-6 text-muted">dari {{ $totalRankedStudents }} siswa</span></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-muted small">Nilai Terbaik Anda</div>
+                                <div class="fs-3 fw-bold">{{ number_format((float) $myRanking->score, 2, ',', '.') }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-muted small">Waktu Pengerjaan</div>
+                                <div class="fs-3 fw-bold">
+                                    @if ($myRanking->duration_seconds === null)
+                                        -
+                                    @else
+                                        {{ gmdate('H:i:s', max(0, (int) $myRanking->duration_seconds)) }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0">Hasil Anda belum masuk dalam ranking.</div>
+                    @endif
+                </div>
+                @endif
+                <div class="card-body border-bottom">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="text-muted small">Aturan Ranking</div>
@@ -47,7 +81,9 @@
                             <th>Waktu Pengerjaan</th>
                             <th>Status</th>
                             <th>Dikumpulkan</th>
-                            <th>Aksi</th>
+                            @if ($isRankingManager)
+                                <th>Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                 </table>
@@ -167,6 +203,7 @@
                             return '<div class="text-nowrap">' + date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + '</div><div class="small text-muted">' + date.toLocaleTimeString('id-ID', { hour12: false }) + '</div>';
                         }
                     },
+                    @if ($isRankingManager)
                     {
                         data: 'id',
                         name: 'id',
@@ -177,7 +214,17 @@
                             return '<a href="' + row.show_url + '" class="btn btn-sm btn-outline-primary" title="Lihat hasil" aria-label="Lihat hasil"><i class="bx bx-show"></i></a>';
                         }
                     }
+                    @endif
                 ],
+                createdRow: function (row, data) {
+                    if (data.is_current_student) {
+                        row.classList.add('table-primary');
+                        const nameCell = row.cells[2];
+                        if (nameCell) {
+                            nameCell.insertAdjacentHTML('beforeend', ' <span class="badge bg-label-primary ms-1">Anda</span>');
+                        }
+                    }
+                },
                 language: {
                     processing: 'Memuat data...',
                     search: '',
