@@ -1191,7 +1191,7 @@ class BulkQuestionImportService
                         continue;
                     }
 
-                    if ($seenSource && $this->isFlexiQuizQuestionStem($candidate)) {
+                    if ($this->isFlexiQuizQuestionCandidate($paragraphs, $index)) {
                         break;
                     }
 
@@ -1209,7 +1209,7 @@ class BulkQuestionImportService
                 $text = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
             }
 
-            if (!$this->isFlexiQuizQuestionStem($text)) {
+            if (!$this->isFlexiQuestionCandidate($paragraphs, $index)) {
                 $index++;
                 continue;
             }
@@ -1266,7 +1266,7 @@ class BulkQuestionImportService
                     $itemBlock = $paragraphs[$index];
                     $itemText = $this->normalizeText((string) ($itemBlock['text'] ?? ''));
 
-                    if ($this->isFlexiQuizQuestionStem($itemText) && !$this->containsFlexiAnswer($itemText)) {
+                    if ($this->isFlexiQuestionCandidate($paragraphs, $index) && !$this->containsFlexiAnswer($itemText)) {
                         break;
                     }
 
@@ -1371,7 +1371,7 @@ class BulkQuestionImportService
                 $optionBlock = $paragraphs[$index];
                 $optionText = $this->normalizeText((string) ($optionBlock['text'] ?? ''));
 
-                if ($this->isFlexiQuizQuestionStem($optionText) && !$this->containsFlexiAnswer($optionText)) {
+                if ($this->isFlexiQuestionCandidate($paragraphs, $index) && !$this->containsFlexiAnswer($optionText)) {
                     break;
                 }
 
@@ -1450,6 +1450,39 @@ class BulkQuestionImportService
         return $questions;
     }
 
+    protected function isFlexiQuestionCandidate(array $paragraphs, int $index): bool
+    {
+        $text = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
+
+        if (!$this->isFlexiQuizQuestionStem($text)) {
+            return false;
+        }
+
+        $limit = min(count($paragraphs), $index + 13);
+
+        for ($lookahead = $index + 1; $lookahead < $limit; $lookahead++) {
+            $candidate = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
+
+            if ($this->containsFlexiAnswer($candidate)) {
+                return true;
+            }
+
+            if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban|tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $candidate)) {
+                for ($answerLookahead = $lookahead + 1; $answerLookahead < $limit; $answerLookahead++) {
+                    if ($this->containsFlexiAnswer($this->normalizeText((string) ($paragraphs[$answerLookahead]['text'] ?? '')))) {
+                        return true;
+                    }
+                }
+            }
+
+            if ($this->isFlexiQuizQuestionStem($candidate) && !$this->containsFlexiAnswer($candidate)) {
+                break;
+            }
+        }
+
+        return false;
+    }
+
     protected function isFlexiQuizQuestionStem(string $text): bool
     {
         if ($text === '' || preg_match('/^Bacalah\b|^Teks\s+\d+\b|^Sumber\s*:/iu', $text)) {
@@ -1461,7 +1494,7 @@ class BulkQuestionImportService
         }
 
         return preg_match(
-            '/^(Apa|Apakah|Mengapa|Bagaimana|Siapa|Kepada siapa|Kata manakah|Kalimat manakah|Pernyataan manakah|Informasi yang|Nada dan suasana|Berdasarkan teks|Setelah membaca|Tentukanlah|Tentukan|Pesan apa|Apa sajakah|Apa saja|Alat apa|Hal apa|Yang menjadi|Yang paling tepat|Makna dari|Apa makna|Manakah|Informasi yang tidak tepat|Apa yang|Mengapa|Dilihat dari)/iu',
+            '/^(Apa|Apakah|Mengapa|Bagaimana|Siapa|Kepada siapa|Kata manakah|Kalimat manakah|Pernyataan manakah|Informasi yang|Nada dan suasana|Berdasarkan teks|Tentukanlah|Tentukan|Pesan apa|Apa sajakah|Apa saja|Alat apa|Hal apa|Yang menjadi|Yang paling tepat|Makna dari|Apa makna|Manakah|Informasi yang tidak tepat|Apa yang)/iu',
             $text
         ) === 1;
     }
