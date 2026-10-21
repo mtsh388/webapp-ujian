@@ -136,7 +136,9 @@ class ResultController extends Controller
     {
         $studentId = $this->authorizeRankingAccess($exam);
         $isRankingManager = auth()->user()->can('result.view');
-        $rankedAttempts = $this->rankedAttemptsQuery($exam);
+        $rankedAttempts = DB::query()
+            ->fromSub($this->rankedAttemptsQuery($exam), 'ranked')
+            ->select('ranked.*');
 
         $recordsTotal = (clone $rankedAttempts)->count();
         $search = trim((string) $request->input('search.value', ''));
