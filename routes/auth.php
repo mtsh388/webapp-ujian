@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\StudentProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+
+
     Route::get('/login', [AuthController::class, 'index'])
         ->name('login');
 
@@ -24,6 +27,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/lengkapi-profil', [StudentProfileController::class, 'edit'])->name('students.profile.edit');
+    Route::put('/lengkapi-profil', [StudentProfileController::class, 'update'])->name('students.profile.update');
+
     Route::get('/change-password', [AuthController::class, 'change'])
         ->name('password.change');
 

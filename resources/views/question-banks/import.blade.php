@@ -59,7 +59,7 @@
                         </h4>
 
                         <p class="text-muted mb-0">
-                            Import soal pilihan ganda dan benar/salah dari Microsoft Word.
+                            Impor soal dari Microsoft Word (.docx) menggunakan template lama atau dokumen TKA/FlexiQuiz.
                         </p>
                     </div>
 
@@ -85,6 +85,14 @@
             </div>
 
             <div class="card-body p-4">
+
+                <div class="alert alert-info mb-4">
+                    <div class="fw-semibold mb-1">Format Word yang didukung</div>
+                    <ul class="mb-0 ps-3">
+                        <li><strong>Template lama:</strong> gunakan tombol Download Template DOCX; format SOAL, pilihan A-D, JAWABAN, dan PEMBAHASAN tetap didukung.</li>
+                        <li><strong>TKA/FlexiQuiz:</strong> unggah dokumen soal yang memuat teks bacaan, pertanyaan, pilihan jawaban, dan baris Jawaban. Jawaban jamak dan Benar/Salah pernyataan akan dikonversi menjadi beberapa soal Benar/Salah; hasilnya ditampilkan di halaman preview sebelum disimpan.</li>
+                    </ul>
+                </div>
 
                 <div class="row g-4">
 
