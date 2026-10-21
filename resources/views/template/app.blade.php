@@ -66,6 +66,32 @@
     <link
         rel="stylesheet"
         href="{{ asset('assets/sneat/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+
+    <style>
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: calc(2.25rem + 2px);
+        }
+
+        .select2-container--bootstrap-5 .select2-selection.is-invalid {
+            border-color: var(--bs-form-invalid-border-color, #dc3545);
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            line-height: 1.5;
+            padding-top: .25rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    </style>
 
     @yield('styles')
 
@@ -159,6 +185,7 @@
 </div>
 
 <script src="{{ asset('assets/sneat/vendor/libs/jquery/jquery.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{{ asset('assets/sneat/vendor/libs/popper/popper.js') }}"></script>
 <script src="{{ asset('assets/sneat/vendor/libs/sweetalert2/sweetalert2.all.min.js') }}"></script>
 <script src="{{ asset('assets/sneat/vendor/js/bootstrap.js') }}"></script>
@@ -182,6 +209,89 @@
 
 <script src="{{ asset('assets/sneat/js/main.js') }}"></script>
 <script src="{{ asset('assets/sneat/js/tables-datatables-basic.js') }}"></script>
+
+<script>
+    (function () {
+        function initializeSelect2(context) {
+            if (!window.jQuery || !jQuery.fn.select2) {
+                return;
+            }
+
+            const $context = jQuery(context || document);
+            const $selects = $context.find('select').addBack('select');
+
+            $selects.each(function () {
+                const $select = jQuery(this);
+
+                if (
+                    $select.hasClass('select2-hidden-accessible') ||
+                    $select.is('[data-no-select2]') ||
+                    $select.closest('.dataTables_wrapper').length
+                ) {
+                    return;
+                }
+
+                const firstOption = $select.find('option').first();
+                const options = {
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    language: {
+                        noResults: function () {
+                            return 'Tidak ada hasil yang cocok';
+                        },
+                        searching: function () {
+                            return 'Mencari...';
+                        }
+                    }
+                };
+
+                if (firstOption.length && firstOption.val() === '') {
+                    options.placeholder = firstOption.text().trim();
+                    options.allowClear = !$select.prop('required');
+                }
+
+                const $modal = $select.closest('.modal');
+
+                if ($modal.length) {
+                    options.dropdownParent = $modal;
+                }
+
+                $select.select2(options);
+
+                if ($select.hasClass('is-invalid')) {
+                    $select.next('.select2-container').find('.select2-selection').addClass('is-invalid');
+                }
+
+                $select.on('change.qseeSelect2', function () {
+                    if (this.value !== '') {
+                        $select.next('.select2-container').find('.select2-selection').removeClass('is-invalid');
+                    }
+                });
+            });
+        }
+
+        window.qseeInitSelect2 = initializeSelect2;
+
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.alert = function (message) {
+                window.Swal.fire({
+                    icon: 'info',
+                    title: 'Informasi',
+                    text: String(message ?? ''),
+                    confirmButtonText: 'OK'
+                });
+            };
+        }
+
+        jQuery(function () {
+            initializeSelect2(document);
+        });
+
+        jQuery(document).on('shown.bs.modal', function (event) {
+            initializeSelect2(event.target);
+        });
+    })();
+</script>
 
 @yield('scripts')
 
