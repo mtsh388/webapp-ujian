@@ -56,6 +56,15 @@
                         </a>
 
                         @can('exam.update')
+                            @if($questions->isNotEmpty())
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger"
+                                    id="deleteAllQuestions">
+                                    <i class="bx bx-trash me-1"></i>
+                                    Hapus Semua Soal
+                                </button>
+                            @endif
                             <button
                                 type="button"
                                 class="btn btn-primary"
@@ -156,7 +165,7 @@
 
                     <tbody>
                     @forelse($questions as $index => $q)
-                        <tr class="assigned-question-row">
+                        <tr class="assigned-question-row" data-question-id="{{ $q->id }}">
                             <td>{{ $index + 1 }}</td>
 
                             <td>
@@ -433,6 +442,85 @@
             if (assignedSearch) filterRows(assignedSearch, assignedRows, assignedNoResults, assignedSearchInfo, 'soal');
             if (availableSearch) filterRows(availableSearch, availableRows, availableNoResults, availableSearchInfo, 'soal');
             updateSubmitButton();
+
+            const deleteAllButton = document.getElementById('deleteAllQuestions');
+
+            if (deleteAllButton) {
+                deleteAllButton.addEventListener('click', async function () {
+                    const questionIds = assignedRows.map(row => row.dataset.questionId).filter(Boolean);
+
+                    if (!questionIds.length) return;
+
+                    const confirmation = await Swal.fire({
+                        title: 'Hapus semua soal?',
+                        text: 'Semua soal akan dilepas dari ujian ini. Soal tetap tersimpan di Bank Soal.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, hapus semua',
+                        cancelButtonText: 'Batal',
+                        reverseButtons: true,
+                        customClass: {
+                            confirmButton: 'btn btn-danger ms-2',
+                            cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                    });
+
+                    if (!confirmation.isConfirmed) return;
+
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+                    if (!csrfToken) {
+                        await Swal.fire({ icon: 'error', title: 'Gagal', text: 'CSRF token tidak ditemukan.' });
+                        return;
+                    }
+
+                    deleteAllButton.disabled = true;
+
+                    Swal.fire({
+                        title: 'Menghapus semua soal...',
+                        text: 'Mohon tunggu, jangan tutup halaman ini.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: function () { Swal.showLoading(); }
+                    });
+
+                    try {
+                        for (let index = 0; index < questionIds.length; index++) {
+                            Swal.update({ text: 'Menghapus soal ' + (index + 1) + ' dari ' + questionIds.length + '.' });
+
+                            const response = await fetch('/ujian/{{ $exam->id }}/soal/' + encodeURIComponent(questionIds[index]), {
+                                method: 'DELETE',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                                }
+                            });
+                            const data = await response.json();
+
+                            if (!response.ok || !data.status) {
+                                throw new Error(data.message || 'Gagal menghapus salah satu soal.');
+                            }
+                        }
+
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: questionIds.length + ' soal berhasil dihapus dari ujian.',
+                            confirmButtonText: 'OK'
+                        });
+                        location.reload();
+                    } catch (error) {
+                        deleteAllButton.disabled = false;
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Penghapusan tidak selesai',
+                            text: error.message || 'Terjadi kesalahan saat menghapus soal.'
+                        });
+                    }
+                });
+            }
         });
 
         function deleteQuestion(id) {
