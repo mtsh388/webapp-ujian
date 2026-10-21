@@ -133,6 +133,9 @@
                     @php
                         $question = $answer->examQuestion;
                         $isCorrect = (bool) $answer->is_correct;
+                        $selectedOptionIds = $answer->selected_option_ids ?? [];
+                        if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+                        if (empty($selectedOptionIds) && $answer->selected_option_id) $selectedOptionIds = [(int) $answer->selected_option_id];
                     @endphp
 
                     <div class="border rounded p-3 mb-4">
@@ -153,42 +156,48 @@
                         </div>
 
                         <div class="mb-3">
-                            <small class="text-muted d-block mb-1">Pilihan Jawaban</small>
+                            <small class="text-muted d-block mb-1">Jawaban</small>
 
-                            @foreach (($question->options ?? collect()) as $option)
+                            @if ($question?->type === 'statement_true_false')
                                 @php
-                                    $selectedOptionId = $answer->selected_option_id
-                                        ?? $answer->option_id
-                                        ?? null;
-
-                                    $isSelected = $selectedOptionId !== null
-                                        && (string) $selectedOptionId === (string) $option->id;
-
-                                    $isAnswerKey = (bool) ($option->is_correct ?? false);
+                                    $statementGroups = ($question->options ?? collect())->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
                                 @endphp
-
-                                <div class="rounded border p-2 mb-2
-                                    {{ $showCorrectAnswers && $isSelected && $isAnswerKey ? 'border-success bg-label-success' : '' }}
-                                    {{ $showCorrectAnswers && $isSelected && !$isAnswerKey ? 'border-danger bg-label-danger' : '' }}">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <span>
-                                            {{ $option->option_label ?? $option->label ?? '' }}
-                                        </span>
-
-                                        <div class="flex-grow-1">
-                                            {!! \App\Support\QuestionHtml::sanitize($option->option_text ?? $option->text ?? '') !!}
-                                        </div>
-
-                                        @if ($isSelected)
-                                            <span class="badge bg-label-primary">Jawaban Anak</span>
-                                        @endif
-
-                                        @if ($showCorrectAnswers && $isAnswerKey)
-                                            <span class="badge bg-label-success">Kunci Jawaban</span>
+                                @foreach ($statementGroups as $groupKey => $groupOptions)
+                                    @php
+                                        $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                        $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                        $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
+                                        $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                    @endphp
+                                    <div class="rounded border p-3 mb-2 {{ $selectedStatementOption && $selectedStatementOption->is_correct ? 'border-success bg-label-success' : ($selectedStatementOption ? 'border-danger bg-label-danger' : '') }}">
+                                        <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
+                                        <div class="mb-2">{!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}</div>
+                                        <div class="small">Jawaban Anak: <strong>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</strong></div>
+                                        @if ($showCorrectAnswers)
+                                            <div class="small">Kunci Jawaban: <strong>{{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</strong></div>
                                         @endif
                                     </div>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            @else
+                                @foreach (($question->options ?? collect()) as $option)
+                                    @php
+                                        $isSelected = in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
+                                        $isAnswerKey = (bool) ($option->is_correct ?? false);
+                                    @endphp
+                                    <div class="rounded border p-2 mb-2 {{ $showCorrectAnswers && $isSelected && $isAnswerKey ? 'border-success bg-label-success' : '' }} {{ $showCorrectAnswers && $isSelected && !$isAnswerKey ? 'border-danger bg-label-danger' : '' }}">
+                                        <div class="d-flex align-items-start gap-2">
+                                            <span>{{ $option->option_key ?? $option->option_label ?? $option->label ?? '' }}</span>
+                                            <div class="flex-grow-1">{!! \App\Support\QuestionHtml::sanitize($option->option_text ?? $option->text ?? '') !!}</div>
+                                            @if ($isSelected)
+                                                <span class="badge bg-label-primary">Jawaban Anak</span>
+                                            @endif
+                                            @if ($showCorrectAnswers && $isAnswerKey)
+                                                <span class="badge bg-label-success">Kunci Jawaban</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
 
                         @if ($showCorrectAnswers && !$isCorrect && $question && $question->explanation)
