@@ -1238,7 +1238,7 @@ class BulkQuestionImportService
                 '/tentukan.*benar\s+atau\s+salah|pilih\s+jawaban\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i',
                 $stemText
             ) ? 'statement_true_false' : '';
-            $markerIndex = $index;
+            $markerIndex = $marker === 'statement_true_false' ? $index - 1 : $index;
 
             for ($lookahead = $index; $marker === '' && $lookahead < min($count, $index + 3); $lookahead++) {
                 $markerText = $this->normalizeText((string) ($paragraphs[$lookahead]['text'] ?? ''));
