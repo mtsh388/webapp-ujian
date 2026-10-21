@@ -69,11 +69,14 @@
         .exam-question-content { font-size: 1.05rem; line-height: 1.8; overflow-wrap: anywhere; }
         .exam-question-content img,
         .exam-option-content img {
-            display: inline-block;
-            max-width: 100%;
+            display: block;
+            width: auto !important;
+            max-width: min(100%, 680px);
+            max-height: 420px;
             height: auto !important;
             object-fit: contain;
-            vertical-align: middle;
+            object-position: center;
+            margin: .85rem auto;
         }
         .exam-question-content table,
         .exam-option-content table {
@@ -99,22 +102,36 @@
             border-radius: .75rem;
             overflow-x: auto;
         }
-        .exam-statement-table { min-width: 420px; width: 100%; }
-        .exam-statement-table > :not(caption) > * > * { padding: .85rem .75rem; }
+        .exam-statement-table {
+            width: 100%;
+            min-width: 520px;
+            table-layout: auto;
+            font-size: .98rem;
+            line-height: 1.55;
+        }
+        .exam-statement-table > :not(caption) > * > * { padding: .75rem .8rem; }
         .exam-statement-table thead th {
             background: var(--bs-tertiary-bg, #f5f5f9);
-            font-size: .85rem;
+            font-size: .9rem;
             white-space: nowrap;
+            text-align: center;
         }
-        .exam-statement-text { min-width: 220px; overflow-wrap: anywhere; }
+        .exam-statement-table thead th:first-child { text-align: left; }
+        .exam-statement-text { min-width: 300px; overflow-wrap: anywhere; }
         .exam-statement-number { font-weight: 700; margin-right: .35rem; white-space: nowrap; }
-        .exam-statement-answer-heading, .exam-statement-answer-cell { width: 88px; min-width: 72px; }
-        .exam-statement-choice { min-width: 42px; min-height: 42px; }
-        .exam-statement-choice .form-check-input { width: 1.15rem; height: 1.15rem; cursor: pointer; }
+        .exam-statement-answer-heading, .exam-statement-answer-cell { width: 96px; min-width: 88px; }
+        .exam-statement-choice { min-width: 44px; min-height: 44px; }
+        .exam-statement-choice .form-check-input { width: 1.2rem; height: 1.2rem; cursor: pointer; }
         @media (max-width: 575.98px) {
-            .exam-statement-table { min-width: 360px; }
-            .exam-statement-table > :not(caption) > * > * { padding: .65rem .5rem; }
-            .exam-statement-answer-heading, .exam-statement-answer-cell { width: 66px; min-width: 60px; }
+            .exam-question-content img,
+            .exam-option-content img {
+                max-width: 100%;
+                max-height: 300px;
+            }
+            .exam-statement-table { min-width: 460px; font-size: .92rem; }
+            .exam-statement-table > :not(caption) > * > * { padding: .6rem .5rem; }
+            .exam-statement-text { min-width: 260px; }
+            .exam-statement-answer-heading, .exam-statement-answer-cell { width: 76px; min-width: 72px; }
         }
         .exam-navigation-loading { pointer-events: none; opacity: .65; }
         @media (max-width: 991.98px) {
