@@ -116,20 +116,14 @@
                             <input
                                 type="text"
                                 id="code"
-                                name="code"
-                                value="{{ old('code') }}"
-                                class="form-control @error('code') is-invalid @enderror"
-                                placeholder="Contoh: X-IPA-01"
-                                required>
+                                class="form-control"
+                                value=""
+                                placeholder="Dibuat otomatis saat disimpan"
+                                readonly>
 
-
-                            @error('code')
-
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-
-                            @enderror
+                            <small class="text-muted">
+                                Kode dibuat otomatis berdasarkan jenjang dan tingkat kelas.
+                            </small>
 
 
                         </div>
