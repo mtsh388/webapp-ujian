@@ -182,13 +182,13 @@ class ResultController extends Controller
         $recordsFiltered = (clone $rankedAttempts)->count();
 
         $orderColumns = [
-            1 => 'student_name',
-            2 => 'class_name',
-            3 => 'score',
-            4 => 'duration_seconds',
-            5 => 'status',
-            6 => 'submitted_at',
-            7 => 'rank_position',
+            1 => 'rank_position',
+            2 => 'student_name',
+            3 => 'class_name',
+            4 => 'score',
+            5 => 'duration_seconds',
+            6 => 'status',
+            7 => 'submitted_at',
         ];
 
         $orderIndex = (int) $request->input('order.0.column', 0);
