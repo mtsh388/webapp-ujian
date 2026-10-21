@@ -274,6 +274,33 @@ class ExamController extends Controller
         ]);
     }
 
+    public function publish(Exam $exam)
+    {
+        $exam->forceFill(['status' => 'published'])->save();
+
+        return redirect()
+            ->route('exams.index')
+            ->with('success', 'Ujian berhasil dipublikasikan.');
+    }
+
+    public function draft(Exam $exam)
+    {
+        $exam->forceFill(['status' => 'draft'])->save();
+
+        return redirect()
+            ->route('exams.index')
+            ->with('success', 'Status ujian berhasil diubah menjadi Draft.');
+    }
+
+    public function close(Exam $exam)
+    {
+        $exam->forceFill(['status' => 'closed'])->save();
+
+        return redirect()
+            ->route('exams.index')
+            ->with('success', 'Ujian berhasil ditutup.');
+    }
+
     public function update(
         StoreExamRequest $request,
         Exam             $exam
