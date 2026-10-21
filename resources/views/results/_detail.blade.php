@@ -696,7 +696,7 @@
                                                         </div>
                                                     @endif
 
-                                                    @if ($showCorrectAnswers && $correctOption)
+                                                    @if ($question->type !== 'statement_true_false' && $showCorrectAnswers && $correctOption)
                                                         <div class="small">
                                                             Jawaban yang benar adalah
                                                             <strong>{{ $correctOption->option_key }}</strong>.
