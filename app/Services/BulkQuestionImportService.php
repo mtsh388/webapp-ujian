@@ -2468,6 +2468,21 @@ class BulkQuestionImportService
 
                 [$optionPrefix, $itemAnswer] = $this->splitFlexiAnswer($optionText);
 
+                // Some DOCX files store answer choices as Office Math or formatted
+                // equation HTML, so the plain-text extraction can be empty even
+                // though the option has visible content. Preserve that option.
+                if ($optionPrefix === '') {
+                    $optionHtmlText = trim(strip_tags(html_entity_decode(
+                        (string)($optionBlock['html'] ?? ''),
+                        ENT_QUOTES | ENT_HTML5,
+                        'UTF-8'
+                    )));
+
+                    if ($optionHtmlText !== '') {
+                        $optionPrefix = $optionHtmlText;
+                    }
+                }
+
                 if ($optionPrefix !== '') {
                     $key = chr(65 + $optionCount);
                     $optionLabelPattern = '/^' . preg_quote($key, '/') . '\\s*[.)、:：-]\\s*/u';
