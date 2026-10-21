@@ -21,7 +21,7 @@ return new class extends Migration
 
         foreach ($subjects as $subject) {
             if (is_string($subject->code) && trim($subject->code) !== '') {
-                $usedCodes[$subject->code] = true;
+                $usedCodes[strtoupper(trim($subject->code))] = true;
             }
         }
 
@@ -48,10 +48,25 @@ return new class extends Migration
 
             do {
                 $code = $prefix . '-' . str_pad((string) $number++, 3, '0', STR_PAD_LEFT);
-            } while (isset($usedCodes[$code]));
+            } while (isset($usedCodes[strtoupper($code)]));
 
             DB::table('subjects')->where('id', $subject->id)->update(['code' => $code]);
-            $usedCodes[$code] = true;
+            $usedCodes[strtoupper($code)] = true;
+        }
+
+        $duplicateCodes = DB::table('subjects')
+            ->selectRaw('UPPER(code) as normalized_code, COUNT(*) as total')
+            ->whereNotNull('code')
+            ->where('code', '<>', '')
+            ->groupByRaw('UPPER(code)')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('normalized_code');
+
+        if ($duplicateCodes->isNotEmpty()) {
+            throw new RuntimeException(
+                'Migration kode mata pelajaran dibatalkan karena ditemukan kode duplikat: '
+                . $duplicateCodes->implode(', ')
+            );
         }
 
         $indexes = Schema::getIndexes('subjects');
