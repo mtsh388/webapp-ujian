@@ -593,7 +593,7 @@ class ExamService
         DB::table('exam_participants')->insertOrIgnore($rows);
     }
 
-    private function syncAutoAssignedParticipants(Exam $exam): void
+    public function syncAutoAssignedParticipants(Exam $exam): void
     {
         $exam->loadMissing('subject');
         $subject = $exam->subject;
