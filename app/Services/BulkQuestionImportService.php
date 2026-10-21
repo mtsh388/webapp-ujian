@@ -479,6 +479,7 @@ class BulkQuestionImportService
         $text = '';
         $html = '';
         $images = [];
+        $seenImageHashes = [];
 
         // Office Math (Equation) is stored in m:oMath/m:oMathPara,
         // not in ordinary w:r/w:t nodes. Include it in document order so
@@ -636,6 +637,12 @@ class BulkQuestionImportService
                         PATHINFO_EXTENSION
                     )
                 );
+
+                $imageHash = hash('sha256', $imageContent);
+                if (isset($seenImageHashes[$imageHash])) {
+                    continue;
+                }
+                $seenImageHashes[$imageHash] = true;
 
                 $images[] = [
                     'content' => $imageContent,
