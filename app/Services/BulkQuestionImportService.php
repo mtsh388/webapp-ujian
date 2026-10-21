@@ -2081,10 +2081,22 @@ class BulkQuestionImportService
             $index++;
 
             $marker = preg_match(
-                '/tentukan.*benar\s+atau\s+salah|tentukan\s+setuju\s+atau\s+tidak\s+setuju|setuju\s+atau\s+tidak\s+setuju\s+untuk\s+setiap\s+pernyataan|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i',
+                '/tentukan.*benar\\s+atau\\s+salah|tentukan\\s+setuju\\s+atau\\s+tidak\\s+setuju|setuju\\s+atau\\s+tidak\\s+setuju\\s+untuk\\s+setiap\\s+pernyataan|pilih\\s+jawaban\\s+benar\\s+atau\\s+salah|pilihan\\s+benar\\s+atau\\s+salah|benar\\s+atau\\s+salah\\s+pada\\s+setiap\\s+pernyataan/i',
                 $stemText
             ) ? 'statement_true_false' : '';
-            $markerIndex = $marker === 'statement_true_false' ? $index - 1 : $index;
+
+            // The instruction for multiple-select questions can be part of the
+            // question stem itself, rather than a separate paragraph.
+            if (
+                $marker === ''
+                && preg_match('/jawaban\\s+benar\\s+lebih\\s+dari\\s+satu|pilih\\s+semua\\s+jawaban/iu', $stemText)
+            ) {
+                $marker = 'multiple_select';
+            }
+
+            $markerIndex = in_array($marker, ['statement_true_false', 'multiple_select'], true)
+                ? $index - 1
+                : $index;
 
             for ($lookahead = $index; $marker === '' && $lookahead < min($count, $index + 3); $lookahead++) {
                 $markerText = $this->normalizeText((string)($paragraphs[$lookahead]['text'] ?? ''));
@@ -2153,6 +2165,48 @@ class BulkQuestionImportService
                     }
 
                     $index++;
+                }
+
+                // Some Word exports place "Jawaban:" immediately after the
+                // last option and then repeat the selected options as a bulleted
+                // list. Recover those selected options when the answer marker is
+                // present but its value is empty.
+                if ($answerText === '' && $marker === 'multiple_select' && !empty($items)) {
+                    $selectedAnswers = [];
+                    $normalizedItems = [];
+
+                    foreach ($items as $item) {
+                        $normalizedItems[$this->normalizeFlexiComparable((string)($item['text'] ?? ''))] = (string)($item['text'] ?? '');
+                    }
+
+                    while ($index < $count) {
+                        $candidateText = $this->normalizeText((string)($paragraphs[$index]['text'] ?? ''));
+
+                        if ($candidateText === '') {
+                            $index++;
+                            continue;
+                        }
+
+                        [$candidatePrefix, $candidateAnswer] = $this->splitFlexiAnswer($candidateText);
+                        $normalizedCandidate = $this->normalizeFlexiComparable($candidatePrefix);
+
+                        if ($candidateAnswer !== null && $candidateAnswer !== '') {
+                            $answerText = $candidateAnswer;
+                            $index++;
+                            break;
+                        }
+
+                        if ($normalizedCandidate === '' || !array_key_exists($normalizedCandidate, $normalizedItems)) {
+                            break;
+                        }
+
+                        $selectedAnswers[] = $normalizedItems[$normalizedCandidate];
+                        $index++;
+                    }
+
+                    if ($answerText === '' && !empty($selectedAnswers)) {
+                        $answerText = implode(' | ', $selectedAnswers);
+                    }
                 }
 
                 if ($answerText === '' || empty($items)) {
