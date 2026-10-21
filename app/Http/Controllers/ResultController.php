@@ -117,56 +117,26 @@ class ResultController extends Controller
 
     public function ranking(Exam $exam): View
     {
-        abort_unless(auth()->user()->can('result.view'), 403);
+        $studentId = $this->authorizeRankingAccess($exam);
+        $rankedAttempts = $this->rankedAttemptsQuery($exam);
+        $totalRankedStudents = (clone $rankedAttempts)->count();
+        $myRanking = $studentId
+            ? (clone $rankedAttempts)->where('student_id', $studentId)->first()
+            : null;
 
-        abort_unless(
-            $exam->show_result_immediately || $exam->status === 'closed',
-            403,
-            'Ranking belum tersedia untuk ujian ini.'
-        );
-
-        return view('results.ranking', compact('exam'));
+        return view('results.ranking', [
+            'exam' => $exam,
+            'myRanking' => $myRanking,
+            'totalRankedStudents' => $totalRankedStudents,
+            'isRankingManager' => auth()->user()->can('result.view'),
+        ]);
     }
 
     public function rankingData(Exam $exam, Request $request): JsonResponse
     {
-        abort_unless(auth()->user()->can('result.view'), 403);
-
-        abort_unless(
-            $exam->show_result_immediately || $exam->status === 'closed',
-            403,
-            'Ranking belum tersedia untuk ujian ini.'
-        );
-
-        $attempts = DB::table('exam_attempts as ea')
-            ->join('students as s', 's.id', '=', 'ea.student_id')
-            ->leftJoin('classes as cr', 'cr.id', '=', 's.class_id')
-            ->where('ea.exam_id', $exam->id)
-            ->whereIn('ea.status', ['submitted', 'expired'])
-            ->whereNotNull('ea.submitted_at')
-            ->select([
-                'ea.id',
-                'ea.student_id',
-                'ea.exam_id',
-                'ea.score',
-                'ea.duration_seconds',
-                'ea.status',
-                'ea.passed',
-                'ea.submitted_at',
-                's.full_name as student_name',
-                's.student_number',
-                'cr.name as class_name',
-            ])
-            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ea.student_id ORDER BY ea.score DESC, CASE WHEN ea.duration_seconds IS NULL THEN 1 ELSE 0 END ASC, ea.duration_seconds ASC, ea.submitted_at ASC, ea.id ASC) as attempt_choice');
-
-        $bestAttempts = DB::query()
-            ->fromSub($attempts, 'attempts')
-            ->where('attempt_choice', 1);
-
-        $rankedAttempts = DB::query()
-            ->fromSub($bestAttempts, 'best_attempts')
-            ->select('best_attempts.*')
-            ->selectRaw('RANK() OVER (ORDER BY score DESC, CASE WHEN duration_seconds IS NULL THEN 1 ELSE 0 END ASC, duration_seconds ASC) as rank_position');
+        $studentId = $this->authorizeRankingAccess($exam);
+        $isRankingManager = auth()->user()->can('result.view');
+        $rankedAttempts = $this->rankedAttemptsQuery($exam);
 
         $recordsTotal = (clone $rankedAttempts)->count();
         $search = trim((string) $request->input('search.value', ''));
@@ -205,8 +175,8 @@ class ResultController extends Controller
             ->offset($start)
             ->limit($length)
             ->get()
-            ->map(function ($row, $index) use ($start) {
-                return [
+            ->map(function ($row, $index) use ($start, $studentId, $isRankingManager) {
+                $data = [
                     'no' => $start + $index + 1,
                     'rank' => (int) $row->rank_position,
                     'id' => $row->id,
@@ -218,8 +188,14 @@ class ResultController extends Controller
                     'status' => $row->status,
                     'passed' => (bool) $row->passed,
                     'submitted_at' => $row->submitted_at,
-                    'show_url' => route('results.show', $row->id),
+                    'is_current_student' => $studentId !== null && (int) $row->student_id === $studentId,
                 ];
+
+                if ($isRankingManager) {
+                    $data['show_url'] = route('results.show', $row->id);
+                }
+
+                return $data;
             });
 
         return response()->json([
@@ -228,6 +204,75 @@ class ResultController extends Controller
             'recordsFiltered' => $recordsFiltered,
             'data' => $rows,
         ]);
+    }
+
+    private function authorizeRankingAccess(Exam $exam): ?int
+    {
+        abort_unless(
+            $exam->show_result_immediately || $exam->status === 'closed',
+            403,
+            'Ranking belum tersedia untuk ujian ini.'
+        );
+
+        $user = auth()->user();
+
+        if ($user->can('result.view')) {
+            return null;
+        }
+
+        abort_unless($user->can('result.view_own'), 403);
+
+        $student = $user->student;
+
+        abort_unless(
+            $student !== null,
+            403,
+            'Akun ini tidak terhubung dengan data siswa.'
+        );
+
+        $hasResult = DB::table('exam_attempts')
+            ->where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->whereIn('status', ['submitted', 'expired'])
+            ->whereNotNull('submitted_at')
+            ->exists();
+
+        abort_unless($hasResult, 403, 'Anda belum memiliki hasil untuk ujian ini.');
+
+        return (int) $student->id;
+    }
+
+    private function rankedAttemptsQuery(Exam $exam)
+    {
+        $attempts = DB::table('exam_attempts as ea')
+            ->join('students as s', 's.id', '=', 'ea.student_id')
+            ->leftJoin('classes as cr', 'cr.id', '=', 's.class_id')
+            ->where('ea.exam_id', $exam->id)
+            ->whereIn('ea.status', ['submitted', 'expired'])
+            ->whereNotNull('ea.submitted_at')
+            ->select([
+                'ea.id',
+                'ea.student_id',
+                'ea.exam_id',
+                'ea.score',
+                'ea.duration_seconds',
+                'ea.status',
+                'ea.passed',
+                'ea.submitted_at',
+                's.full_name as student_name',
+                's.student_number',
+                'cr.name as class_name',
+            ])
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ea.student_id ORDER BY ea.score DESC, CASE WHEN ea.duration_seconds IS NULL THEN 1 ELSE 0 END ASC, ea.duration_seconds ASC, ea.submitted_at ASC, ea.id ASC) as attempt_choice');
+
+        $bestAttempts = DB::query()
+            ->fromSub($attempts, 'attempts')
+            ->where('attempt_choice', 1);
+
+        return DB::query()
+            ->fromSub($bestAttempts, 'best_attempts')
+            ->select('best_attempts.*')
+            ->selectRaw('RANK() OVER (ORDER BY score DESC, CASE WHEN duration_seconds IS NULL THEN 1 ELSE 0 END ASC, duration_seconds ASC) as rank_position');
     }
 
     public function show(
