@@ -557,50 +557,49 @@
             </div>
 
             <div style="margin-top: 10px;">
-
-                @foreach ($question->options as $option)
-
+                @if ($question->type === 'statement_true_false')
                     @php
-                        $isSelected =
-                            in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
-
-                        $isCorrectOption = (bool) $option->is_correct;
-
-                        $isWrongSelected =
-                            $isSelected &&
-                            !$isCorrectOption;
+                        $statementGroups = $question->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
                     @endphp
-
-                    <div
-                        class="option
-                            {{ $isSelected ? 'option-selected' : '' }}
-                            {{ $showCorrectAnswers && $isCorrectOption ? 'option-correct' : '' }}
-                            {{ $showCorrectAnswers && $isWrongSelected ? 'option-wrong' : '' }}">
-
-                            <span class="option-key">
-                                {{ $option->option_key }}.
-                            </span>
-
-                        <span class="option-text option-content">
-                                {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
-                            </span>
-
-                        @if ($isSelected)
-                            <span class="badge badge-primary">
-                                    Jawaban Anda
-                                </span>
-                        @endif
-
-                        @if ($showCorrectAnswers && $isCorrectOption)
-                            <span class="badge badge-success">
-                                    Jawaban Benar
-                                </span>
-                        @endif
-
-                    </div>
-
-                @endforeach
-
+                    @foreach ($statementGroups as $groupKey => $groupOptions)
+                        @php
+                            $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                            $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
+                            $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                        @endphp
+                        <div class="option {{ $selectedStatementOption && $selectedStatementOption->is_correct ? 'option-correct' : ($selectedStatementOption ? 'option-wrong' : '') }}">
+                            <strong>Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}.</strong>
+                            <div class="option-content">
+                                {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
+                            </div>
+                            <div>
+                                Jawaban Anda:
+                                <strong>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</strong>
+                                @if ($showCorrectAnswers)
+                                    <span class="badge badge-success">Kunci: {{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    @foreach ($question->options as $option)
+                        @php
+                            $isSelected = in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
+                            $isCorrectOption = (bool) $option->is_correct;
+                            $isWrongSelected = $isSelected && !$isCorrectOption;
+                        @endphp
+                        <div class="option {{ $isSelected ? 'option-selected' : '' }} {{ $showCorrectAnswers && $isCorrectOption ? 'option-correct' : '' }} {{ $showCorrectAnswers && $isWrongSelected ? 'option-wrong' : '' }}">
+                            <span class="option-key">{{ $option->option_key }}.</span>
+                            <span class="option-text option-content">{!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}</span>
+                            @if ($isSelected)
+                                <span class="badge badge-primary">Jawaban Anda</span>
+                            @endif
+                            @if ($showCorrectAnswers && $isCorrectOption)
+                                <span class="badge badge-success">Jawaban Benar</span>
+                            @endif
+                        </div>
+                    @endforeach
+                @endif
             </div>
 
             @if (!$isAnswered)
