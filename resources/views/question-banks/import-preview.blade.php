@@ -20,6 +20,19 @@
             Periksa pertanyaan, pilihan jawaban, kunci jawaban, dan pembahasan di bawah ini. Data baru dibuat setelah Anda menekan tombol Konfirmasi Import.
         </div>
 
+        @if (($preview['format'] ?? 'template') === 'flexiquiz')
+            <div class="alert alert-warning">
+                <div class="fw-semibold mb-2">Format TKA/FlexiQuiz terdeteksi</div>
+                <p class="mb-2">Dokumen ini menggunakan kunci jawaban berupa teks, jawaban jamak, dan/atau pernyataan Benar/Salah. Agar kompatibel dengan format penilaian ujian yang saat ini tersedia, beberapa jenis soal dikonversi menjadi soal Benar/Salah per pilihan atau per pernyataan.</p>
+                <ul class="mb-0 ps-3">
+                    @foreach (($preview['conversion_notes'] ?? []) as $note)
+                        <li>{{ $note }}</li>
+                    @endforeach
+                </ul>
+                <div class="mt-2 fw-semibold">Pastikan seluruh teks bacaan, soal, dan kunci jawaban di bawah ini sesuai sebelum mengonfirmasi impor.</div>
+            </div>
+        @endif
+
         <div class="row g-3 mb-4">
             <div class="col-md-6 col-xl-3">
                 <div class="card h-100"><div class="card-body">
