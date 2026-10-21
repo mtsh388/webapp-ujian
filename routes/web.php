@@ -326,6 +326,14 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             ->middleware('permission:result.view')
             ->name('results.index');
 
+        Route::get('/data', [ResultController::class, 'data'])
+            ->middleware('permission:result.view')
+            ->name('results.data');
+
+        Route::get('/ujian/{exam}/ranking/data', [ResultController::class, 'rankingData'])
+            ->middleware('permission:result.view')
+            ->name('results.ranking.data');
+
         Route::get('/ujian/{exam}/ranking', [ResultController::class, 'ranking'])
             ->middleware('permission:result.view')
             ->name('results.ranking');
