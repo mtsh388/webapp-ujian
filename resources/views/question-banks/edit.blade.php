@@ -109,6 +109,12 @@
                                             value="multiple_select"
                                             @selected(old('type', $questionBank->type) === 'multiple_select')>Pilih Semua yang Benar</option>
                                         <option
+                                            value="statement_true_false"
+                                            @selected(old('type', $questionBank->type) === 'statement_true_false')>
+                                            Benar / Salah per Pernyataan
+                                        </option>
+
+                                        <option
                                             value="true_false"
                                             @selected(old('type', $questionBank->type) === 'true_false')>
                                             Benar / Salah
@@ -784,6 +790,10 @@
             }
 
             function updateOptionNumbers() {
+                if (document.getElementById('question-type')?.value === 'statement_true_false') {
+                    return;
+                }
+
                 const items = optionsContainer.querySelectorAll('.option-item');
 
                 items.forEach(function (item, index) {
@@ -807,7 +817,7 @@
                     return;
                 }
 
-                if (document.getElementById('question-type')?.value === 'multiple_select') {
+                if (['multiple_select', 'statement_true_false'].includes(document.getElementById('question-type')?.value)) {
                     return;
                 }
 
