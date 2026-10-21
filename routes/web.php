@@ -10,6 +10,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
+use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -324,6 +325,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         Route::get('/', [ResultController::class, 'index'])
             ->middleware('permission:result.view')
             ->name('results.index');
+
+        Route::get('/ujian/{exam}/ranking', [ResultController::class, 'ranking'])
+            ->middleware('permission:result.view')
+            ->name('results.ranking');
 
         Route::get('/saya', [ResultController::class, 'myResults'])
             ->middleware('permission:result.view_own')
