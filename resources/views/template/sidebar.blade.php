@@ -1,10 +1,11 @@
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
 
     <div class="app-brand demo">
-        <a href="{{ route('dashboard') }}" class="app-brand-link">
-            <span class="app-brand-text demo menu-text fw-bold ms-2">
-                BIMBEL
+        <a href="{{ route('dashboard') }}" class="app-brand-link gap-2">
+            <span class="app-brand-logo demo">
+                <img src="{{ asset('assets/sneat/img/Logo.jpeg') }}" alt="QSEE" style="width: 34px; height: 34px; object-fit: contain;">
             </span>
+            <span class="app-brand-text demo menu-text fw-bold">QSEE</span>
         </a>
 
         <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
