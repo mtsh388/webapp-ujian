@@ -3,6 +3,13 @@
 @section('title', 'Tambah Bank Soal')
 
 @section('content')
+    <style>
+        .question-rich-editor { min-height: 220px; overflow-y: auto; white-space: normal; }
+        .question-rich-editor:empty::before { content: attr(data-placeholder); color: #8993a4; pointer-events: none; }
+        .question-rich-editor table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
+        .question-rich-editor th, .question-rich-editor td { border: 1px solid #adb5bd; padding: .5rem; vertical-align: top; min-width: 70px; }
+        .question-rich-editor th { background: #f1f3f5; }
+    </style>
     <div class="container-fluid py-3">
 
         <form
@@ -151,11 +158,25 @@
                                         Pertanyaan
                                     </label>
 
-                                    <textarea
-                                        name="question"
-                                        class="form-control"
-                                        rows="7"
-                                        required>{{ old('question') }}</textarea>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                        <div class="form-text">
+                                            Bisa berisi teks, tabel pernyataan, rumus sederhana, atau kombinasi.
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary insert-statement-table">
+                                            <i class="bx bx-table me-1"></i> Sisipkan Tabel Pernyataan
+                                        </button>
+                                    </div>
+                                    <div
+                                        id="question-editor"
+                                        class="form-control question-rich-editor"
+                                        contenteditable="true"
+                                        role="textbox"
+                                        aria-multiline="true"
+                                        data-placeholder="Tuliskan pertanyaan di sini...">{!! \App\Support\QuestionHtml::sanitize(old('question', '')) !!}</div>
+                                    <textarea name="question" id="question-content" class="d-none">{{ old('question') }}</textarea>
+                                    <div class="form-text mt-2">
+                                        Untuk soal kombinasi Benar/Salah, pilih tipe <strong>Pilihan Ganda</strong>, isi empat opsi kombinasi, lalu tandai satu opsi yang benar.
+                                    </div>
 
                                 </div>
 
@@ -207,7 +228,7 @@
                                 </h5>
 
                                 <small class="text-muted">
-                                    Setiap pilihan dapat menggunakan teks dan gambar.
+                                    Setiap pilihan dapat menggunakan teks dan gambar. Untuk soal kombinasi, isi opsi seperti “Salah, Benar, Benar” dan tandai satu opsi yang benar.
                                 </small>
                             </div>
 
@@ -867,6 +888,35 @@
 
                 if (wrapper) {
                     wrapper.remove();
+                }
+            });
+
+            const questionEditor = document.getElementById('question-editor');
+            const questionContent = document.getElementById('question-content');
+            const questionForm = document.getElementById('question-form');
+
+            function syncQuestionContent() {
+                questionContent.value = questionEditor.innerHTML.trim();
+            }
+
+            questionEditor.addEventListener('input', syncQuestionContent);
+
+            document.querySelectorAll('.insert-statement-table').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    questionEditor.focus();
+                    const table = `<table><thead><tr><th>PERNYATAAN</th><th>BENAR</th><th>SALAH</th></tr></thead><tbody><tr><td>Pernyataan 1</td><td></td><td></td></tr><tr><td>Pernyataan 2</td><td></td><td></td></tr><tr><td>Pernyataan 3</td><td></td><td></td></tr></tbody></table><p></p>`;
+                    document.execCommand('insertHTML', false, table);
+                    syncQuestionContent();
+                });
+            });
+
+            questionForm.addEventListener('submit', function (event) {
+                syncQuestionContent();
+                if (!questionEditor.textContent.trim() && !questionEditor.querySelector('img, table')) {
+                    event.preventDefault();
+                    questionEditor.classList.add('is-invalid');
+                    questionEditor.focus();
+                    alert('Pertanyaan wajib diisi.');
                 }
             });
 
