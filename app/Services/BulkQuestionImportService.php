@@ -2755,6 +2755,7 @@ class BulkQuestionImportService
                     [
                         'multiple_choice',
                         'multiple_select',
+                        'statement_true_false',
                         'true_false',
                     ],
                     true
