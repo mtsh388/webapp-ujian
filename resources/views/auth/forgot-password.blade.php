@@ -13,16 +13,16 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-    <title>Login | Bimbel</title>
+    <title>Lupa Password | QSEE</title>
 
     <meta
         name="description"
-        content="Login aplikasi Bimbel">
+        content="Pemulihan password akun QSEE">
 
     <link
         rel="icon"
         type="image/x-icon"
-        href="{{ asset('assets/sneat/img/favicon/favicon.ico') }}">
+        href="{{ asset('assets/sneat/img/Logo.jpeg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,6 +63,12 @@
         <div class="col-lg-5 col-xl-4">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4 p-lg-5">
+                    <div class="app-brand justify-content-center mb-6">
+                        <a href="{{ route('login') }}" class="app-brand-link gap-2">
+                            <span class="app-brand-logo demo"><img src="{{ asset('assets/sneat/img/Logo.jpeg') }}" alt="QSEE" style="width: 48px; height: 48px; object-fit: contain;"></span>
+                            <span class="app-brand-text demo text-heading fw-bold">QSEE</span>
+                        </a>
+                    </div>
                     <div class="mb-4">
                         <h4 class="fw-bold mb-2">Lupa Password?</h4>
                         <p class="text-muted mb-0">
