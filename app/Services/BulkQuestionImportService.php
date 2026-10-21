@@ -2126,7 +2126,17 @@ class BulkQuestionImportService
                 $marker = 'multiple_select';
             }
 
-            $markerIndex = in_array($marker, ['statement_true_false', 'multiple_select'], true)
+            // TKA items asking how many of four statements are true have
+            // four statement paragraphs before the numeric A-D choices.
+            // Treat those paragraphs as question content, not answer options.
+            if (
+                $marker === ''
+                && preg_match('/banyaknya\\s+dari\\s+empat\\s+pernyataan|berapa\\s+banyak(?:nya)?\\s+.*empat\\s+pernyataan/iu', $stemText)
+            ) {
+                $marker = 'count_statements';
+            }
+
+            $markerIndex = in_array($marker, ['statement_true_false', 'multiple_select', 'count_statements'], true)
                 ? $index - 1
                 : $index;
 
@@ -2154,6 +2164,33 @@ class BulkQuestionImportService
                 $index = $markerIndex + 1;
                 $items = [];
                 $answerText = '';
+
+                if ($marker === 'count_statements') {
+                    $statementCount = 0;
+
+                    while ($index < $count && $statementCount < 4) {
+                        $statementBlock = $paragraphs[$index];
+                        $statementText = $this->normalizeText((string)($statementBlock['text'] ?? ''));
+
+                        if ($statementText === '' || $this->containsFlexiAnswer($statementText)) {
+                            break;
+                        }
+
+                        $statementImages = [];
+                        $statementHtml = $this->flexiBlockHtml($statementBlock, $statementImages);
+                        $questionHtml = $this->appendHtml($questionHtml, $statementHtml);
+                        $questionImages = array_merge($questionImages, $statementImages);
+                        $stemText .= ' ' . $statementText;
+                        $statementCount++;
+                        $index++;
+                    }
+
+                    if ($statementCount !== 4) {
+                        throw new RuntimeException(
+                            'Soal yang menanyakan banyaknya pernyataan harus memiliki empat pernyataan sebelum pilihan jawaban: ' . strip_tags($stemText)
+                        );
+                    }
+                }
 
                 while ($index < $count) {
                     $itemBlock = $paragraphs[$index];
