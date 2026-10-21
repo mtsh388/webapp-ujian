@@ -225,8 +225,7 @@
 
                 if (
                     $select.hasClass('select2-hidden-accessible') ||
-                    $select.is('[data-no-select2]') ||
-                    $select.closest('.dataTables_wrapper').length
+                    $select.is('[data-no-select2]')
                 ) {
                     return;
                 }
@@ -245,7 +244,11 @@
                     }
                 };
 
-                if (firstOption.length && firstOption.val() === '') {
+                if (
+                    !$select.prop('multiple') &&
+                    firstOption.length &&
+                    firstOption.val() === ''
+                ) {
                     options.placeholder = firstOption.text().trim();
                     options.allowClear = !$select.prop('required');
                 }
@@ -258,13 +261,15 @@
 
                 $select.select2(options);
 
+                const $selection = $select.next('.select2-container').find('.select2-selection');
+
                 if ($select.hasClass('is-invalid')) {
-                    $select.next('.select2-container').find('.select2-selection').addClass('is-invalid');
+                    $selection.addClass('is-invalid');
                 }
 
                 $select.on('change.qseeSelect2', function () {
                     if (this.value !== '') {
-                        $select.next('.select2-container').find('.select2-selection').removeClass('is-invalid');
+                        $selection.removeClass('is-invalid');
                     }
                 });
             });
@@ -272,24 +277,267 @@
 
         window.qseeInitSelect2 = initializeSelect2;
 
-        if (window.Swal && typeof window.Swal.fire === 'function') {
-            window.alert = function (message) {
-                window.Swal.fire({
-                    icon: 'info',
-                    title: 'Informasi',
-                    text: String(message ?? ''),
-                    confirmButtonText: 'OK'
-                });
-            };
+        window.qseeAlert = function (message, options) {
+            const settings = options || {};
+
+            if (!window.Swal || typeof window.Swal.fire !== 'function') {
+                console.warn(String(message ?? ''));
+                return Promise.resolve();
+            }
+
+            return window.Swal.fire({
+                icon: settings.icon || 'info',
+                title: settings.title || 'Informasi',
+                text: String(message ?? ''),
+                confirmButtonText: settings.confirmButtonText || 'OK'
+            });
+        };
+
+        window.qseeConfirm = function (message, options) {
+            const settings = options || {};
+
+            if (!window.Swal || typeof window.Swal.fire !== 'function') {
+                return Promise.resolve(false);
+            }
+
+            return window.Swal.fire({
+                icon: settings.icon || 'warning',
+                title: settings.title || 'Konfirmasi',
+                text: String(message ?? ''),
+                showCancelButton: true,
+                confirmButtonText: settings.confirmButtonText || 'Ya, lanjutkan',
+                cancelButtonText: settings.cancelButtonText || 'Batal',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function (result) {
+                return result.isConfirmed;
+            });
+        };
+
+        window.alert = function (message) {
+            window.qseeAlert(message);
+        };
+
+        function fieldLabel(control) {
+            const label = control.labels && control.labels.length
+                ? control.labels[0].textContent
+                : control.getAttribute('aria-label');
+
+            return String(label || control.name || control.id || 'Field ini')
+                .replace(/\s+/g, ' ')
+                .replace(/\*/g, '')
+                .trim();
         }
 
-        jQuery(function () {
-            initializeSelect2(document);
-        });
+        function validationMessage(control) {
+            const validity = control.validity;
+            const label = fieldLabel(control);
 
-        jQuery(document).on('shown.bs.modal', function (event) {
-            initializeSelect2(event.target);
-        });
+            if (validity.valueMissing) {
+                if (control.type === 'checkbox' || control.type === 'radio') {
+                    return 'Silakan pilih atau centang ' + label + '.';
+                }
+
+                if (control.tagName === 'SELECT' || control.type === 'file') {
+                    return 'Silakan pilih ' + label + '.';
+                }
+
+                return label + ' wajib diisi.';
+            }
+
+            if (validity.typeMismatch && control.type === 'email') {
+                return 'Masukkan alamat email yang valid.';
+            }
+
+            if (validity.typeMismatch && control.type === 'url') {
+                return 'Masukkan URL yang valid, diawali http:// atau https://.';
+            }
+
+            if (validity.patternMismatch) {
+                return control.dataset.validationMessage || 'Format ' + label + ' belum sesuai.';
+            }
+
+            if (validity.tooShort) {
+                return label + ' minimal ' + control.minLength + ' karakter.';
+            }
+
+            if (validity.tooLong) {
+                return label + ' maksimal ' + control.maxLength + ' karakter.';
+            }
+
+            if (validity.rangeUnderflow) {
+                return label + ' tidak boleh kurang dari ' + control.min + '.';
+            }
+
+            if (validity.rangeOverflow) {
+                return label + ' tidak boleh lebih dari ' + control.max + '.';
+            }
+
+            if (validity.stepMismatch) {
+                return 'Nilai ' + label + ' belum sesuai dengan interval yang diizinkan.';
+            }
+
+            if (validity.badInput) {
+                return 'Periksa kembali nilai pada ' + label + '.';
+            }
+
+            return control.dataset.validationMessage || 'Periksa kembali ' + label + '.';
+        }
+
+        function prepareForms(context) {
+            const forms = [];
+
+            if (context instanceof HTMLFormElement) {
+                forms.push(context);
+            }
+
+            if (context && context.querySelectorAll) {
+                forms.push.apply(forms, context.querySelectorAll('form'));
+            }
+
+            forms.forEach(function (form) {
+                form.noValidate = true;
+            });
+        }
+
+        function focusInvalidControl(control) {
+            if (
+                control.tagName === 'SELECT' &&
+                window.jQuery &&
+                jQuery.fn.select2 &&
+                jQuery(control).hasClass('select2-hidden-accessible')
+            ) {
+                jQuery(control).select2('open');
+                return;
+            }
+
+            control.focus({ preventScroll: false });
+        }
+
+        function showServerValidationErrors() {
+            const errors = @json($errors->all());
+
+            if (!errors.length || !window.Swal || typeof window.Swal.fire !== 'function') {
+                return;
+            }
+
+            window.Swal.fire({
+                icon: 'error',
+                title: 'Periksa kembali data',
+                text: errors.slice(0, 5).join(' | ') + (errors.length > 5 ? ' | dan ' + (errors.length - 5) + ' kesalahan lainnya.' : ''),
+                confirmButtonText: 'Mengerti'
+            });
+        }
+
+        function clearInvalidState(event) {
+            const control = event.target;
+
+            if (
+                !control ||
+                !control.matches ||
+                !control.matches('input, textarea, select') ||
+                !control.validity ||
+                !control.validity.valid
+            ) {
+                return;
+            }
+
+            control.classList.remove('is-invalid');
+
+            if (
+                control.tagName === 'SELECT' &&
+                window.jQuery &&
+                jQuery.fn.select2
+            ) {
+                jQuery(control).next('.select2-container')
+                    .find('.select2-selection')
+                    .removeClass('is-invalid');
+            }
+        }
+
+        function start() {
+            initializeSelect2(document);
+            prepareForms(document);
+            showServerValidationErrors();
+
+            document.addEventListener('submit', function (event) {
+                const form = event.target;
+
+                if (!(form instanceof HTMLFormElement) || form.matches('[data-skip-swal-validation]')) {
+                    return;
+                }
+
+                prepareForms(form);
+
+                const invalidControl = Array.from(form.elements).find(function (control) {
+                    return control.willValidate && control.validity && !control.validity.valid;
+                });
+
+                if (!invalidControl) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                invalidControl.classList.add('is-invalid');
+
+                if (
+                    invalidControl.tagName === 'SELECT' &&
+                    window.jQuery &&
+                    jQuery.fn.select2 &&
+                    jQuery(invalidControl).hasClass('select2-hidden-accessible')
+                ) {
+                    jQuery(invalidControl).next('.select2-container')
+                        .find('.select2-selection')
+                        .addClass('is-invalid');
+                }
+
+                window.qseeAlert(validationMessage(invalidControl), {
+                    icon: 'warning',
+                    title: 'Data belum lengkap'
+                }).then(function () {
+                    focusInvalidControl(invalidControl);
+                });
+            }, true);
+
+            document.addEventListener('input', clearInvalidState, true);
+            document.addEventListener('change', clearInvalidState, true);
+
+            const observer = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
+                    mutation.addedNodes.forEach(function (node) {
+                        if (node.nodeType !== Node.ELEMENT_NODE) {
+                            return;
+                        }
+
+                        if (node.matches('select') || node.querySelector('select')) {
+                            initializeSelect2(node);
+                        }
+
+                        if (node.matches('form') || node.querySelector('form')) {
+                            prepareForms(node);
+                        }
+                    });
+                });
+            });
+
+            observer.observe(document.documentElement, {
+                childList: true,
+                subtree: true
+            });
+
+            jQuery(document).on('shown.bs.modal', function (event) {
+                initializeSelect2(event.target);
+                prepareForms(event.target);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start, { once: true });
+        } else {
+            start();
+        }
     })();
 </script>
 
