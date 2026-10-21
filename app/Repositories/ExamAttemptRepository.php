@@ -150,13 +150,21 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
             ->get()
             ->keyBy('exam_question_id');
 
+        $questionModels = \App\Models\ExamQuestion::query()
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
+
         $correctAnswers = 0;
         $wrongAnswers = 0;
         $unanswered = 0;
         $totalScore = 0.0;
+        $maximumScore = 0.0;
 
         foreach ($questionIds as $questionId) {
             $answer = $answers->get($questionId);
+            $question = $questionModels->get($questionId);
+            $maximumScore += (float) ($question?->score ?? 0);
 
             $selectedIds = $answer?->selected_option_ids;
             $hasSelectedOptions = is_array($selectedIds)
@@ -173,13 +181,17 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
                 $totalScore += (float) $answer->score;
             } else {
                 $wrongAnswers++;
+
+                if ($question?->type === 'statement_true_false') {
+                    $totalScore += (float) $answer->score;
+                }
             }
         }
 
         $totalQuestions = $questionIds->count();
 
-        $score = $totalQuestions > 0
-            ? ($correctAnswers / $totalQuestions) * 100
+        $score = $maximumScore > 0
+            ? ($totalScore / $maximumScore) * 100
             : 0;
 
         return [
