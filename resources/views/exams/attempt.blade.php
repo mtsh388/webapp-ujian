@@ -4,106 +4,102 @@
 
 @section('content')
     <style>
-        .exam-timer {
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: 1px;
+        .exam-taking-page { --exam-accent: var(--bs-primary); }
+        .exam-header {
+            border: 1px solid var(--bs-border-color);
+            border-radius: 1rem;
+            background: var(--bs-card-bg, #fff);
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 3px 14px rgba(34, 48, 62, .04);
         }
-
-        .exam-timer-warning {
-            animation: timerPulse 1s infinite;
-        }
-
-        @keyframes timerPulse {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.45;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .question-option {
-            transition: all 0.15s ease;
-        }
-
-        .question-option:hover {
-            background-color: rgba(105, 108, 255, 0.05);
-        }
-
-        .question-option.selected {
-            background-color: rgba(105, 108, 255, 0.08);
-            border-color: rgba(105, 108, 255, 0.5) !important;
-        }
-
-        .question-number {
-            width: 42px;
-            height: 42px;
+        .exam-header-title { font-size: clamp(1.15rem, 2vw, 1.5rem); line-height: 1.35; }
+        .exam-meta-chip {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-weight: 600;
+            gap: .35rem;
+            padding: .35rem .65rem;
+            border-radius: 999px;
+            background: var(--bs-tertiary-bg, #f5f5f9);
+            color: var(--bs-secondary-color, #697a8d);
+            font-size: .8rem;
         }
-
-        .question-number.current {
-            background-color: var(--bs-primary);
-            color: #fff;
+        .exam-timer-card {
+            min-width: 155px;
+            border: 1px solid rgba(105, 108, 255, .2);
+            border-radius: .85rem;
+            background: rgba(105, 108, 255, .06);
         }
-
-        .question-number.answered {
-            background-color: var(--bs-success);
-            color: #fff;
+        .exam-timer { font-size: 1.45rem; font-weight: 800; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+        .exam-timer-warning { animation: timerPulse 1s infinite; }
+        @keyframes timerPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+        .exam-proctor-alert {
+            border: 1px solid rgba(3, 195, 236, .22);
+            border-radius: .85rem;
+            background: rgba(3, 195, 236, .06);
+            padding: .85rem 1rem;
         }
-
-        .question-number.current.answered {
-            background-color: var(--bs-primary);
-            color: #fff;
+        .exam-panel-card {
+            border: 1px solid var(--bs-border-color);
+            border-radius: .95rem;
+            box-shadow: 0 4px 18px rgba(34, 48, 62, .045);
+            overflow: hidden;
         }
-
-        .exam-question-content img {
-            max-width: 100%;
-            height: auto;
+        .exam-sidebar { position: sticky; top: 1.25rem; align-self: flex-start; }
+        .exam-sidebar .card-header { background: transparent; border-bottom: 1px solid var(--bs-border-color); padding: 1rem 1.1rem; }
+        .exam-sidebar .card-body { padding: 1.1rem; }
+        .exam-timer-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--bs-secondary-color); }
+        .question-option {
+            border-radius: .8rem !important;
+            background: var(--bs-card-bg, #fff);
+            cursor: pointer;
+            transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
         }
-
-        .exam-question-content table {
-            max-width: 100%;
+        .question-option:hover { background-color: rgba(105, 108, 255, .045); border-color: rgba(105, 108, 255, .4) !important; }
+        .question-option.selected { background-color: rgba(105, 108, 255, .08); border-color: rgba(105, 108, 255, .65) !important; box-shadow: 0 0 0 1px rgba(105, 108, 255, .12); }
+        .question-option .form-check-input { flex-shrink: 0; width: 1.1rem; height: 1.1rem; }
+        .question-number {
+            width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: .85rem; border: 1px solid var(--bs-border-color);
+            transition: transform .15s ease, box-shadow .15s ease;
         }
-
-        .exam-option-content img {
-            max-width: 100%;
-            height: auto;
+        .question-number:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(34, 48, 62, .12); }
+        .question-number.current { background-color: var(--bs-primary); color: #fff; border-color: var(--bs-primary); box-shadow: 0 0 0 3px rgba(105, 108, 255, .14); }
+        .question-number.answered { background-color: var(--bs-success); color: #fff; border-color: var(--bs-success); }
+        .question-number.current.answered { background-color: var(--bs-primary); color: #fff; border-color: var(--bs-primary); }
+        .exam-question-content { font-size: 1.05rem; line-height: 1.8; overflow-wrap: anywhere; }
+        .exam-question-content img, .exam-option-content img { max-width: 100%; height: auto; }
+        .exam-question-content table, .exam-option-content table { max-width: 100%; display: block; overflow-x: auto; }
+        .exam-question-content p:last-child, .exam-option-content p:last-child { margin-bottom: 0; }
+        .exam-navigation-loading { pointer-events: none; opacity: .65; }
+        @media (max-width: 991.98px) {
+            .exam-sidebar { position: static; }
         }
-
-        .exam-navigation-loading {
-            pointer-events: none;
-            opacity: 0.65;
+        @media (max-width: 575.98px) {
+            .exam-header { padding: 1rem; }
+            .exam-timer-card { width: 100%; }
+            .exam-timer { font-size: 1.3rem; }
+            .question-number { width: 35px; height: 35px; }
         }
     </style>
 
-    <div class="container-fluid py-3">
+    <div class="container-fluid py-3 exam-taking-page">
 
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+        <div class="exam-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
             <div>
-                <h4 class="fw-bold mb-1">
+                <h4 class="exam-header-title fw-bold mb-2">
                     {{ $exam->title }}
                 </h4>
 
-                <div class="text-muted">
-                    {{ $exam->code }}
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="exam-meta-chip"><i class="bx bx-hash"></i>{{ $exam->code }}</span>
                     @if ($exam->subject)
-                        <span class="mx-1">•</span>
-                        {{ $exam->subject->name }}
+                        <span class="exam-meta-chip"><i class="bx bx-book"></i>{{ $exam->subject->name }}@if($exam->subject->grade_level) · Kelas {{ $exam->subject->grade_level }}@endif</span>
                     @endif
                 </div>
             </div>
 
             @if ($exam->has_duration)
-            <div class="card shadow-sm border-0">
+            <div class="card exam-panel-card">
                 <div class="card-body py-2 px-3">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bx bx-time-five fs-4 text-primary"></i>
@@ -125,7 +121,7 @@
             @endif
         </div>
 
-        <div class="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4" role="status">
+        <div class="exam-proctor-alert d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4" role="status">
             <div>
                 <strong>Mode ujian terpantau</strong>
                 <div class="small">Perpindahan tab dan keluar dari fullscreen dicatat untuk ditinjau. Peringatan tidak otomatis menggugurkan peserta.</div>
@@ -140,9 +136,9 @@
 
             @include('exams.partials.attempt-question')
 
-            <div class="col-lg-4">
+            <div class="col-lg-4 exam-sidebar">
 
-                <div class="card shadow-sm border-0 mb-4">
+                <div class="card exam-panel-card mb-3">
                     <div class="card-header">
                         <h5 class="mb-0">
                             Navigasi Soal
