@@ -208,6 +208,9 @@
 
                     </form>
 
+                    <p class="text-center mb-0">
+                        Belum punya akun siswa? <a href="{{ route('register') }}" class="text-decoration-none fw-semibold">Registrasi</a>
+                    </p>
 
                 </div>
             </div>
