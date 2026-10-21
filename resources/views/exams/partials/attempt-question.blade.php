@@ -1,9 +1,9 @@
             <div class="col-lg-8" id="examQuestionPanel">
 
-                <div class="card shadow-sm border-0 mb-4">
+                <div class="card exam-panel-card mb-3">
                     <div class="card-body">
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 pb-3 border-bottom">
                             <div>
                                 <span class="badge bg-label-primary">
                                     Soal {{ $currentNumber }}
@@ -23,7 +23,7 @@
                             </div>
                         </div>
 
-                        <div class="exam-question-content mb-4" id="examQuestionContent">
+                        <div class="exam-question-content mb-4 py-2" id="examQuestionContent">
                             {!! \App\Support\QuestionHtml::sanitize($currentQuestion->question) !!}
                         </div>
 
@@ -51,7 +51,7 @@
                                         $isFalseSelected = $falseOption && in_array((int) $falseOption->id, array_map('intval', $selectedOptionIds), true);
                                     @endphp
 
-                                    <div class="border rounded p-3">
+                                    <div class="border rounded-3 p-3 p-md-4">
                                         <div class="fw-semibold mb-3">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
                                         <div class="exam-option-content mb-3">
                                             {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
@@ -137,7 +137,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between gap-2">
+                <div class="d-flex justify-content-between gap-2 mt-3">
 
                     @if ($currentNumber > 1)
                         <a
