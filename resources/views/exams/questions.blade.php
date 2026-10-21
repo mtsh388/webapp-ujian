@@ -127,6 +127,21 @@
                 </div>
             </div>
 
+            <div class="card-body border-bottom py-3">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-md-7">
+                        <label for="searchAssignedQuestions" class="form-label">Cari soal dalam ujian</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bx bx-search"></i></span>
+                            <input type="search" id="searchAssignedQuestions" class="form-control" placeholder="Cari tipe, pertanyaan, atau bobot..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-5 text-md-end">
+                        <small class="text-muted" id="assignedQuestionSearchInfo">{{ $questions->count() }} soal ditampilkan</small>
+                    </div>
+                </div>
+            </div>
+
             <div class="card-datatable table-responsive">
                 <table class="table table-hover border-top">
                     <thead>
@@ -141,7 +156,7 @@
 
                     <tbody>
                     @forelse($questions as $index => $q)
-                        <tr>
+                        <tr class="assigned-question-row">
                             <td>{{ $index + 1 }}</td>
 
                             <td>
@@ -204,6 +219,9 @@
                             </td>
                         </tr>
                     @endforelse
+                    <tr id="assignedQuestionNoResults" class="d-none">
+                        <td colspan="5" class="text-center text-muted py-4">Tidak ada soal yang cocok dengan pencarian.</td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -236,6 +254,15 @@
                             Daftar di bawah hanya menampilkan soal aktif dari mata pelajaran, jenjang, kelas, dan topik yang dipilih untuk ujian ini.
                         </div>
 
+                        <div class="mb-3">
+                            <label for="searchAvailableQuestions" class="form-label">Cari soal dari Bank Soal</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                <input type="search" id="searchAvailableQuestions" class="form-control" placeholder="Cari kode, tipe, atau isi pertanyaan..." autocomplete="off">
+                            </div>
+                            <small class="text-muted" id="availableQuestionSearchInfo"></small>
+                        </div>
+
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-hover border-top">
                                 <thead class="sticky-top bg-body">
@@ -251,7 +278,7 @@
 
                                 <tbody>
                                 @forelse($availableQuestions as $avail)
-                                    <tr>
+                                    <tr class="available-question-row">
                                         <td>
                                             <input
                                                 class="form-check-input question-checkbox"
@@ -285,6 +312,9 @@
                                         </td>
                                     </tr>
                                 @endforelse
+                                <tr id="availableQuestionNoResults" class="d-none">
+                                    <td colspan="4" class="text-center text-muted py-4">Tidak ada soal yang cocok dengan pencarian.</td>
+                                </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -316,8 +346,35 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const checkAll = document.getElementById('checkAll');
-            const checkboxes = document.querySelectorAll('.question-checkbox');
+            const checkboxes = Array.from(document.querySelectorAll('.question-checkbox'));
             const submitButton = document.getElementById('btnSubmitSoal');
+            const assignedSearch = document.getElementById('searchAssignedQuestions');
+            const availableSearch = document.getElementById('searchAvailableQuestions');
+            const assignedRows = Array.from(document.querySelectorAll('.assigned-question-row'));
+            const availableRows = Array.from(document.querySelectorAll('.available-question-row'));
+            const assignedNoResults = document.getElementById('assignedQuestionNoResults');
+            const availableNoResults = document.getElementById('availableQuestionNoResults');
+            const assignedSearchInfo = document.getElementById('assignedQuestionSearchInfo');
+            const availableSearchInfo = document.getElementById('availableQuestionSearchInfo');
+
+            function filterRows(searchInput, rows, noResultsRow, infoElement, label) {
+                const query = searchInput.value.trim().toLocaleLowerCase();
+                let visibleCount = 0;
+
+                rows.forEach(row => {
+                    const matches = row.textContent.toLocaleLowerCase().includes(query);
+                    row.classList.toggle('d-none', !matches);
+                    if (matches) visibleCount++;
+                });
+
+                if (noResultsRow) {
+                    noResultsRow.classList.toggle('d-none', visibleCount > 0 || rows.length === 0);
+                }
+
+                if (infoElement) {
+                    infoElement.textContent = `${visibleCount} dari ${rows.length} ${label} ditampilkan`;
+                }
+            }
 
             function updateSubmitButton() {
                 if (submitButton) {
@@ -328,8 +385,12 @@
             if (checkAll) {
                 checkAll.addEventListener('change', function () {
                     checkboxes.forEach(checkbox => {
-                        checkbox.checked = checkAll.checked;
+                        const row = checkbox.closest('.available-question-row');
+                        if (row && !row.classList.contains('d-none')) {
+                            checkbox.checked = checkAll.checked;
+                        }
                     });
+                    checkAll.indeterminate = false;
 
                     updateSubmitButton();
                 });
@@ -338,13 +399,39 @@
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', function () {
                     if (checkAll) {
-                        checkAll.checked = Array.from(checkboxes).every(item => item.checked);
+                        const visibleCheckboxes = checkboxes.filter(item => {
+                            const row = item.closest('.available-question-row');
+                            return row && !row.classList.contains('d-none');
+                        });
+                        const checkedCount = visibleCheckboxes.filter(item => item.checked).length;
+                        checkAll.checked = visibleCheckboxes.length > 0 && checkedCount === visibleCheckboxes.length;
+                        checkAll.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
                     }
 
                     updateSubmitButton();
                 });
             });
 
+            if (assignedSearch) {
+                assignedSearch.addEventListener('input', () => filterRows(assignedSearch, assignedRows, assignedNoResults, assignedSearchInfo, 'soal'));
+            }
+
+            if (availableSearch) {
+                availableSearch.addEventListener('input', () => {
+                    filterRows(availableSearch, availableRows, availableNoResults, availableSearchInfo, 'soal');
+                    if (checkAll) {
+                        const visibleCheckboxes = checkboxes.filter(checkbox => {
+                            const row = checkbox.closest('.available-question-row');
+                            return row && !row.classList.contains('d-none');
+                        });
+                        checkAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
+                        checkAll.indeterminate = visibleCheckboxes.some(checkbox => checkbox.checked) && !checkAll.checked;
+                    }
+                });
+            }
+
+            if (assignedSearch) filterRows(assignedSearch, assignedRows, assignedNoResults, assignedSearchInfo, 'soal');
+            if (availableSearch) filterRows(availableSearch, availableRows, availableNoResults, availableSearchInfo, 'soal');
             updateSubmitButton();
         });
 
