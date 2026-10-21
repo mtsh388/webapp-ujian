@@ -121,7 +121,7 @@ class ResultController extends Controller
         $rankedAttempts = $this->rankedAttemptsQuery($exam);
         $totalRankedStudents = (clone $rankedAttempts)->count();
         $myRanking = $studentId
-            ? (clone $rankedAttempts)->where('student_id', $studentId)->first()
+            ? DB::query()->fromSub(clone $rankedAttempts, 'ranked')->where('student_id', $studentId)->first()
             : null;
 
         return view('results.ranking', [
@@ -192,6 +192,7 @@ class ResultController extends Controller
                 ];
 
                 if ($isRankingManager) {
+                    $data['student_number'] = $row->student_number;
                     $data['show_url'] = route('results.show', $row->id);
                 }
 
