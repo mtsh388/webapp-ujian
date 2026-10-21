@@ -32,6 +32,7 @@ class UpdateQuestionBankRequest extends FormRequest
                 Rule::in([
                     'multiple_choice',
                     'multiple_select',
+                    'statement_true_false',
                     'true_false',
                 ]),
             ],
@@ -185,6 +186,26 @@ class UpdateQuestionBankRequest extends FormRequest
                 $correctCount = collect($options)->filter(fn ($option) => !empty($option['is_correct']))->count();
                 if ($correctCount < 1) {
                     $validator->errors()->add('options', 'Soal pilih semua yang benar harus memiliki setidaknya satu jawaban benar.');
+                }
+            }
+
+            if ($type === 'statement_true_false') {
+                $groups = [];
+                foreach ($options as $option) {
+                    $key = (string) ($option['option_key'] ?? '');
+                    if (preg_match('/^S([1-9][0-9]*)([TF])$/', $key, $matches)) {
+                        $groups[$matches[1]][$matches[2]] = !empty($option['is_correct']);
+                    }
+                }
+
+                if (count($groups) < 2) {
+                    $validator->errors()->add('options', 'Soal Benar/Salah per Pernyataan harus memiliki minimal dua pernyataan.');
+                }
+
+                foreach ($groups as $number => $choices) {
+                    if (!array_key_exists('T', $choices) || !array_key_exists('F', $choices) || (int) $choices['T'] + (int) $choices['F'] !== 1) {
+                        $validator->errors()->add('options', "Pernyataan {$number} harus memiliki tepat satu kunci jawaban Benar atau Salah.");
+                    }
                 }
             }
 
