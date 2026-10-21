@@ -37,8 +37,8 @@ class AuthController extends Controller
             'name' => $validated['email'],
             'email' => $validated['email'],
             'password' => $validated['password'],
-            'must_change_password' => false,
         ]);
+        $user->forceFill(['must_change_password' => false])->save();
 
         $studentRole = Role::firstOrCreate([
             'name' => 'Siswa',
