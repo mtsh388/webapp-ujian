@@ -78,11 +78,20 @@
 
                                     <div class="col-md-6">
                                         <div class="text-muted small mb-1">
-                                            Nama Mata Pelajaran
+                                            Topik
                                         </div>
 
                                         <div class="fw-semibold">
                                             {{ $subject->name }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">
+                                            Kode Mata Pelajaran
+                                        </div>
+                                        <div class="fw-semibold font-monospace">
+                                            {{ $subject->code ?? '-' }}
                                         </div>
                                     </div>
 
@@ -103,18 +112,6 @@
 
                                         <div class="fw-semibold">
                                             {{ $subject->grade_level ? 'Kelas ' . $subject->grade_level : '-' }}
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="text-muted small mb-1">
-                                            Topik
-                                        </div>
-
-                                        <div>
-                                            <span class="badge bg-light text-dark border px-3 py-2">
-                                                {{ $subject->topic ?? '-' }}
-                                            </span>
                                         </div>
                                     </div>
 
