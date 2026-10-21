@@ -2149,7 +2149,7 @@ class BulkQuestionImportService
                     break;
                 }
 
-                if (preg_match('/tentukan.*benar\s+atau\s+salah|tentukan\s+setuju\s+atau\s+tidak\s+setuju|setuju\s+atau\s+tidak\s+setuju\s+untuk\s+setiap\s+pernyataan|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $markerText)) {
+                if (preg_match('/tentukan.*benar\s+atau\s+salah|tentukan\s+setuju\s+atau\s+tidak\s+setuju|setuju\s+atau\s+tidak\s+setuju\s+untuk\s+setiap\s+pernyataan|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan|tentukan\s+manakah\s+pernyataan\s+yang\s+benar\s+untuk\s+setiap\s+pernyataan|untuk\s+setiap\s+pernyataan\s+berikut/i', $markerText)) {
                     $marker = 'statement_true_false';
                     $markerIndex = $lookahead;
                     break;
@@ -2611,7 +2611,7 @@ class BulkQuestionImportService
                 break;
             }
 
-            if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban|tentukan.*benar\s+atau\s+salah|tentukan\s+setuju\s+atau\s+tidak\s+setuju|setuju\s+atau\s+tidak\s+setuju\s+untuk\s+setiap\s+pernyataan|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan/i', $candidate)) {
+            if (preg_match('/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban|tentukan.*benar\s+atau\s+salah|tentukan\s+setuju\s+atau\s+tidak\s+setuju|setuju\s+atau\s+tidak\s+setuju\s+untuk\s+setiap\s+pernyataan|pilih\s+jawaban\s+benar\s+atau\s+salah|pilihan\s+benar\s+atau\s+salah|benar\s+atau\s+salah\s+pada\s+setiap\s+pernyataan|tentukan\s+manakah\s+pernyataan\s+yang\s+benar\s+untuk\s+setiap\s+pernyataan|untuk\s+setiap\s+pernyataan\s+berikut/i', $candidate)) {
                 for ($answerLookahead = $lookahead + 1; $answerLookahead < $limit; $answerLookahead++) {
                     if ($this->containsFlexiAnswer($this->normalizeText((string)($paragraphs[$answerLookahead]['text'] ?? '')))) {
                         return true;
