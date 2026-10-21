@@ -17,7 +17,7 @@
                             <div class="text-muted small">
                                 Terjawab:
                                 <strong id="answeredCount">
-                                    {{ $answers->whereNotNull('selected_option_id')->count() }}
+                                    {{ $answers->filter(fn ($answer) => !empty($answer->selected_option_ids) || $answer->selected_option_id !== null)->count() }}
                                 </strong>
                                 / {{ $totalQuestions }}
                             </div>
@@ -29,10 +29,60 @@
 
                         @if ($currentQuestion->type === 'multiple_select')
                             <div class="alert alert-info py-2">Pilih semua jawaban yang benar. Jawaban dinilai benar jika seluruh pilihan tepat.</div>
+                        @elseif ($currentQuestion->type === 'statement_true_false')
+                            <div class="alert alert-info py-2">Pilih Benar atau Salah untuk setiap pernyataan. Skor diberikan sesuai jumlah pernyataan yang dijawab dengan tepat.</div>
                         @endif
 
                         <div class="d-flex flex-column gap-3">
 
+                            @if ($currentQuestion->type === 'statement_true_false')
+                                @php
+                                    $statementGroups = $currentQuestion->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+                                    $selectedOptionIds = $currentAnswer?->selected_option_ids ?? [];
+                                    if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+                                    if (empty($selectedOptionIds) && $currentAnswer?->selected_option_id) $selectedOptionIds = [(int) $currentAnswer->selected_option_id];
+                                @endphp
+
+                                @foreach ($statementGroups as $groupKey => $groupOptions)
+                                    @php
+                                        $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                        $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                        $isTrueSelected = $trueOption && in_array((int) $trueOption->id, array_map('intval', $selectedOptionIds), true);
+                                        $isFalseSelected = $falseOption && in_array((int) $falseOption->id, array_map('intval', $selectedOptionIds), true);
+                                    @endphp
+
+                                    <div class="border rounded p-3">
+                                        <div class="fw-semibold mb-3">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
+                                        <div class="exam-option-content mb-3">
+                                            {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
+                                        </div>
+
+                                        <div class="d-flex flex-wrap gap-3">
+                                            @foreach ([
+                                                ['option' => $trueOption, 'label' => 'Benar', 'selected' => $isTrueSelected],
+                                                ['option' => $falseOption, 'label' => 'Salah', 'selected' => $isFalseSelected],
+                                            ] as $statementChoice)
+                                                @if ($statementChoice['option'])
+                                                    <label class="question-option border rounded px-3 py-2 d-flex align-items-center gap-2 {{ $statementChoice['selected'] ? 'selected' : '' }}" data-option-wrapper="{{ $statementChoice['option']->id }}" data-statement-group="{{ $groupKey }}">
+                                                        <input
+                                                            type="radio"
+                                                            class="form-check-input answer-option"
+                                                            name="statement-answer-{{ $currentQuestion->id }}-{{ $groupKey }}"
+                                                            value="{{ $statementChoice['option']->id }}"
+                                                            data-question-id="{{ $currentQuestion->id }}"
+                                                            data-multiple="1"
+                                                            data-statement="1"
+                                                            data-statement-group="{{ $groupKey }}"
+                                                            data-statement-count="{{ $statementGroups->count() }}"
+                                                            {{ $statementChoice['selected'] ? 'checked' : '' }}>
+                                                        <span>{{ $statementChoice['label'] }}</span>
+                                                    </label>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
                             @foreach ($currentQuestion->options as $option)
                                 @php
                                     $selectedOptionIds = $currentAnswer?->selected_option_ids ?? [];
@@ -69,6 +119,7 @@
 
                                 </label>
                             @endforeach
+                            @endif
 
                         </div>
 
@@ -79,7 +130,7 @@
                                 <i class="bx bx-check-circle text-success me-1"></i> Jawaban tersimpan
                             @else
                                 <i class="bx bx-info-circle me-1"></i>
-                                {{ $currentQuestion->type === 'multiple_select' ? 'Pilih satu atau beberapa jawaban' : 'Pilih salah satu jawaban' }}
+                                {{ $currentQuestion->type === 'multiple_select' ? 'Pilih satu atau beberapa jawaban' : ($currentQuestion->type === 'statement_true_false' ? 'Jawab setiap pernyataan' : 'Pilih salah satu jawaban') }}
                             @endif
                         </div>
 
