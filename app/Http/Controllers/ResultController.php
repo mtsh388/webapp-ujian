@@ -144,10 +144,13 @@ class ResultController extends Controller
         $search = trim((string) $request->input('search.value', ''));
 
         if ($search !== '') {
-            $rankedAttempts->where(function ($query) use ($search) {
+            $rankedAttempts->where(function ($query) use ($search, $isRankingManager) {
                 $query->where('student_name', 'like', '%' . $search . '%')
-                    ->orWhere('student_number', 'like', '%' . $search . '%')
                     ->orWhere('class_name', 'like', '%' . $search . '%');
+
+                if ($isRankingManager) {
+                    $query->orWhere('student_number', 'like', '%' . $search . '%');
+                }
             });
         }
 
@@ -181,9 +184,7 @@ class ResultController extends Controller
                 $data = [
                     'no' => $start + $index + 1,
                     'rank' => (int) $row->rank_position,
-                    'id' => $row->id,
                     'student_name' => $row->student_name,
-                    'student_number' => $row->student_number,
                     'class_name' => $row->class_name,
                     'score' => (float) $row->score,
                     'duration_seconds' => $row->duration_seconds === null ? null : (int) $row->duration_seconds,
@@ -194,6 +195,7 @@ class ResultController extends Controller
                 ];
 
                 if ($isRankingManager) {
+                    $data['id'] = $row->id;
                     $data['student_number'] = $row->student_number;
                     $data['show_url'] = route('results.show', $row->id);
                 }
