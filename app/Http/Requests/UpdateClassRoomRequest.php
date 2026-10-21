@@ -17,12 +17,6 @@ class UpdateClassRoomRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:50',
-                Rule::unique('classes', 'code')->ignore($this->classRoom->id),
-            ],
             'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
             'grade_level' => ['required', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
             'description' => ['nullable', 'string'],
