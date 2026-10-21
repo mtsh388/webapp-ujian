@@ -16,12 +16,14 @@
                 </p>
             </div>
 
-            <a
-                href="{{ route('results.my') }}"
-                class="btn btn-primary">
-                <i class="bx bx-user me-1"></i>
-                Hasil Saya
-            </a>
+            @can('result.view_own')
+                <a
+                    href="{{ route('results.my') }}"
+                    class="btn btn-primary">
+                    <i class="bx bx-user me-1"></i>
+                    Hasil Saya
+                </a>
+            @endcan
         </div>
 
         <div class="card border-0 shadow-sm">
