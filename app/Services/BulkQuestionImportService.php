@@ -129,6 +129,9 @@ class BulkQuestionImportService
             $mimeType = $this->getMimeType($extension);
             $dataUri = 'data:' . $mimeType . ';base64,' . base64_encode($content);
 
+            // The generated HTML uses ordinary double quotes in src attributes.
+            // Do not search for literal backslashes, or the token remains in the
+            // rendered HTML and the image will not appear in the preview.
             $html = str_replace(
                 'src="' . $token . '"',
                 'src="' . $dataUri . '"',
@@ -345,6 +348,11 @@ class BulkQuestionImportService
             $xpath->registerNamespace(
                 'm',
                 'http://schemas.openxmlformats.org/officeDocument/2006/math'
+            );
+
+            $xpath->registerNamespace(
+                'v',
+                'urn:schemas-microsoft-com:vml'
             );
 
             $bodyNodes = $xpath->query(
@@ -599,8 +607,11 @@ class BulkQuestionImportService
                 );
             }
 
+            // DOCX may store images as modern DrawingML (a:blip) or
+            // legacy VML (v:imagedata). Support both so images inserted by
+            // different Word versions/exporters are extracted into preview.
             $drawingNodes = $xpath->query(
-                './/a:blip',
+                './/a:blip | .//v:imagedata',
                 $run
             );
 
@@ -609,10 +620,12 @@ class BulkQuestionImportService
                     continue;
                 }
 
-                $relationId = $node->getAttributeNS(
-                    'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-                    'embed'
-                );
+                $relationNamespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+                $relationId = $node->getAttributeNS($relationNamespace, 'embed');
+
+                if ($relationId === '') {
+                    $relationId = $node->getAttributeNS($relationNamespace, 'id');
+                }
 
                 if (
                     !$relationId ||
