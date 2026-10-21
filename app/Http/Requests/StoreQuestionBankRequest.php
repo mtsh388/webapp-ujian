@@ -26,6 +26,7 @@ class StoreQuestionBankRequest extends FormRequest
                 Rule::in([
                     'multiple_choice',
                     'multiple_select',
+                    'statement_true_false',
                     'true_false',
                 ]),
             ],
