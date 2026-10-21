@@ -15,15 +15,15 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-    <title>@yield('title', 'Bimbel')</title>
+    <title>@yield('title', config('app.name', 'QSEE'))</title>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="Sistem Informasi Bimbel">
+    <meta name="description" content="QSEE - Sistem Ujian">
 
     <link
         rel="icon"
         type="image/x-icon"
-        href="{{ asset('assets/sneat/img/favicon/favicon.ico') }}">
+        href="{{ asset('assets/sneat/img/Logo.jpeg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
