@@ -8,9 +8,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Registrasi | Bimbel</title>
-    <meta name="description" content="Registrasi akun siswa aplikasi Bimbel">
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/sneat/img/favicon/favicon.ico') }}">
+    <title>Registrasi | QSEE</title>
+    <meta name="description" content="Registrasi akun siswa aplikasi QSEE">
+    <link rel="icon" type="image/x-icon" href="{{ asset('assets/sneat/img/Logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
@@ -31,7 +31,8 @@
                 <div class="card-body">
                     <div class="app-brand justify-content-center mb-6">
                         <a href="{{ route('login') }}" class="app-brand-link gap-2">
-                            <span class="app-brand-text demo text-heading fw-bold">Bimbel</span>
+                            <span class="app-brand-logo demo"><img src="{{ asset('assets/sneat/img/Logo.jpeg') }}" alt="QSEE" style="width: 48px; height: 48px; object-fit: contain;"></span>
+                            <span class="app-brand-text demo text-heading fw-bold">QSEE</span>
                         </a>
                     </div>
 
