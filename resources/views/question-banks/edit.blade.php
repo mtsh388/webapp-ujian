@@ -194,6 +194,9 @@
                                         <button type="button" class="btn btn-sm btn-outline-primary insert-statement-table">
                                             <i class="bx bx-table me-1"></i> Sisipkan Tabel Pernyataan
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-statement-table">
+                                            <i class="bx bx-trash me-1"></i> Hapus Tabel
+                                        </button>
                                     </div>
                                     <div
                                         id="question-editor"
@@ -1403,6 +1406,41 @@
                     questionEditor.focus();
                     const table = `<table><thead><tr><th>PERNYATAAN</th><th>BENAR</th><th>SALAH</th></tr></thead><tbody><tr><td>Pernyataan 1</td><td></td><td></td></tr><tr><td>Pernyataan 2</td><td></td><td></td></tr><tr><td>Pernyataan 3</td><td></td><td></td></tr></tbody></table><p></p>`;
                     document.execCommand('insertHTML', false, table);
+                    syncQuestionContent();
+                });
+            });
+
+            document.querySelectorAll('.remove-statement-table').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const selection = window.getSelection();
+                    const selectedNode = selection && selection.anchorNode;
+                    const selectedElement = selectedNode
+                        ? (selectedNode.nodeType === Node.ELEMENT_NODE ? selectedNode : selectedNode.parentElement)
+                        : null;
+
+                    let table = selectedElement && questionEditor.contains(selectedElement)
+                        ? selectedElement.closest('table')
+                        : null;
+
+                    if (!table) {
+                        const tables = questionEditor.querySelectorAll('table');
+                        table = tables.length ? tables[tables.length - 1] : null;
+                    }
+
+                    if (!table) {
+                        alert('Tidak ada tabel di dalam pertanyaan.');
+                        return;
+                    }
+
+                    if (!confirm('Hapus tabel yang dipilih? Jika kursor tidak berada di tabel, tabel terakhir akan dihapus.')) {
+                        return;
+                    }
+
+                    const next = table.nextElementSibling;
+                    table.remove();
+                    if (next && next.tagName === 'P' && !next.textContent.trim() && !next.querySelector('img, table')) {
+                        next.remove();
+                    }
                     syncQuestionContent();
                 });
             });
