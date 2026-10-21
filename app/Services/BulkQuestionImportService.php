@@ -2170,7 +2170,11 @@ class BulkQuestionImportService
                         continue;
                     }
 
-                    if ($this->isFlexiQuestionCandidate($paragraphs, $index) && !$this->containsFlexiAnswer($itemText)) {
+                    if (
+                        $this->isFlexiQuestionCandidate($paragraphs, $index)
+                        && !$this->containsFlexiAnswer($itemText)
+                        && ($marker !== 'multiple_select' || count($items) >= 4)
+                    ) {
                         break;
                     }
 
