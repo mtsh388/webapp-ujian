@@ -1184,7 +1184,7 @@ class BulkQuestionImportService
                 while ($index < $count) {
                     $candidate = $this->normalizeText((string) ($paragraphs[$index]['text'] ?? ''));
 
-                    if (preg_match('/^Sumber\s*:/iu', $candidate)) {
+                    if (preg_match('/^Sumber(?:\s+teks)?\s*:/iu', $candidate)) {
                         $seenSource = true;
                         $context[] = $paragraphs[$index];
                         $index++;
