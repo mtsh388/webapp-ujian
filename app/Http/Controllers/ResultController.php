@@ -140,7 +140,7 @@ class ResultController extends Controller
 
         $attempts = DB::table('exam_attempts as ea')
             ->join('students as s', 's.id', '=', 'ea.student_id')
-            ->leftJoin('class_rooms as cr', 'cr.id', '=', 's.class_id')
+            ->leftJoin('classes as cr', 'cr.id', '=', 's.class_id')
             ->where('ea.exam_id', $exam->id)
             ->whereIn('ea.status', ['submitted', 'expired'])
             ->whereNotNull('ea.submitted_at')
