@@ -149,8 +149,12 @@
                         name: 'student_name',
                         render: function (data, type, row) {
                             const name = $('<div>').text(data || '-').html();
-                            const number = $('<div>').text(row.student_number || '-').html();
-                            return '<div class="fw-semibold">' + name + '</div><div class="small text-muted">' + number + '</div>';
+                            @if ($isRankingManager)
+                                const number = $('<div>').text(row.student_number || '-').html();
+                                return '<div class="fw-semibold">' + name + '</div><div class="small text-muted">' + number + '</div>';
+                            @else
+                                return '<div class="fw-semibold">' + name + '</div>';
+                            @endif
                         }
                     },
                     {
