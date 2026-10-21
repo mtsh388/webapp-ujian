@@ -1423,9 +1423,41 @@ class BulkQuestionImportService
         }
 
         $truthValues = $this->parseFlexiTruthValues($answerText);
+
+        // Some questions show a statement table, but ask students to choose
+        // one of four answer combinations (e.g. "Salah, Benar, Benar").
+        // That layout is ordinary multiple choice, not per-statement T/F.
+        $combinationOptions = [];
+        foreach ($paragraphs as $paragraph) {
+            if (($paragraph['type'] ?? null) !== 'paragraph') {
+                continue;
+            }
+
+            $candidateText = $this->normalizeText((string)($paragraph['text'] ?? ''));
+            if (
+                preg_match(
+                    '/^\\s*(?:Benar|Salah)(?:\\s*[,;]\\s*(?:Benar|Salah)){2}\\s*$/iu',
+                    $candidateText
+                )
+            ) {
+                $combinationOptions[] = $candidateText;
+            }
+        }
+
+        $answerMatchesCombination = false;
+        if (count($combinationOptions) >= 2 && count($truthValues) >= 2) {
+            foreach ($combinationOptions as $combinationOption) {
+                if ($this->parseFlexiTruthValues($combinationOption) === $truthValues) {
+                    $answerMatchesCombination = true;
+                    break;
+                }
+            }
+        }
+
         if (
             count($statementRows) >= 2
             && count($truthValues) === count($statementRows)
+            && !$answerMatchesCombination
         ) {
             $promptBlocks = array_slice($paragraphs, 0, max(0, count($paragraphs) - 4));
             $questionHtml = '';
