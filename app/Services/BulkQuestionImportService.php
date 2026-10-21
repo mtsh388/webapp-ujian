@@ -2422,12 +2422,12 @@ class BulkQuestionImportService
             $parts = preg_split('/(?:\r?\n|[;|])+/u', $text) ?: [];
 
             if (count($parts) === $expected) {
-                return array_map(function (string $part) use ($items): array {
+                return array_map(function (string $part, int $partIndex) use ($items): array {
                     $part = trim($part);
                     $block = $items[0]['block'];
                     $block['text'] = $part;
                     $block['html'] = $this->escapeTextAsHtml($part);
-                    $block['images'] = [];
+                    $block['images'] = $partIndex === 0 ? ($items[0]['block']['images'] ?? []) : [];
 
                     return [
                         'text' => $part,
@@ -2457,7 +2457,7 @@ class BulkQuestionImportService
             $block = $items[0]['block'];
             $block['text'] = $part;
             $block['html'] = $this->escapeTextAsHtml($part);
-            $block['images'] = [];
+            $block['images'] = $i === 0 ? ($items[0]['block']['images'] ?? []) : [];
 
             $parts[] = [
                 'text' => $part,
