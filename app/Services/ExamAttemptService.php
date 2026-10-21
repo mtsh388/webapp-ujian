@@ -421,7 +421,58 @@ class ExamAttemptService
         $isCorrect = null;
         $score = 0;
 
-        if ($examQuestion->type === 'multiple_select') {
+        if ($examQuestion->type === 'statement_true_false') {
+            if ($selectedOptionId !== null && empty($selectedOptionIds)) {
+                $selectedOptionIds = [$selectedOptionId];
+            }
+
+            $validOptionIds = $examQuestion->options->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+            if (array_diff($selectedOptionIds, $validOptionIds)) {
+                throw new RuntimeException('Pilihan jawaban tidak valid.');
+            }
+
+            $optionOrder = array_map('intval', $attempt->option_order[(string) $examQuestion->id] ?? $attempt->option_order[$examQuestion->id] ?? []);
+
+            if (array_diff($selectedOptionIds, $optionOrder)) {
+                throw new RuntimeException('Pilihan jawaban tidak termasuk dalam percobaan ujian Anda.');
+            }
+
+            $statementGroups = $examQuestion->options
+                ->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+
+            $selectedOptions = $examQuestion->options
+                ->whereIn('id', $selectedOptionIds)
+                ->values();
+
+            $selectedGroups = $selectedOptions
+                ->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+
+            foreach ($selectedGroups as $groupOptions) {
+                if ($groupOptions->count() > 1) {
+                    throw new RuntimeException('Pilih Benar atau Salah satu kali untuk setiap pernyataan.');
+                }
+            }
+
+            $correctCount = 0;
+
+            foreach ($statementGroups as $groupKey => $groupOptions) {
+                $selectedInGroup = $selectedGroups->get($groupKey, collect())->first();
+
+                if ($selectedInGroup && $selectedInGroup->is_correct) {
+                    $correctCount++;
+                }
+            }
+
+            $statementCount = $statementGroups->count();
+            $isCorrect = $statementCount > 0
+                && $selectedOptions->count() === $statementCount
+                && $correctCount === $statementCount;
+            $score = $statementCount > 0
+                ? round(((float) $examQuestion->score * $correctCount) / $statementCount, 2)
+                : 0;
+            $selectedOption = $selectedOptions->first();
+        } elseif ($examQuestion->type === 'multiple_select') {
             if ($selectedOptionId !== null && empty($selectedOptionIds)) $selectedOptionIds = [$selectedOptionId];
             $validOptionIds = $examQuestion->options->pluck('id')->map(fn ($id) => (int) $id)->all();
             if (array_diff($selectedOptionIds, $validOptionIds)) throw new RuntimeException('Pilihan jawaban tidak valid.');
@@ -454,7 +505,7 @@ class ExamAttemptService
             }
         }
 
-        if ($examQuestion->type !== 'multiple_select') {
+        if (!in_array($examQuestion->type, ['multiple_select', 'statement_true_false'], true)) {
             $isCorrect = $selectedOption ? (bool) $selectedOption->is_correct : null;
             $score = $isCorrect ? (float) $examQuestion->score : 0;
             $selectedOptionIds = $selectedOption ? [(int) $selectedOption->id] : [];
