@@ -13,6 +13,7 @@ class ExamAnswer extends Model
         'exam_attempt_id',
         'exam_question_id',
         'selected_option_id',
+        'selected_option_ids',
         'is_correct',
         'score',
         'answered_at',
@@ -22,6 +23,7 @@ class ExamAnswer extends Model
     {
         return [
             'is_correct' => 'boolean',
+            'selected_option_ids' => 'array',
             'score' => 'decimal:2',
             'answered_at' => 'datetime',
         ];

@@ -113,7 +113,7 @@ class ExamAttemptController extends Controller
 
             if ($request->expectsJson()) {
                 $answeredQuestionIds = $data['answers']
-                    ->filter(fn ($answer) => $answer->selected_option_id !== null)
+                    ->filter(fn ($answer) => !empty($answer->selected_option_ids) || $answer->selected_option_id !== null)
                     ->keys()
                     ->map(fn ($id) => (int) $id)
                     ->values();
@@ -160,18 +160,13 @@ class ExamAttemptController extends Controller
                 $attempt
             );
 
+            $selectedOptionId = $request->validated('selected_option_id');
+            $selectedOptionIds = $request->validated('selected_option_ids');
             $answer = $this->service->answer(
                 $attempt,
-                (int)$request->validated(
-                    'exam_question_id'
-                ),
-                $request->validated(
-                    'selected_option_id'
-                )
-                    ? (int)$request->validated(
-                    'selected_option_id'
-                )
-                    : null
+                (int) $request->validated('exam_question_id'),
+                $selectedOptionId ? (int) $selectedOptionId : null,
+                is_array($selectedOptionIds) ? $selectedOptionIds : null
             );
 
             return response()->json([
@@ -181,6 +176,7 @@ class ExamAttemptController extends Controller
                     'answer_id' => $answer->id,
                     'exam_question_id' => $answer->exam_question_id,
                     'selected_option_id' => $answer->selected_option_id,
+                    'selected_option_ids' => $answer->selected_option_ids ?? [],
                 ],
             ]);
         } catch (RuntimeException $e) {

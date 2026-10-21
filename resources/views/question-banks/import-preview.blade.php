@@ -55,8 +55,20 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card h-100"><div class="card-body">
+                    <div class="text-muted mb-1">Pilih Semua yang Benar</div>
+                    <div class="fs-3 fw-semibold">{{ $preview['multiple_select'] ?? 0 }}</div>
+                </div></div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100"><div class="card-body">
                     <div class="text-muted mb-1">Benar / Salah</div>
                     <div class="fs-3 fw-semibold">{{ $preview['true_false'] }}</div>
+                </div></div>
+            </div>
+            <div class="col-md-6 col-xl-3">
+                <div class="card h-100"><div class="card-body">
+                    <div class="text-muted mb-1">Benar / Salah per Pernyataan</div>
+                    <div class="fs-3 fw-semibold">{{ $preview['statement_true_false'] ?? 0 }}</div>
                 </div></div>
             </div>
         </div>
@@ -72,7 +84,10 @@
                     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <div class="fw-semibold">Soal {{ $item['number'] }}</div>
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-label-primary">{{ $item['type'] === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah' }}</span>
+                            <span class="badge bg-label-primary">{{ $item['type'] === 'statement_true_false' ? 'Benar / Salah per Pernyataan' : ($item['type'] === 'multiple_select' ? 'Pilih Semua yang Benar' : ($item['type'] === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah')) }}</span>
+                            @if (empty($item['answer_keys']))
+                                <span class="badge bg-warning text-dark">Kunci tidak terbaca — periksa sebelum dipakai</span>
+                            @endif
                             @if ($item['image_count'] > 0)
                                 <span class="badge bg-label-info">{{ $item['image_count'] }} gambar pada soal</span>
                             @endif
@@ -81,7 +96,30 @@
                     <div class="card-body">
                         <div class="question-preview mb-3">{!! $item['question'] !!}</div>
 
-                        @if (!empty($item['options']))
+                        @if (($item['type'] ?? null) === 'statement_true_false')
+                            @php
+                                $statementGroups = collect($item['options'])->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option['key']));
+                            @endphp
+                            <div class="d-flex flex-column gap-3 mb-3">
+                                @foreach ($statementGroups as $groupKey => $groupOptions)
+                                    @php
+                                        $trueOption = $groupOptions->firstWhere('key', $groupKey . 'T');
+                                        $falseOption = $groupOptions->firstWhere('key', $groupKey . 'F');
+                                    @endphp
+                                    <div class="border rounded p-3">
+                                        <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
+                                        <div>{!! $trueOption['html'] ?? '' !!}</div>
+                                        <div class="small text-muted mt-2">
+                                            Kunci jawaban:
+                                            <strong>{{ !empty($trueOption['is_correct']) ? 'Benar' : (!empty($falseOption['is_correct']) ? 'Salah' : 'Belum teridentifikasi') }}</strong>
+                                        </div>
+                                        @if (($trueOption['image_count'] ?? 0) > 0)
+                                            <span class="badge bg-label-info mt-2">{{ $trueOption['image_count'] }} gambar</span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif (!empty($item['options']))
                             <div class="d-flex flex-column gap-2 mb-3">
                                 @foreach ($item['options'] as $option)
                                     <div class="border rounded p-3 {{ $option['is_correct'] ? 'border-success bg-label-success' : '' }}">
@@ -100,7 +138,11 @@
                             </div>
                         @else
                             <div class="text-muted small mb-3">Pilihan: A = Benar, B = Salah</div>
-                            <div class="fw-semibold mb-3">Kunci jawaban: {{ $item['answer'] === 'A' ? 'Benar' : 'Salah' }}</div>
+                            <div class="fw-semibold mb-3">Kunci jawaban: {{ $item['answer'] === 'A' ? 'Benar' : ($item['answer'] === 'B' ? 'Salah' : 'Belum teridentifikasi') }}</div>
+                        @endif
+
+                        @if (empty($item['options']) && empty($item['answer_keys']))
+                            <div class="alert alert-warning py-2">Kunci jawaban tidak teridentifikasi. Periksa manual sebelum menambahkan soal ini ke ujian.</div>
                         @endif
 
                         @if (!empty($item['explanation']))

@@ -518,13 +518,16 @@
                                 $answer = $answers->get($question->id);
 
                                 $selectedOptionId = $answer?->selected_option_id;
+                                $selectedOptionIds = $answer?->selected_option_ids ?? [];
+                                if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
+                                if (empty($selectedOptionIds) && $selectedOptionId !== null) $selectedOptionIds = [(int) $selectedOptionId];
 
                                 $selectedOption = $answer?->selectedOption;
 
                                 $correctOption = $question->options
                                     ->firstWhere('is_correct', true);
 
-                                $isAnswered = $selectedOptionId !== null;
+                                $isAnswered = !empty($selectedOptionIds) || $selectedOptionId !== null;
 
                                 $isCorrect = $answer?->is_correct === true;
                             @endphp
@@ -581,57 +584,63 @@
                                         {!! \App\Support\QuestionHtml::sanitize($question->question) !!}
                                     </div>
 
-                                    <div class="d-flex flex-column gap-2">
-
-                                        @foreach ($question->options as $option)
-
-                                            @php
-                                                $isSelected = $selectedOptionId !== null
-                                                    && (int) $selectedOptionId === (int) $option->id;
-
-                                                $isCorrectOption = (bool) $option->is_correct;
-
-                                                $showCorrectOption = $showCorrectAnswers
-                                                    && $isCorrectOption;
-                                            @endphp
-
-                                            <div class="option-item
-                                                {{ $showCorrectOption ? 'option-correct' : '' }}
-                                                {{ $isSelected && !$isCorrectOption ? 'option-wrong' : '' }}">
-
-                                                <div class="d-flex align-items-start gap-3">
-
-                                                    <div class="fw-bold flex-shrink-0">
-                                                        {{ $option->option_key }}.
+                                    @if ($question->type === 'statement_true_false')
+                                        @php
+                                            $statementGroups = $question->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+                                        @endphp
+                                        <div class="d-flex flex-column gap-3">
+                                            @foreach ($statementGroups as $groupKey => $groupOptions)
+                                                @php
+                                                    $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                                    $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                                    $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
+                                                    $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                                @endphp
+                                                <div class="option-item {{ $selectedStatementOption && $selectedStatementOption->is_correct ? 'option-correct' : ($selectedStatementOption ? 'option-wrong' : '') }}">
+                                                    <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
+                                                    <div class="option-content mb-3">
+                                                        {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
                                                     </div>
-
-                                                    <div class="flex-grow-1 option-content">
-                                                        {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
-                                                    </div>
-
-                                                    <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
-
-                                                        @if ($isSelected)
-                                                            <span class="badge bg-primary">
-                                                                Jawaban Anda
-                                                            </span>
-                                                        @endif
-
-                                                        @if ($showCorrectOption)
+                                                    <div class="d-flex flex-wrap gap-2 small">
+                                                        <span class="badge {{ $selectedStatementOption && str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'bg-primary' : 'bg-label-secondary' }}">
+                                                            Jawaban Anda: {{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}
+                                                        </span>
+                                                        @if ($showCorrectAnswers)
                                                             <span class="badge bg-success">
-                                                                Jawaban Benar
+                                                                Kunci: {{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}
                                                             </span>
                                                         @endif
-
                                                     </div>
-
                                                 </div>
-
-                                            </div>
-
-                                        @endforeach
-
-                                    </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="d-flex flex-column gap-2">
+                                            @foreach ($question->options as $option)
+                                                @php
+                                                    $isSelected = in_array((int) $option->id, array_map('intval', $selectedOptionIds), true);
+                                                    $isCorrectOption = (bool) $option->is_correct;
+                                                    $showCorrectOption = $showCorrectAnswers && $isCorrectOption;
+                                                @endphp
+                                                <div class="option-item {{ $showCorrectOption ? 'option-correct' : '' }} {{ $isSelected && !$isCorrectOption ? 'option-wrong' : '' }}">
+                                                    <div class="d-flex align-items-start gap-3">
+                                                        <div class="fw-bold flex-shrink-0">{{ $option->option_key }}.</div>
+                                                        <div class="flex-grow-1 option-content">
+                                                            {!! \App\Support\QuestionHtml::sanitize($option->option_text) !!}
+                                                        </div>
+                                                        <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                                            @if ($isSelected)
+                                                                <span class="badge bg-primary">Jawaban Anda</span>
+                                                            @endif
+                                                            @if ($showCorrectOption)
+                                                                <span class="badge bg-success">Jawaban Benar</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
 
                                     @if (!$isAnswered)
 
@@ -664,7 +673,7 @@
 
                                                     <div class="small">
                                                         Jawaban Anda mendapatkan
-                                                        {{ number_format((float) $question->score, 2, ',', '.') }}
+                                                        {{ number_format((float) ($answer?->score ?? $question->score), 2, ',', '.') }}
                                                         poin.
                                                     </div>
                                                 </div>
@@ -679,10 +688,15 @@
 
                                                 <div>
                                                     <div class="fw-semibold">
-                                                        Jawaban Salah
+                                                        {{ $question->type === 'statement_true_false' ? 'Jawaban Belum Sepenuhnya Benar' : 'Jawaban Salah' }}
                                                     </div>
+                                                    @if ($question->type === 'statement_true_false')
+                                                        <div class="small">
+                                                            Skor: {{ number_format((float) ($answer?->score ?? 0), 2, ',', '.') }} dari {{ number_format((float) $question->score, 2, ',', '.') }} poin.
+                                                        </div>
+                                                    @endif
 
-                                                    @if ($showCorrectAnswers && $correctOption)
+                                                    @if ($question->type !== 'statement_true_false' && $showCorrectAnswers && $correctOption)
                                                         <div class="small">
                                                             Jawaban yang benar adalah
                                                             <strong>{{ $correctOption->option_key }}</strong>.
@@ -884,7 +898,7 @@
                                     @php
                                         $answer = $answers->get($question->id);
 
-                                        $answered = $answer?->selected_option_id !== null;
+                                        $answered = !empty($answer?->selected_option_ids) || $answer?->selected_option_id !== null;
 
                                         $correct = $answer?->is_correct === true;
                                     @endphp

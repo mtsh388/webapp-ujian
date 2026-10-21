@@ -161,7 +161,7 @@
                         </span>
 
                             <span class="badge bg-label-info">
-                            {{ $questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah' }}
+                            {{ $questionBank->type === 'statement_true_false' ? 'Benar / Salah per Pernyataan' : ($questionBank->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah')) }}
                         </span>
 
                             <span class="badge
@@ -525,6 +525,28 @@
 
                             <div class="d-flex flex-column gap-3">
 
+                                @if ($questionBank->type === 'statement_true_false')
+                                    @php
+                                        $statementGroups = $questionBank->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+                                    @endphp
+                                    @foreach ($statementGroups as $groupKey => $groupOptions)
+                                        @php
+                                            $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                            $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                        @endphp
+                                        <div class="option-item border rounded-3 p-3 {{ $correctStatementOption ? 'correct' : '' }}">
+                                            <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
+                                            <div class="option-content">
+                                                {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
+                                            </div>
+                                            <div class="mt-3">
+                                                <span class="badge bg-label-success">
+                                                    Kunci jawaban: {{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @else
                                 @forelse ($questionBank->options as $option)
 
                                     <div
@@ -657,6 +679,7 @@
                                     </div>
 
                                 @endforelse
+                                @endif
 
                             </div>
 
@@ -737,7 +760,7 @@
                                     </div>
 
                                     <div class="fw-semibold">
-                                        {{ $questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah' }}
+                                        {{ $questionBank->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($questionBank->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar / Salah') }}
                                     </div>
 
                                 </div>
@@ -784,7 +807,7 @@
                                     </div>
 
                                     <div class="fw-semibold">
-                                        {{ $questionBank->options->count() }} Pilihan
+                                        {{ $questionBank->type === 'statement_true_false' ? $questionBank->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key))->count() . ' Pernyataan' : $questionBank->options->count() . ' Pilihan' }}
                                     </div>
 
                                 </div>

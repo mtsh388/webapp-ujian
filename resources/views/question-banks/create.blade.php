@@ -97,6 +97,7 @@
                                             Pilihan Ganda
                                         </option>
 
+                                        <option value="multiple_select">Pilih Semua yang Benar</option>
                                         <option value="true_false">
                                             Benar / Salah
                                         </option>
@@ -641,14 +642,11 @@
             });
 
             optionsContainer.addEventListener('change', function (event) {
-                if (event.target.classList.contains('correct-option')) {
-                    optionsContainer
-                        .querySelectorAll('.correct-option')
-                        .forEach(function (checkbox) {
-                            if (checkbox !== event.target) {
-                                checkbox.checked = false;
-                            }
-                        });
+                if (event.target.classList.contains('correct-option') &&
+                    document.getElementById('question-type')?.value !== 'multiple_select') {
+                    optionsContainer.querySelectorAll('.correct-option').forEach(function (checkbox) {
+                        if (checkbox !== event.target) checkbox.checked = false;
+                    });
                 }
 
                 if (event.target.classList.contains('option-image-input')) {

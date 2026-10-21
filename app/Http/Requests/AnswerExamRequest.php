@@ -19,11 +19,9 @@ class AnswerExamRequest extends FormRequest
                 'integer',
                 'exists:exam_questions,id',
             ],
-            'selected_option_id' => [
-                'nullable',
-                'integer',
-                'exists:exam_question_options,id',
-            ],
+            'selected_option_id' => ['nullable', 'integer', 'exists:exam_question_options,id'],
+            'selected_option_ids' => ['sometimes', 'array'],
+            'selected_option_ids.*' => ['integer', 'distinct', 'exists:exam_question_options,id'],
         ];
     }
 }

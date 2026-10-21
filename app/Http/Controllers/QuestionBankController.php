@@ -250,7 +250,7 @@ class QuestionBankController extends Controller
                 ->route('questions.index')
                 ->with(
                     'success',
-                    "{$result['imported']} soal berhasil diimport. Pilihan Ganda: {$result['multiple_choice']}, Benar/Salah: {$result['true_false']}."
+                    "{$result['imported']} soal berhasil diimport. Pilihan Ganda: {$result['multiple_choice']}, Pilih Semua yang Benar: {$result['multiple_select']}, Benar/Salah per Pernyataan: {$result['statement_true_false']}, Benar/Salah: {$result['true_false']}."
                 );
         } catch (\Throwable $e) {
             Log::error('Bulk question import failed.', [

@@ -94,6 +94,7 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
             ],
             [
                 'selected_option_id' => $data['selected_option_id'] ?? null,
+                'selected_option_ids' => $data['selected_option_ids'] ?? null,
                 'is_correct' => $data['is_correct'] ?? null,
                 'score' => $data['score'] ?? 0,
                 'answered_at' => $data['answered_at'] ?? now(),
@@ -149,15 +150,28 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
             ->get()
             ->keyBy('exam_question_id');
 
+        $questionModels = \App\Models\ExamQuestion::query()
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
+
         $correctAnswers = 0;
         $wrongAnswers = 0;
         $unanswered = 0;
         $totalScore = 0.0;
+        $maximumScore = 0.0;
 
         foreach ($questionIds as $questionId) {
             $answer = $answers->get($questionId);
+            $question = $questionModels->get($questionId);
+            $maximumScore += (float) ($question?->score ?? 0);
 
-            if (!$answer || $answer->selected_option_id === null) {
+            $selectedIds = $answer?->selected_option_ids;
+            $hasSelectedOptions = is_array($selectedIds)
+                ? count($selectedIds) > 0
+                : ($answer && $answer->selected_option_id !== null);
+
+            if (!$answer || !$hasSelectedOptions) {
                 $unanswered++;
                 continue;
             }
@@ -167,13 +181,17 @@ class ExamAttemptRepository implements ExamAttemptRepositoryInterface
                 $totalScore += (float) $answer->score;
             } else {
                 $wrongAnswers++;
+
+                if ($question?->type === 'statement_true_false') {
+                    $totalScore += (float) $answer->score;
+                }
             }
         }
 
         $totalQuestions = $questionIds->count();
 
-        $score = $totalQuestions > 0
-            ? ($correctAnswers / $totalQuestions) * 100
+        $score = $maximumScore > 0
+            ? ($totalScore / $maximumScore) * 100
             : 0;
 
         return [

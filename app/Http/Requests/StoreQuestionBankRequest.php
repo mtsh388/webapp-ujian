@@ -25,6 +25,8 @@ class StoreQuestionBankRequest extends FormRequest
                 'required',
                 Rule::in([
                     'multiple_choice',
+                    'multiple_select',
+                    'statement_true_false',
                     'true_false',
                 ]),
             ],
@@ -163,6 +165,13 @@ class StoreQuestionBankRequest extends FormRequest
                         'options',
                         'Soal pilihan ganda harus memiliki tepat satu jawaban benar.'
                     );
+                }
+            }
+
+            if ($type === 'multiple_select') {
+                $correctCount = collect($options)->filter(fn ($option) => !empty($option['is_correct']))->count();
+                if ($correctCount < 1) {
+                    $validator->errors()->add('options', 'Soal pilih semua yang benar harus memiliki setidaknya satu jawaban benar.');
                 }
             }
 
