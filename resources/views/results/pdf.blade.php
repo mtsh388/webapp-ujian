@@ -632,7 +632,7 @@
                         Jawaban Salah
                     </div>
 
-                    @if ($showCorrectAnswers && $correctOption)
+                    @if ($question->type !== 'statement_true_false' && $showCorrectAnswers && $correctOption)
                         Jawaban yang benar adalah
                         <strong>
                             {{ $correctOption->option_key }}
