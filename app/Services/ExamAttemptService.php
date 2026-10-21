@@ -274,7 +274,7 @@ class ExamAttemptService
                         ->map(fn($id) => (int) $id)
                         ->all();
 
-                    if ($exam->shuffle_options) {
+                    if ($exam->shuffle_options && $question->type !== 'statement_true_false') {
                         shuffle($optionIds);
                     }
 
