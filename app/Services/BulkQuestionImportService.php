@@ -1967,7 +1967,7 @@ class BulkQuestionImportService
                         continue;
                     }
 
-                    if ($this->isFlexiQuizQuestionCandidate($paragraphs, $index)) {
+                    if ($this->isFlexiQuestionCandidate($paragraphs, $index)) {
                         break;
                     }
 
