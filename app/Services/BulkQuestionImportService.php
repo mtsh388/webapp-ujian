@@ -1257,6 +1257,55 @@ class BulkQuestionImportService
                     }
 
                     $answer = implode("\n", $answerItems);
+                } elseif (preg_match('/^\\s*[-•]\\s*/u', $answer)) {
+                    // Some FlexiQuiz exports put the first selected multi-select
+                    // answer on the "Jawaban:" paragraph, then repeat the remaining
+                    // selected answers in following paragraphs. Consume only those
+                    // paragraphs that exactly match choices already seen.
+                    $answerItems = [preg_replace('/^\\s*[-•]\\s*/u', '', $answer)];
+                    $knownOptionTexts = [];
+
+                    for ($previousIndex = 0; $previousIndex <= $blockIndex; $previousIndex++) {
+                        $previousBlock = $blocks[$previousIndex];
+                        if (($previousBlock['type'] ?? null) !== 'paragraph') {
+                            continue;
+                        }
+
+                        $previousText = $this->normalizeText((string)($previousBlock['text'] ?? ''));
+                        if ($previousIndex === $blockIndex) {
+                            $previousText = $before;
+                        }
+                        if ($previousText !== '') {
+                            $knownOptionTexts[$this->normalizeAnswerForMatching($previousText)] = true;
+                        }
+                    }
+
+                    for ($nextIndex = $blockIndex + 1; isset($blocks[$nextIndex]); $nextIndex++) {
+                        $nextBlock = $blocks[$nextIndex];
+                        if (($nextBlock['type'] ?? null) !== 'paragraph') {
+                            break;
+                        }
+
+                        $itemText = $this->normalizeText((string)($nextBlock['text'] ?? ''));
+                        if ($itemText === '') {
+                            if (!empty($nextBlock['is_list'])) {
+                                $consumedAnswerListBlocks[$nextIndex] = true;
+                                continue;
+                            }
+                            break;
+                        }
+
+                        $cleanItemText = preg_replace('/^\\s*[-•]\\s*/u', '', $itemText);
+                        $normalizedItem = $this->normalizeAnswerForMatching($cleanItemText);
+                        if ($normalizedItem === '' || !isset($knownOptionTexts[$normalizedItem])) {
+                            break;
+                        }
+
+                        $answerItems[] = $cleanItemText;
+                        $consumedAnswerListBlocks[$nextIndex] = true;
+                    }
+
+                    $answer = implode("\n", $answerItems);
                 }
 
                 if ($before !== '') {
