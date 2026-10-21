@@ -52,6 +52,7 @@ class StoreExamRequest extends FormRequest
                 'max:100',
             ],
             'max_attempts' => ['nullable', 'required_if:has_duration,1', 'integer', 'min:1'],
+            'auto_assign_new_students' => ['boolean'],
             'status' => [
                 'required',
                 'in:draft,published,closed',
@@ -85,6 +86,7 @@ class StoreExamRequest extends FormRequest
             'shuffle_options' => $this->boolean('shuffle_options'),
             'show_result_immediately' => $this->boolean('show_result_immediately'),
             'show_correct_answers' => $this->boolean('show_correct_answers'),
+            'auto_assign_new_students' => $this->boolean('auto_assign_new_students'),
         ]);
     }
 }
