@@ -1279,6 +1279,9 @@
                 mediaContainer.appendChild(wrapper);
 
                 updateMediaFileAccept(wrapper);
+                if (window.qseeInitSelect2) {
+                    window.qseeInitSelect2(wrapper);
+                }
             });
 
             mediaContainer.addEventListener('change', function (event) {
@@ -1341,7 +1344,10 @@
                     return;
                 }
 
-                const confirmed = confirm('Hapus media ini?');
+                const confirmed = await window.qseeConfirm('Hapus media ini?', {
+                    icon: 'warning',
+                    confirmButtonText: 'Ya, hapus'
+                });
 
                 if (!confirmed) {
                     return;
@@ -1411,7 +1417,7 @@
             });
 
             document.querySelectorAll('.remove-statement-table').forEach(function (button) {
-                button.addEventListener('click', function () {
+                button.addEventListener('click', async function () {
                     const selection = window.getSelection();
                     const selectedNode = selection && selection.anchorNode;
                     const selectedElement = selectedNode
@@ -1432,7 +1438,12 @@
                         return;
                     }
 
-                    if (!confirm('Hapus tabel yang dipilih? Jika kursor tidak berada di tabel, tabel terakhir akan dihapus.')) {
+                    const confirmed = await window.qseeConfirm('Hapus tabel yang dipilih? Jika kursor tidak berada di tabel, tabel terakhir akan dihapus.', {
+                        icon: 'warning',
+                        confirmButtonText: 'Ya, hapus'
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
