@@ -41,47 +41,64 @@
                                     $selectedOptionIds = $currentAnswer?->selected_option_ids ?? [];
                                     if (!is_array($selectedOptionIds)) $selectedOptionIds = [];
                                     if (empty($selectedOptionIds) && $currentAnswer?->selected_option_id) $selectedOptionIds = [(int) $currentAnswer->selected_option_id];
+                                    $selectedOptionIds = array_map('intval', $selectedOptionIds);
                                 @endphp
 
-                                @foreach ($statementGroups as $groupKey => $groupOptions)
-                                    @php
-                                        $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
-                                        $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
-                                        $isTrueSelected = $trueOption && in_array((int) $trueOption->id, array_map('intval', $selectedOptionIds), true);
-                                        $isFalseSelected = $falseOption && in_array((int) $falseOption->id, array_map('intval', $selectedOptionIds), true);
-                                    @endphp
-
-                                    <div class="border rounded-3 p-3 p-md-4">
-                                        <div class="fw-semibold mb-3">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
-                                        <div class="exam-option-content mb-3">
-                                            {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
-                                        </div>
-
-                                        <div class="d-flex flex-wrap gap-3">
-                                            @foreach ([
-                                                ['option' => $trueOption, 'label' => 'Benar', 'selected' => $isTrueSelected],
-                                                ['option' => $falseOption, 'label' => 'Salah', 'selected' => $isFalseSelected],
-                                            ] as $statementChoice)
-                                                @if ($statementChoice['option'])
-                                                    <label class="question-option border rounded px-3 py-2 d-flex align-items-center gap-2 {{ $statementChoice['selected'] ? 'selected' : '' }}" data-option-wrapper="{{ $statementChoice['option']->id }}" data-statement-group="{{ $groupKey }}">
-                                                        <input
-                                                            type="radio"
-                                                            class="form-check-input answer-option"
-                                                            name="statement-answer-{{ $currentQuestion->id }}-{{ $groupKey }}"
-                                                            value="{{ $statementChoice['option']->id }}"
-                                                            data-question-id="{{ $currentQuestion->id }}"
-                                                            data-multiple="1"
-                                                            data-statement="1"
-                                                            data-statement-group="{{ $groupKey }}"
-                                                            data-statement-count="{{ $statementGroups->count() }}"
-                                                            {{ $statementChoice['selected'] ? 'checked' : '' }}>
-                                                        <span>{{ $statementChoice['label'] }}</span>
-                                                    </label>
-                                                @endif
+                                <div class="table-responsive exam-statement-table-wrap">
+                                    <table class="table table-bordered align-middle exam-statement-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col" class="exam-statement-text-heading">Pernyataan</th>
+                                                <th scope="col" class="text-center exam-statement-answer-heading">Benar</th>
+                                                <th scope="col" class="text-center exam-statement-answer-heading">Salah</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($statementGroups as $groupKey => $groupOptions)
+                                                @php
+                                                    $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                                    $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                                    $statementOption = $trueOption ?: $falseOption;
+                                                    $isTrueSelected = $trueOption && in_array((int) $trueOption->id, $selectedOptionIds, true);
+                                                    $isFalseSelected = $falseOption && in_array((int) $falseOption->id, $selectedOptionIds, true);
+                                                @endphp
+                                                <tr>
+                                                    <td class="exam-option-content exam-statement-text">
+                                                        <span class="exam-statement-number">{{ preg_replace('/^S/', '', $groupKey) }}.</span>
+                                                        {!! \App\Support\QuestionHtml::sanitize($statementOption?->option_text ?? '') !!}
+                                                    </td>
+                                                    @foreach ([
+                                                        ['option' => $trueOption, 'selected' => $isTrueSelected, 'label' => 'Benar'],
+                                                        ['option' => $falseOption, 'selected' => $isFalseSelected, 'label' => 'Salah'],
+                                                    ] as $statementChoice)
+                                                        <td class="text-center exam-statement-answer-cell">
+                                                            @if ($statementChoice['option'])
+                                                                <label class="question-option exam-statement-choice d-inline-flex align-items-center justify-content-center rounded-3 p-2 {{ $statementChoice['selected'] ? 'selected' : '' }}"
+                                                                    data-option-wrapper="{{ $statementChoice['option']->id }}"
+                                                                    data-statement-group="{{ $groupKey }}"
+                                                                    aria-label="{{ $statementChoice['label'] }}">
+                                                                    <input
+                                                                        type="radio"
+                                                                        class="form-check-input answer-option m-0"
+                                                                        name="statement-answer-{{ $currentQuestion->id }}-{{ $groupKey }}"
+                                                                        value="{{ $statementChoice['option']->id }}"
+                                                                        data-question-id="{{ $currentQuestion->id }}"
+                                                                        data-multiple="1"
+                                                                        data-statement="1"
+                                                                        data-statement-group="{{ $groupKey }}"
+                                                                        data-statement-count="{{ $statementGroups->count() }}"
+                                                                        {{ $statementChoice['selected'] ? 'checked' : '' }}>
+                                                                </label>
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                    @endforeach
+                                                </tr>
                                             @endforeach
-                                        </div>
-                                    </div>
-                                @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             @else
                             @foreach ($currentQuestion->options as $option)
                                 @php
