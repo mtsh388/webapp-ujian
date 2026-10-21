@@ -142,33 +142,7 @@
 
 
 
-                        <div class="col-md-6">
-
-
-                            <label for="code" class="form-label">
-                                Kode Kelas
-                            </label>
-
-
-                            <input
-                                type="text"
-                                id="code"
-                                class="form-control"
-                                value="{{ $classRoom->code }}"
-                                readonly>
-
-                            <small class="text-muted">
-                                Kode dibuat otomatis saat kelas ditambahkan dan tidak berubah saat data diedit.
-                            </small>
-
-
-                        </div>
-
-
-
-
-
-                        <div class="col-md-6">
+                                                <div class="col-md-6">
                             <label for="education_level" class="form-label">Jenjang Pendidikan</label>
                             <select id="education_level" name="education_level" class="form-select @error('education_level') is-invalid @enderror" required>
                                 <option value="">Pilih Jenjang</option>
