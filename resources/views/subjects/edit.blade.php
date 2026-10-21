@@ -108,7 +108,7 @@
                                 placeholder="Kode mata pelajaran"
                                 readonly
                             >
-                            <div class="form-text">Kode dibuat otomatis dan tidak berubah saat topik diedit.</div>
+                            <div class="form-text">Kode dibuat saat data pertama kali disimpan dan tidak berubah saat data diedit.</div>
                         </div>
 
                         <div class="col-12">
