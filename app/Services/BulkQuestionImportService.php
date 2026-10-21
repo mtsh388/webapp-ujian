@@ -129,6 +129,9 @@ class BulkQuestionImportService
             $mimeType = $this->getMimeType($extension);
             $dataUri = 'data:' . $mimeType . ';base64,' . base64_encode($content);
 
+            // The generated HTML uses ordinary double quotes in src attributes.
+            // Do not search for literal backslashes, or the token remains in the
+            // rendered HTML and the image will not appear in the preview.
             $html = str_replace(
                 'src="' . $token . '"',
                 'src="' . $dataUri . '"',
