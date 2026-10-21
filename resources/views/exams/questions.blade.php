@@ -218,9 +218,10 @@
                     <div class="modal-header border-bottom">
                         <div>
                             <h5 class="modal-title mb-1">Tambah Soal dari Bank Soal</h5>
-                            <small class="text-muted">
-                                Mata Pelajaran: {{ $exam->subject->name ?? 'Umum' }}
-                            </small>
+                            <div class="small text-muted">
+                                <div>Mata Pelajaran: {{ $exam->subject->name ?? 'Umum' }}</div>
+                                <div>Jenjang: {{ $exam->subject->education_level ?? '-' }} · Kelas {{ $exam->subject->grade_level ?? '-' }} · Topik: {{ $exam->subject->topic ?? '-' }}</div>
+                            </div>
                         </div>
 
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -232,7 +233,7 @@
                     <div class="modal-body">
                         <div class="alert alert-label-primary mb-3">
                             <i class="bx bx-info-circle me-1"></i>
-                            Pilih satu atau beberapa soal yang ingin ditambahkan ke ujian.
+                            Daftar di bawah hanya menampilkan soal aktif dari mata pelajaran, jenjang, kelas, dan topik yang dipilih untuk ujian ini.
                         </div>
 
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
@@ -279,7 +280,7 @@
                                         <td colspan="4" class="text-center py-5">
                                             <i class="bx bx-info-circle fs-2 text-muted d-block mb-2"></i>
                                             <span class="text-muted">
-                                                    Tidak ada soal yang tersedia untuk mata pelajaran ini atau semua soal sudah ditambahkan.
+                                                    Tidak ada soal aktif untuk mata pelajaran, jenjang, kelas, dan topik ini, atau semua soal sudah ditambahkan.
                                                 </span>
                                         </td>
                                     </tr>
