@@ -2240,10 +2240,21 @@ class BulkQuestionImportService
                         continue;
                     }
 
+                    // Numeric answer choices (for example 3, 4, 2, 1) can
+                    // look like a new question stem to the generic detector.
+                    // For "how many of four statements" questions, always collect
+                    // all four choices before checking for the next question.
                     if (
                         $this->isFlexiQuestionCandidate($paragraphs, $index)
                         && !$this->containsFlexiAnswer($itemText)
-                        && ($marker !== 'multiple_select' || count($items) >= 4)
+                        && (
+                            $marker !== 'multiple_select'
+                            || count($items) >= 4
+                        )
+                        && (
+                            $marker !== 'count_statements'
+                            || count($items) >= 4
+                        )
                     ) {
                         break;
                     }
