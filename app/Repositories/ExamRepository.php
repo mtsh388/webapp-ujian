@@ -240,11 +240,26 @@ class ExamRepository implements ExamRepositoryInterface
         int $examId
     ): Collection
     {
+        $exam = Exam::query()
+            ->with('subject')
+            ->findOrFail($examId);
+
+        $subject = $exam->subject;
+
+        if (!$subject) {
+            return new Collection();
+        }
+
         return Student::query()
             ->where(
                 'students.is_active',
                 true
             )
+            ->whereHas('classRoom', function ($query) use ($subject) {
+                $query
+                    ->where('education_level', $subject->education_level)
+                    ->where('grade_level', $subject->grade_level);
+            })
             ->whereNotExists(
                 function ($query) use ($examId) {
                     $query
