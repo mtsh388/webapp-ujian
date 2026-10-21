@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +21,36 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    public function registerForm(): View
+    {
+        return view('auth.register');
+    }
+
+    public function register(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $user = User::create([
+            'name' => $validated['email'],
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'must_change_password' => false,
+        ]);
+
+        $studentRole = Role::firstOrCreate([
+            'name' => 'Siswa',
+            'guard_name' => 'web',
+        ]);
+        $user->assignRole($studentRole);
+
+        return redirect()
+            ->route('login')
+            ->with('status', 'Registrasi berhasil. Silakan login untuk melengkapi data siswa.');
+    }
+
     public function login(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
@@ -27,6 +59,18 @@ class AuthController extends Controller
 
         if ($request->user()->must_change_password) {
             return redirect()->route('password.change');
+        }
+
+        if ($request->user()->hasRole('Siswa')) {
+            $student = $request->user()->student;
+            $profileComplete = $student
+                && filled($student->full_name)
+                && filled($student->school_name)
+                && filled($student->phone)
+                && filled($student->education_level)
+                && filled($student->class_id);
+
+            return redirect()->route($profileComplete ? 'exams.available' : 'students.profile.edit');
         }
 
         return redirect()->intended(route('dashboard', absolute: false));
