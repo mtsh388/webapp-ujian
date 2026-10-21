@@ -226,9 +226,15 @@
                                         <div class="mt-auto">
                                             <a
                                                 href="{{ route('results.my.show', $attempt->id) }}"
-                                                class="btn btn-primary w-100">
+                                                class="btn btn-primary w-100 mb-2">
                                                 <i class="bx bx-show me-1"></i>
                                                 Lihat Detail Hasil
+                                            </a>
+                                            <a
+                                                href="{{ route('results.ranking', $attempt->exam_id) }}"
+                                                class="btn btn-outline-primary w-100">
+                                                <i class="bx bx-trophy me-1"></i>
+                                                Lihat Ranking Ujian
                                             </a>
                                         </div>
 
