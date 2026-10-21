@@ -56,7 +56,9 @@ class ResultController extends Controller
             ->orderByRaw('CASE WHEN duration_seconds IS NULL THEN 1 ELSE 0 END')
             ->orderBy('duration_seconds')
             ->orderBy('submitted_at')
-            ->get();
+            ->get()
+            ->unique('student_id')
+            ->values();
 
         $rank = 0;
         $position = 0;
