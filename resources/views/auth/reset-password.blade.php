@@ -13,16 +13,16 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-    <title>Reset Password | Bimbel</title>
+    <title>Reset Password | QSEE</title>
 
     <meta
         name="description"
-        content="Reset password aplikasi Bimbel">
+        content="Reset password aplikasi QSEE">
 
     <link
         rel="icon"
         type="image/x-icon"
-        href="{{ asset('assets/sneat/img/favicon/favicon.ico') }}">
+        href="{{ asset('assets/sneat/img/Logo.jpeg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,26 +65,11 @@
                 <div class="card-body">
 
                     <div class="app-brand justify-content-center mb-6">
-                        <a href="{{ url('/') }}" class="app-brand-link gap-2">
+                        <a href="{{ route('login') }}" class="app-brand-link gap-2">
                             <span class="app-brand-logo demo">
-                                <span class="text-primary">
-                                    <svg
-                                        width="25"
-                                        viewBox="0 0 25 42"
-                                        version="1.1"
-                                        xmlns="http://www.w3.org/2000/svg">
-
-                                        <path
-                                            d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960553 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.59773219,21.2525164 L2.63468769,24.5493413 C0.445452254,26.3002124 0.0884951797,28.5083815 1.56381646,31.1738486 C2.83770406,32.8170431 5.20850219,33.2640127 7.09180128,32.5391577 C8.347334,32.0559211 11.4559176,30.0011079 16.4175519,26.3747182 C18.0338571,24.4997859 18.6973423,22.4544883 18.4080071,20.2388261 C17.9637532,17.5346866 16.1776345,15.5799961 13.0496516,14.3747546 L10.9194936,13.4715819 L18.6192054,7.984237 L13.7918663,0.358365126 Z"
-                                            fill="currentColor">
-                                        </path>
-                                    </svg>
-                                </span>
+                                <img src="{{ asset('assets/sneat/img/Logo.jpeg') }}" alt="QSEE" style="width: 48px; height: 48px; object-fit: contain;">
                             </span>
-
-                            <span class="app-brand-text demo text-heading fw-bold">
-                                Bimbel
-                            </span>
+                            <span class="app-brand-text demo text-heading fw-bold">QSEE</span>
                         </a>
                     </div>
 
