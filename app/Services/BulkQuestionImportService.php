@@ -2257,6 +2257,69 @@ class BulkQuestionImportService
                     $marker = 'statement_true_false';
                 }
 
+                if ($marker === 'multiple_select') {
+                    $selectedAnswerTexts = array_values(array_filter(array_map(
+                        fn($answerItem) => $this->normalizeFlexiComparable($answerItem),
+                        $this->splitFlexiAnswerItems($answerText)
+                    ), fn($answerItem) => $answerItem !== ''));
+
+                    // The selected options may be repeated after a blank Jawaban:
+                    // paragraph. Match them back to the original A-D options and
+                    // preserve one multiple-select question rather than converting
+                    // each option into a separate true/false question.
+                    if (empty($selectedAnswerTexts)) {
+                        $normalizedWholeAnswer = $this->normalizeFlexiComparable($answerText);
+                        if ($normalizedWholeAnswer !== '') {
+                            $selectedAnswerTexts = [$normalizedWholeAnswer];
+                        }
+                    }
+
+                    $multiOptions = [];
+                    $answerKeys = [];
+
+                    foreach ($items as $itemIndex => $item) {
+                        $key = chr(65 + $itemIndex);
+                        $itemText = $this->normalizeText((string)($item['text'] ?? ''));
+                        $normalizedOption = $this->normalizeFlexiComparable($itemText);
+                        $isCorrect = $normalizedOption !== '' && (
+                            in_array($normalizedOption, $selectedAnswerTexts, true)
+                            || (count($selectedAnswerTexts) === 1
+                                && str_contains($selectedAnswerTexts[0], $normalizedOption))
+                        );
+
+                        $itemImages = [];
+                        $itemHtml = $this->flexiBlockHtml($item['block'], $itemImages);
+                        $multiOptions[$key] = [
+                            'key' => $key,
+                            'text' => $itemText,
+                            'html' => $itemHtml,
+                            'images' => $itemImages,
+                        ];
+
+                        if ($isCorrect) {
+                            $answerKeys[] = $key;
+                        }
+                    }
+
+                    if (count($answerKeys) < 2) {
+                        throw new RuntimeException(
+                            'Kunci jawaban pilihan ganda kompleks tidak cocok dengan pilihan yang tersedia: ' . strip_tags($stemText)
+                        );
+                    }
+
+                    $questions[] = [
+                        'type' => 'multiple_select',
+                        'question' => $questionHtml,
+                        'question_images' => $questionImages,
+                        'options' => $multiOptions,
+                        'answer' => null,
+                        'answer_keys' => $answerKeys,
+                        'explanation' => '',
+                    ];
+
+                    continue;
+                }
+
                 if ($marker === 'statement_true_false') {
                     $truthValues = $this->parseFlexiTruthValues($answerText);
                     $items = $this->splitFlexiCombinedStatements($items, count($truthValues));
@@ -2467,8 +2530,12 @@ class BulkQuestionImportService
     protected function isFlexiQuestionCandidate(array $paragraphs, int $index): bool
     {
         $text = $this->normalizeText((string)($paragraphs[$index]['text'] ?? ''));
+        $isMultiSelectStem = preg_match(
+            '/jawaban\s+benar\s+lebih\s+dari\s+satu|pilih\s+semua\s+jawaban/iu',
+            $text
+        ) === 1;
 
-        if (!$this->isFlexiQuizQuestionStem($text)) {
+        if (!$this->isFlexiQuizQuestionStem($text) && !$isMultiSelectStem) {
             return false;
         }
 
@@ -2481,7 +2548,10 @@ class BulkQuestionImportService
                 return true;
             }
 
-            if ($this->isFlexiQuizQuestionStem($candidate)) {
+            // A multi-select prompt is followed by option paragraphs. Do not mistake
+            // an option containing punctuation or a question mark for a new question
+            // before reaching its Jawaban marker.
+            if (!$isMultiSelectStem && $this->isFlexiQuizQuestionStem($candidate)) {
                 break;
             }
 
@@ -2492,7 +2562,6 @@ class BulkQuestionImportService
                     }
                 }
             }
-
         }
 
         return false;
