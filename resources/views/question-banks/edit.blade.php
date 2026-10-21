@@ -258,7 +258,7 @@
                                 </h5>
 
                                 <small class="text-muted">
-                                    Pilihan dapat berupa teks, gambar, atau kombinasi teks dan gambar.
+                                    Pilihan dapat berupa teks, gambar, atau kombinasi teks dan gambar. Untuk soal kombinasi, isi opsi seperti “Salah, Benar, Benar” dan tandai satu opsi yang benar.
                                 </small>
 
                             </div>
