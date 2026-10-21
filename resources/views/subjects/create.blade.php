@@ -53,6 +53,10 @@
                                 {{ $message }}
                             </div>
                             @enderror
+
+                            <div class="form-text">
+                                Kode mata pelajaran dibuat otomatis berdasarkan jenjang, kelas, dan topik.
+                            </div>
                         </div>
 
                         <div class="col-md-4">
