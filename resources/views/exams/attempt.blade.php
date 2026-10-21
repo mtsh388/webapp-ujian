@@ -616,6 +616,22 @@
                 }
 
                 const isMultiple = option.dataset.multiple === '1';
+                if (option.dataset.statement === '1') {
+                    document.querySelectorAll(`[data-statement-group="${option.dataset.statementGroup}"]`).forEach(wrapper => wrapper.classList.remove('selected'));
+                    const wrapper = document.querySelector(`[data-option-wrapper="${option.value}"]`);
+                    wrapper?.classList.add('selected');
+
+                    const selectedIds = Array.from(document.querySelectorAll('.answer-option[data-statement="1"]:checked')).map(input => Number(input.value));
+                    const expectedCount = Number(option.dataset.statementCount || 0);
+
+                    if (selectedIds.length >= expectedCount) markCurrentQuestionAnswered();
+                    else document.querySelector('.question-number.current')?.classList.remove('answered');
+
+                    try { await saveAnswer(Number(option.dataset.questionId), selectedIds, true); } catch (error) {}
+                    updateAnsweredCount();
+                    return;
+                }
+
                 if (isMultiple) {
                     const wrapper = document.querySelector(`[data-option-wrapper="${option.value}"]`);
                     wrapper?.classList.toggle('selected', option.checked);
