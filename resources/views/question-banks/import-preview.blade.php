@@ -200,10 +200,13 @@
                 <form action="{{ route('questions.import.confirm') }}" method="POST">
                     @csrf
                     <input type="hidden" name="token" value="{{ $pending['token'] }}">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" {{ $unreadableAnswerKeys->isNotEmpty() ? 'disabled' : '' }} title="{{ $unreadableAnswerKeys->isNotEmpty() ? 'Perbaiki kunci jawaban yang tidak terbaca sebelum mengimpor.' : '' }}">
                         <i class="bx bx-check-circle me-1"></i>
                         Konfirmasi Import {{ $preview['total'] }} Soal
                     </button>
+                    @if ($unreadableAnswerKeys->isNotEmpty())
+                        <div class="small text-danger mt-2">Konfirmasi dinonaktifkan karena ada {{ $unreadableAnswerKeys->count() }} soal dengan kunci jawaban tidak terbaca.</div>
+                    @endif
                 </form>
             </div>
         </div>
