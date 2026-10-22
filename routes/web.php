@@ -218,6 +218,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
                 ->middleware('permission:question.update')
                 ->name('questions.update');
 
+            Route::delete('/bulk', [QuestionBankController::class, 'bulkDestroy'])
+                ->middleware('permission:question.delete')
+                ->name('questions.bulk-destroy');
+
             Route::delete('/{question}', [QuestionBankController::class, 'destroy'])
                 ->middleware('permission:question.delete')
                 ->name('questions.destroy');
