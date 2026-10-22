@@ -1727,7 +1727,15 @@ class BulkQuestionImportService
         $normalizedAnswer = $this->normalizeAnswerForMatching($answerText);
         $answerKeys = [];
 
-        foreach ($options as $key => $option) {
+        // Accept either an option label (A-D) or the full answer text.
+        // This keeps source documents using "Jawaban: c" compatible with
+        // documents using "Jawaban: 2 jam".
+        $answerLabel = strtoupper(trim($answerText));
+        if (preg_match('/^[A-D]$/u', $answerLabel) && isset($options[$answerLabel])) {
+            $answerKeys[] = $answerLabel;
+        }
+
+        foreach ($answerKeys === [] ? $options : [] as $key => $option) {
             $normalizedOption = $this->normalizeAnswerForMatching((string)$option['text']);
             if ($normalizedOption === '') {
                 continue;
