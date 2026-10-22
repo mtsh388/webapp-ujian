@@ -78,12 +78,9 @@
             <span class="badge bg-label-secondary">Nilai default: {{ number_format((float) $pending['default_score'], 2, ',', '.') }}</span>
         </div>
 
-        <div class="d-flex justify-content-end mb-3">
-            <button type="button" class="btn btn-outline-primary" id="scroll-to-import-bottom">
-                <i class="bx bx-chevrons-down me-1"></i>
-                Ke Bagian Paling Bawah
-            </button>
-        </div>
+        <button type="button" class="btn btn-primary rounded-circle shadow import-preview-scroll-button" id="scroll-to-import-bottom" aria-label="Ke bagian paling bawah" title="Ke bagian paling bawah">
+            <i class="bx bx-chevrons-down"></i>
+        </button>
 
         <div class="d-flex flex-column gap-3 mb-4">
             @foreach ($preview['questions'] as $item)
@@ -182,15 +179,50 @@
     </div>
 
     <script>
-        document.getElementById('scroll-to-import-bottom')?.addEventListener('click', function () {
-            document.getElementById('import-preview-bottom')?.scrollIntoView({
+        const scrollToImportBottomButton = document.getElementById('scroll-to-import-bottom');
+        const importPreviewBottom = document.getElementById('import-preview-bottom');
+
+        scrollToImportBottomButton?.addEventListener('click', function () {
+            importPreviewBottom?.scrollIntoView({
                 behavior: 'smooth',
                 block: 'end'
             });
         });
+
+        if (scrollToImportBottomButton && importPreviewBottom && 'IntersectionObserver' in window) {
+            const importPreviewBottomObserver = new IntersectionObserver(([entry]) => {
+                scrollToImportBottomButton.classList.toggle('d-none', entry.isIntersecting);
+            }, { threshold: 0.15 });
+
+            importPreviewBottomObserver.observe(importPreviewBottom);
+        }
     </script>
 
     <style>
+        .import-preview-scroll-button {
+            position: fixed;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            z-index: 1050;
+            width: 3.25rem;
+            height: 3.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .import-preview-scroll-button.d-none {
+            display: none !important;
+        }
+
+        @media (max-width: 576px) {
+            .import-preview-scroll-button {
+                right: 1rem;
+                bottom: 1rem;
+            }
+        }
+
         .question-preview img,
         .question-preview table,
         .card-body img {
