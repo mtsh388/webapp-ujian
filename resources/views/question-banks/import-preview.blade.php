@@ -20,6 +20,32 @@
             Periksa pertanyaan, pilihan jawaban, kunci jawaban, dan pembahasan di bawah ini. Data baru dibuat setelah Anda menekan tombol Konfirmasi Import.
         </div>
 
+        @php
+            $unreadableAnswerKeys = collect($preview['questions'])
+                ->filter(fn ($item) => empty($item['answer_keys']))
+                ->values();
+        @endphp
+
+        @if ($unreadableAnswerKeys->isNotEmpty())
+            <div class="alert alert-warning border-warning mb-4" role="alert">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="bx bx-error-circle fs-2"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold fs-5 mb-1">Kunci tidak terbaca ({{ $unreadableAnswerKeys->count() }} soal)</div>
+                        <p class="mb-2">Kunci jawaban untuk soal berikut belum berhasil dikenali dari dokumen Word. Periksa kunci pada file sumber dan jangan mengonfirmasi impor sebelum memastikan jawaban yang benar.</p>
+                        <ul class="mb-0 ps-3">
+                            @foreach ($unreadableAnswerKeys as $unreadableItem)
+                                <li class="mb-1">
+                                    <strong>Soal {{ $unreadableItem['number'] }}:</strong>
+                                    {{ \Illuminate\Support\Str::limit(trim(strip_tags($unreadableItem['question'])), 180) ?: 'Teks soal tidak tersedia' }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @if (($preview['format'] ?? 'template') === 'flexiquiz')
             <div class="alert alert-warning">
                 <div class="fw-semibold mb-2">Format TKA/FlexiQuiz terdeteksi</div>
