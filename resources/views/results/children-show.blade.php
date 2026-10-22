@@ -161,23 +161,41 @@
                             @if ($question?->type === 'statement_true_false')
                                 @php
                                     $statementGroups = ($question->options ?? collect())->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
+                                    $selectedOptionIds = array_map('intval', $selectedOptionIds);
                                 @endphp
-                                @foreach ($statementGroups as $groupKey => $groupOptions)
-                                    @php
-                                        $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
-                                        $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
-                                        $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
-                                        $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
-                                    @endphp
-                                    <div class="rounded border p-3 mb-2 {{ $selectedStatementOption && $selectedStatementOption->is_correct ? 'border-success bg-label-success' : ($selectedStatementOption ? 'border-danger bg-label-danger' : '') }}">
-                                        <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
-                                        <div class="mb-2">{!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}</div>
-                                        <div class="small">Jawaban Anak: <strong>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</strong></div>
-                                        @if ($showCorrectAnswers)
-                                            <div class="small">Kunci Jawaban: <strong>{{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</strong></div>
-                                        @endif
-                                    </div>
-                                @endforeach
+                                <div class="table-responsive">
+                                    <table class="table table-bordered align-middle statement-question-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 70px;">No.</th>
+                                                <th>Pernyataan</th>
+                                                <th>Jawaban Anak</th>
+                                                @if ($showCorrectAnswers)
+                                                    <th>Kunci Jawaban</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($statementGroups as $groupKey => $groupOptions)
+                                                @php
+                                                    $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                                    $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                                    $statementOption = $trueOption ?: $falseOption;
+                                                    $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, $selectedOptionIds, true));
+                                                    $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                                @endphp
+                                                <tr class="{{ $selectedStatementOption ? ($selectedStatementOption->is_correct ? 'table-success' : 'table-danger') : '' }}">
+                                                    <th scope="row" class="text-center">{{ preg_replace('/^S/', '', $groupKey) }}</th>
+                                                    <td>{!! \App\Support\QuestionHtml::sanitize($statementOption?->option_text ?? '') !!}</td>
+                                                    <td>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</td>
+                                                    @if ($showCorrectAnswers)
+                                                        <td>{{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             @else
                                 @foreach (($question->options ?? collect()) as $option)
                                     @php
