@@ -27,7 +27,7 @@
         @endphp
 
         @if ($unreadableAnswerKeys->isNotEmpty())
-            <div class="alert alert-warning border-warning mb-4" role="alert">
+            <div class="alert alert-danger border-danger mb-4" role="alert">
                 <div class="d-flex align-items-start gap-3">
                     <i class="bx bx-error-circle fs-2"></i>
                     <div class="flex-grow-1">
