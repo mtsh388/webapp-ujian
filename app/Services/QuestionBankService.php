@@ -95,14 +95,15 @@ class QuestionBankService
 
         $orderColumns = [
             0 => 'question_banks.id',
-            1 => 'question_banks.code',
-            2 => 'question_banks.question',
-            3 => 'question_banks.subject_id',
-            4 => 'question_banks.type',
-            5 => 'question_banks.difficulty',
-            6 => 'question_banks.id',
-            7 => 'question_banks.is_active',
-            8 => 'question_banks.id',
+            1 => 'question_banks.id',
+            2 => 'question_banks.code',
+            3 => 'question_banks.question',
+            4 => 'question_banks.subject_id',
+            5 => 'question_banks.type',
+            6 => 'question_banks.difficulty',
+            7 => 'question_banks.id',
+            8 => 'question_banks.is_active',
+            9 => 'question_banks.id',
         ];
 
         $orderColumn = $orderColumns[$orderColumnIndex] ?? 'question_banks.code';
@@ -246,6 +247,8 @@ class QuestionBankService
             ';
 
                 return [
+                    'selection' => '<input type="checkbox" class="form-check-input question-row-checkbox" value="' . $question->id . '" aria-label="Pilih soal ' . e($question->code) . '">',
+
                     'DT_RowIndex' =>
                         $start + $index + 1,
 
