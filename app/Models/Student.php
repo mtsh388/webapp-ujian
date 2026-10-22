@@ -20,6 +20,7 @@ class Student extends Model
         'gender',
         'birth_date',
         'phone',
+        'parent_phone',
         'address',
         'is_active',
     ];
