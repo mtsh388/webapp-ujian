@@ -133,26 +133,48 @@
 
                         @if (($item['type'] ?? null) === 'statement_true_false')
                             @php
-                                $statementGroups = collect($item['options'])->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option['key']));
+                                $statementGroups = collect($item['options'] ?? [])->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) ($option['key'] ?? '')));
                             @endphp
-                            <div class="d-flex flex-column gap-3 mb-3">
-                                @foreach ($statementGroups as $groupKey => $groupOptions)
-                                    @php
-                                        $trueOption = $groupOptions->firstWhere('key', $groupKey . 'T');
-                                        $falseOption = $groupOptions->firstWhere('key', $groupKey . 'F');
-                                    @endphp
-                                    <div class="border rounded p-3">
-                                        <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
-                                        <div>{!! $trueOption['html'] ?? '' !!}</div>
-                                        <div class="small text-muted mt-2">
-                                            Kunci jawaban:
-                                            <strong>{{ !empty($trueOption['is_correct']) ? 'Benar' : (!empty($falseOption['is_correct']) ? 'Salah' : 'Belum teridentifikasi') }}</strong>
-                                        </div>
-                                        @if (($trueOption['image_count'] ?? 0) > 0)
-                                            <span class="badge bg-label-info mt-2">{{ $trueOption['image_count'] }} gambar</span>
-                                        @endif
-                                    </div>
-                                @endforeach
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered align-middle statement-question-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 70px;">No.</th>
+                                            <th>Pernyataan</th>
+                                            <th class="text-center" style="width: 110px;">Benar</th>
+                                            <th class="text-center" style="width: 110px;">Salah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($statementGroups as $groupKey => $groupOptions)
+                                            @php
+                                                $trueOption = $groupOptions->firstWhere('key', $groupKey . 'T');
+                                                $falseOption = $groupOptions->firstWhere('key', $groupKey . 'F');
+                                            @endphp
+                                            <tr>
+                                                <th scope="row" class="text-center">{{ preg_replace('/^S/', '', $groupKey) }}</th>
+                                                <td>{!! \App\Support\QuestionHtml::sanitize($trueOption['html'] ?? $falseOption['html'] ?? $trueOption['text'] ?? $falseOption['text'] ?? '') !!}</td>
+                                                <td class="text-center">
+                                                    @if (!empty($trueOption['is_correct']))
+                                                        <span class="badge bg-success">Kunci</span>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
+                                                    @if (($trueOption['image_count'] ?? 0) > 0)
+                                                        <span class="badge bg-label-info">{{ $trueOption['image_count'] }} gambar</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    @if (!empty($falseOption['is_correct']))
+                                                        <span class="badge bg-success">Kunci</span>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         @elseif (!empty($item['options']))
                             <div class="d-flex flex-column gap-2 mb-3">
