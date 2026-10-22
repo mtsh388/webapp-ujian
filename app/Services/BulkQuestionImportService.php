@@ -2290,57 +2290,24 @@ class BulkQuestionImportService
         foreach ($blocks as $block) {
             $blockType = (string)($block['type'] ?? '');
 
-            // FlexiQuiz exports statement-based Benar/Salah questions as a
-            // Word table. Convert only tables with the expected statement
-            // header into paragraph-like items; unrelated tables stay ignored
-            // by the question parser and are preserved separately in context.
+            // FlexiQuiz/DOCX exports may put the statement headings on the
+            // first row or on a later row (for example, when a title/blank row
+            // is included). Reuse the same tolerant parser used by native DOCX
+            // imports so those statement rows become options instead of being
+            // silently discarded.
             if ($blockType === 'table') {
                 $tableHtml = (string)($block['html'] ?? '');
-                $tableDom = new DOMDocument();
-                $previousErrorState = libxml_use_internal_errors(true);
-                $loaded = $tableDom->loadHTML(
-                    '<?xml encoding="UTF-8">' . $tableHtml,
-                    LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-                );
-                libxml_clear_errors();
-                libxml_use_internal_errors($previousErrorState);
+                $statementRows = $this->extractNativeStatementRows($tableHtml);
 
-                if ($loaded) {
-                    $tableXPath = new DOMXPath($tableDom);
-                    $rows = $tableXPath->query('//table//tr');
-                    $tableRows = [];
-
-                    foreach ($rows as $row) {
-                        $cells = $tableXPath->query('./th|./td', $row);
-                        $cellTexts = [];
-                        foreach ($cells as $cell) {
-                            $cellTexts[] = $this->normalizeText((string)($cell->textContent ?? ''));
-                        }
-                        if (!empty($cellTexts)) {
-                            $tableRows[] = ['cells' => $cells, 'texts' => $cellTexts];
-                        }
-                    }
-
-                    $headerText = implode(' ', $tableRows[0]['texts'] ?? []);
-                    $isStatementTable = preg_match('/pernyataan/iu', $headerText)
-                        && preg_match('/benar/iu', $headerText)
-                        && preg_match('/salah/iu', $headerText);
-
-                    if ($isStatementTable) {
-                        foreach (array_slice($tableRows, 1) as $tableRow) {
-                            $statementText = $this->normalizeText((string)($tableRow['texts'][0] ?? ''));
-                            if ($statementText === '') {
-                                continue;
-                            }
-
-                            $paragraphs[] = [
-                                'type' => 'paragraph',
-                                'text' => $statementText,
-                                'html' => $this->escapeTextAsHtml($statementText),
-                                'images' => [],
-                                'is_list' => false,
-                            ];
-                        }
+                if (count($statementRows) >= 2) {
+                    foreach ($statementRows as $statementText) {
+                        $paragraphs[] = [
+                            'type' => 'paragraph',
+                            'text' => $statementText,
+                            'html' => $this->escapeTextAsHtml($statementText),
+                            'images' => [],
+                            'is_list' => false,
+                        ];
                     }
                 }
 
