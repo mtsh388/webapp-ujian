@@ -8,17 +8,10 @@
             <div class="card-header border-bottom">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div>
-                        <h4 class="card-title mb-1">Hasil Ujian</h4>
-                        <p class="card-subtitle text-muted mb-0">Daftar hasil ujian siswa yang telah selesai dan tersedia untuk ditinjau.</p>
+                        <h4 class="card-title mb-1">Daftar Ujian</h4>
+                        <p class="card-subtitle text-muted mb-0">Pilih ujian untuk melihat hasil peserta dan ranking.</p>
                     </div>
-                    <div class="d-flex align-items-center justify-content-end gap-2 flex-wrap">
-                        <div id="resultsExportButtons"></div>
-                        @can('result.view_own')
-                            <a href="{{ route('results.my') }}" class="btn btn-primary">
-                                <i class="bx bx-user me-1"></i>Hasil Saya
-                            </a>
-                        @endcan
-                    </div>
+                    <div id="resultsExportButtons"></div>
                 </div>
             </div>
             <div class="card-datatable table-responsive">
@@ -26,11 +19,11 @@
                     <thead>
                         <tr>
                             <th>No</th>
-                            <th>Ujian</th>
-                            <th>Siswa</th>
-                            <th>Nilai</th>
-                            <th>Status</th>
-                            <th>Dikumpulkan</th>
+                            <th>Kode Ujian</th>
+                            <th>Nama Ujian</th>
+                            <th>Mata Pelajaran</th>
+                            <th>Peserta Selesai</th>
+                            <th>Hasil Terakhir</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -82,45 +75,37 @@
                 columns: [
                     { data: 'no', name: 'no', searchable: false, orderable: false },
                     {
-                        data: 'exam_title',
-                        name: 'exam_title',
-                        render: function (data, type, row) {
-                            const title = $('<div>').text(data || '-').html();
-                            const code = $('<div>').text(row.exam_code || '-').html();
-                            return '<div class="fw-semibold">' + title + '</div><div class="small text-muted">' + code + '</div>';
-                        }
-                    },
-                    {
-                        data: 'student_name',
-                        name: 'student_name',
+                        data: 'exam_code',
+                        name: 'exam_code',
                         render: function (data) {
                             return $('<div>').text(data || '-').html();
                         }
                     },
                     {
-                        data: 'score',
-                        name: 'score',
-                        render: function (data, type, row) {
-                            if (type !== 'display') return data;
-                            const score = Number(data || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                            const passing = Number(row.passing_score || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                            return '<span class="fw-bold">' + score + '</span><div class="small text-muted">Passing: ' + passing + '</div>';
+                        data: 'exam_title',
+                        name: 'exam_title',
+                        render: function (data) {
+                            return $('<div>').text(data || '-').html();
                         }
                     },
                     {
-                        data: 'status',
-                        name: 'status',
-                        render: function (data, type, row) {
-                            if (type !== 'display') return data;
-                            if (data === 'expired') return '<span class="badge bg-label-warning">Waktu Habis</span>';
-                            return row.passed
-                                ? '<span class="badge bg-label-success">Lulus</span>'
-                                : '<span class="badge bg-label-danger">Tidak Lulus</span>';
+                        data: 'subject_name',
+                        name: 'subject_name',
+                        render: function (data) {
+                            return $('<div>').text(data || '-').html();
                         }
                     },
                     {
-                        data: 'submitted_at',
-                        name: 'submitted_at',
+                        data: 'completed_attempts',
+                        name: 'completed_attempts',
+                        render: function (data, type) {
+                            if (type !== 'display') return Number(data || 0);
+                            return '<span class="badge bg-label-primary">' + Number(data || 0).toLocaleString('id-ID') + ' peserta</span>';
+                        }
+                    },
+                    {
+                        data: 'latest_submitted_at',
+                        name: 'latest_submitted_at',
                         render: function (data, type) {
                             if (!data) return '-';
                             if (type !== 'display') return data;
@@ -130,28 +115,25 @@
                         }
                     },
                     {
-                        data: 'id',
-                        name: 'id',
+                        data: 'ranking_url',
+                        name: 'ranking_url',
                         searchable: false,
                         orderable: false,
-                        render: function (data, type, row) {
+                        render: function (data, type) {
                             if (type !== 'display') return data;
-                            return '<div class="d-flex gap-1">' +
-                                '<a href="' + row.show_url + '" class="btn btn-sm btn-outline-primary" title="Lihat hasil" aria-label="Lihat hasil"><i class="bx bx-show"></i></a>' +
-                                '<a href="' + row.ranking_url + '" class="btn btn-sm btn-outline-success" title="Ranking ujian" aria-label="Ranking ujian"><i class="bx bx-trophy"></i></a>' +
-                                '</div>';
+                            return '<a href="' + data + '" class="btn btn-sm btn-outline-success" title="Lihat hasil dan ranking" aria-label="Lihat hasil dan ranking"><i class="bx bx-trophy me-1"></i>Lihat Hasil</a>';
                         }
                     }
                 ],
                 language: {
                     processing: 'Memuat data...',
                     search: '',
-                    searchPlaceholder: 'Cari ujian atau siswa...',
+                    searchPlaceholder: 'Cari ujian atau mata pelajaran...',
                     lengthMenu: '_MENU_',
-                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
-                    infoEmpty: 'Menampilkan 0 hasil',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ ujian',
+                    infoEmpty: 'Menampilkan 0 ujian',
                     zeroRecords: 'Data tidak ditemukan',
-                    emptyTable: 'Belum ada hasil ujian',
+                    emptyTable: 'Belum ada ujian dengan hasil yang tersedia',
                     paginate: { first: 'Pertama', last: 'Terakhir', next: 'Selanjutnya', previous: 'Sebelumnya' }
                 },
                 initComplete: function () {

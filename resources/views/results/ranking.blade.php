@@ -191,6 +191,7 @@
                         render: function (data, type, row) {
                             if (type !== 'display') return data;
                             if (data === 'expired') return '<span class="badge bg-label-warning">Waktu Habis</span>';
+                            if (row.passed === null || row.passed === undefined) return '<span class="badge bg-label-secondary">KKM belum ditentukan</span>';
                             return row.passed
                                 ? '<span class="badge bg-label-success">Lulus</span>'
                                 : '<span class="badge bg-label-danger">Tidak Lulus</span>';

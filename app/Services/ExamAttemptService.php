@@ -588,12 +588,12 @@ class ExamAttemptService
                 : null;
 
             $now = now();
-            $durationSeconds = $lockedAttempt->started_at
-                ? min(
-                    (int) $lockedAttempt->started_at->diffInSeconds($now),
-                    max(0, (int) $lockedAttempt->exam->duration_minutes * 60)
-                )
+            $elapsedSeconds = $lockedAttempt->started_at
+                ? max(0, (int) $lockedAttempt->started_at->diffInSeconds($now, false))
                 : 0;
+            $durationSeconds = $lockedAttempt->exam->has_duration
+                ? min($elapsedSeconds, max(0, (int) $lockedAttempt->exam->duration_minutes * 60))
+                : $elapsedSeconds;
 
             $lockedAttempt->update([
                 'submitted_at' => $now,

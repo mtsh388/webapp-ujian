@@ -31,61 +31,83 @@ class ResultController extends Controller
     {
         abort_unless(auth()->user()->can('result.view'), 403);
 
-        $baseQuery = DB::table('exam_attempts as ea')
-            ->join('exams as e', 'e.id', '=', 'ea.exam_id')
-            ->leftJoin('students as s', 's.id', '=', 'ea.student_id')
-            ->whereIn('ea.status', ['submitted', 'expired'])
-            ->whereNotNull('ea.submitted_at')
+        $baseQuery = DB::table('exams as e')
+            ->whereNull('e.deleted_at')
             ->where(function ($query) {
                 $query->where('e.show_result_immediately', true)
                     ->orWhere('e.status', 'closed');
+            })
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('exam_attempts as ea')
+                    ->whereColumn('ea.exam_id', 'e.id')
+                    ->whereIn('ea.status', ['submitted', 'expired'])
+                    ->whereNotNull('ea.submitted_at');
             });
 
-        $recordsTotal = (clone $baseQuery)->count('ea.id');
+        $recordsTotal = (clone $baseQuery)->count('e.id');
         $search = trim((string) $request->input('search.value', ''));
 
         if ($search !== '') {
             $baseQuery->where(function ($query) use ($search) {
                 $query->where('e.title', 'like', '%' . $search . '%')
                     ->orWhere('e.code', 'like', '%' . $search . '%')
-                    ->orWhere('s.full_name', 'like', '%' . $search . '%')
-                    ->orWhere('s.student_number', 'like', '%' . $search . '%');
+                    ->orWhereExists(function ($subjectQuery) use ($search) {
+                        $subjectQuery->selectRaw('1')
+                            ->from('subjects as search_subject')
+                            ->whereColumn('search_subject.id', 'e.subject_id')
+                            ->where('search_subject.name', 'like', '%' . $search . '%');
+                    });
             });
         }
 
-        $recordsFiltered = (clone $baseQuery)->count('ea.id');
+        $recordsFiltered = (clone $baseQuery)->count('e.id');
 
         $orderColumns = [
-            1 => 'e.title',
-            2 => 's.full_name',
-            3 => 'ea.score',
-            4 => 'ea.status',
-            5 => 'ea.submitted_at',
+            1 => 'e.code',
+            2 => 'e.title',
+            3 => 'subjects.name',
+            4 => 'completed_attempts',
+            5 => 'latest_submitted_at',
         ];
 
         $orderIndex = (int) $request->input('order.0.column', 5);
-        $orderColumn = $orderColumns[$orderIndex] ?? 'ea.submitted_at';
+        $orderColumn = $orderColumns[$orderIndex] ?? 'latest_submitted_at';
         $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $start = max(0, (int) $request->input('start', 0));
         $length = (int) $request->input('length', 10);
         $length = $length < 1 ? 10 : min($length, 100);
 
-        $rows = $baseQuery
+        $rows = DB::table('exams as e')
+            ->leftJoin('subjects', 'subjects.id', '=', 'e.subject_id')
+            ->join('exam_attempts as ea', 'ea.exam_id', '=', 'e.id')
+            ->whereNull('e.deleted_at')
+            ->whereIn('ea.status', ['submitted', 'expired'])
+            ->whereNotNull('ea.submitted_at')
+            ->where(function ($query) {
+                $query->where('e.show_result_immediately', true)
+                    ->orWhere('e.status', 'closed');
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('e.title', 'like', '%' . $search . '%')
+                        ->orWhere('e.code', 'like', '%' . $search . '%')
+                        ->orWhere('subjects.name', 'like', '%' . $search . '%');
+                });
+            })
             ->select([
-                'ea.id',
-                'ea.exam_id',
-                'ea.score',
-                'ea.status',
-                'ea.passed',
-                'ea.submitted_at',
-                'e.title as exam_title',
-                'e.code as exam_code',
+                'e.id',
+                'e.code',
+                'e.title',
+                'subjects.name as subject_name',
                 'e.passing_score',
-                's.full_name as student_name',
             ])
+            ->selectRaw('COUNT(ea.id) as completed_attempts')
+            ->selectRaw('MAX(ea.submitted_at) as latest_submitted_at')
+            ->groupBy('e.id', 'e.code', 'e.title', 'subjects.name', 'e.passing_score')
             ->orderBy($orderColumn, $orderDirection)
-            ->orderBy('ea.id', 'desc')
+            ->orderBy('e.id', 'desc')
             ->offset($start)
             ->limit($length)
             ->get()
@@ -93,17 +115,13 @@ class ResultController extends Controller
                 return [
                     'no' => $start + $index + 1,
                     'id' => $row->id,
-                    'exam_id' => $row->exam_id,
-                    'exam_title' => $row->exam_title,
-                    'exam_code' => $row->exam_code,
-                    'student_name' => $row->student_name,
-                    'score' => (float) $row->score,
-                    'passing_score' => (float) $row->passing_score,
-                    'status' => $row->status,
-                    'passed' => (bool) $row->passed,
-                    'submitted_at' => $row->submitted_at,
-                    'show_url' => route('results.show', $row->id),
-                    'ranking_url' => route('results.ranking', $row->exam_id),
+                    'exam_code' => $row->code,
+                    'exam_title' => $row->title,
+                    'subject_name' => $row->subject_name,
+                    'passing_score' => $row->passing_score === null ? null : (float) $row->passing_score,
+                    'completed_attempts' => (int) $row->completed_attempts,
+                    'latest_submitted_at' => $row->latest_submitted_at,
+                    'ranking_url' => route('results.ranking', $row->id),
                 ];
             });
 
@@ -189,7 +207,7 @@ class ResultController extends Controller
                     'score' => (float) $row->score,
                     'duration_seconds' => $row->duration_seconds === null ? null : (int) $row->duration_seconds,
                     'status' => $row->status,
-                    'passed' => (bool) $row->passed,
+                    'passed' => $row->passed === null ? null : (bool) $row->passed,
                     'submitted_at' => $row->submitted_at,
                     'is_current_student' => $studentId !== null && (int) $row->student_id === $studentId,
                 ];
