@@ -207,7 +207,7 @@ class ResultController extends Controller
                     'score' => (float) $row->score,
                     'duration_seconds' => $row->duration_seconds === null ? null : (int) $row->duration_seconds,
                     'status' => $row->status,
-                    'passed' => (bool) $row->passed,
+                    'passed' => $row->passed === null ? null : (bool) $row->passed,
                     'submitted_at' => $row->submitted_at,
                     'is_current_student' => $studentId !== null && (int) $row->student_id === $studentId,
                 ];
