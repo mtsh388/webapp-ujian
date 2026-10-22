@@ -161,6 +161,19 @@ class BulkQuestionImportService
 
         $this->validateQuestions($questions);
 
+        foreach ($questions as $index => $question) {
+            $answerKeys = $question['answer_keys']
+                ?? (isset($question['answer']) ? [$question['answer']] : []);
+
+            if (empty($answerKeys)) {
+                $number = $index + 1;
+
+                throw new RuntimeException(
+                    "Kunci jawaban soal nomor {$number} tidak terbaca. Perbaiki kunci jawaban pada dokumen Word lalu upload ulang."
+                );
+            }
+        }
+
         $storedFiles = [];
 
         try {
