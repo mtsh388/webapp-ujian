@@ -1936,10 +1936,12 @@ class BulkQuestionImportService
                     continue;
                 }
 
-                if (($current['type'] ?? null) === 'statement_true_false' && $currentOption === null) {
+                if (in_array(($current['type'] ?? null), [null, 'statement_true_false'], true) && $currentOption === null) {
                     $statements = $this->extractNativeStatementRows($tableHtml);
 
                     if (count($statements) >= 2) {
+                        $current['type'] = 'statement_true_false';
+
                         foreach ($statements as $statementIndex => $statement) {
                             $statementNumber = $statementIndex + 1;
                             $trueKey = 'S' . $statementNumber . 'T';
