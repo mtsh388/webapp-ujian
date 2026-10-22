@@ -1936,6 +1936,35 @@ class BulkQuestionImportService
                     continue;
                 }
 
+                if (($current['type'] ?? null) === 'statement_true_false' && $currentOption === null) {
+                    $statements = $this->extractNativeStatementRows($tableHtml);
+
+                    if (count($statements) >= 2) {
+                        foreach ($statements as $statementIndex => $statement) {
+                            $statementNumber = $statementIndex + 1;
+                            $trueKey = 'S' . $statementNumber . 'T';
+                            $falseKey = 'S' . $statementNumber . 'F';
+
+                            $current['options'][$trueKey] = [
+                                'key' => $trueKey,
+                                'text' => $statement . ' — Benar',
+                                'html' => $this->escapeTextAsHtml($statement . ' — Benar'),
+                                'images' => [],
+                            ];
+                            $current['options'][$falseKey] = [
+                                'key' => $falseKey,
+                                'text' => $statement . ' — Salah',
+                                'html' => $this->escapeTextAsHtml($statement . ' — Salah'),
+                                'images' => [],
+                            ];
+                        }
+
+                        $current['statement_count'] = count($statements);
+                        $current['question_images'] = array_merge($current['question_images'], $tableImages);
+                        continue;
+                    }
+                }
+
                 if ($currentOption !== null) {
                     $current['options'][$currentOption]['text'] =
                         $this->appendHtml(
@@ -2016,6 +2045,28 @@ class BulkQuestionImportService
             }
 
             if (
+                ($current['type'] ?? null) === 'statement_true_false'
+                && preg_match('/^\s*JAWABAN\s*[:.]?\s*(.+)$/iu', $text, $statementAnswerMatches)
+            ) {
+                $truthValues = $this->parseFlexiTruthValues($statementAnswerMatches[1]);
+                $statementCount = (int) ($current['statement_count'] ?? (count($current['options']) / 2));
+
+                if ($statementCount > 0 && count($truthValues) === $statementCount) {
+                    $answerKeys = [];
+                    foreach ($truthValues as $statementIndex => $isTrue) {
+                        $answerKeys[] = 'S' . ($statementIndex + 1) . ($isTrue ? 'T' : 'F');
+                    }
+
+                    $current['answer_keys'] = $answerKeys;
+                    $current['answer'] = null;
+                }
+
+                $currentOption = null;
+                $inExplanation = false;
+                continue;
+            }
+
+            if (
                 preg_match(
                     '/^\s*JAWABAN\s*[:.]?\s*([A-D](?:\s*[,;]\s*[A-D])*)(?:\s+(.*))?$/iu',
                     $text,
@@ -2075,7 +2126,7 @@ class BulkQuestionImportService
 
             if (
                 $current['type'] === null ||
-                in_array($current['type'], ['multiple_choice', 'multiple_select'], true)
+                in_array($current['type'], ['multiple_choice', 'multiple_select', 'true_false'], true)
             ) {
                 $optionResult = $this->extractOptions(
                     $rawText,
@@ -3111,7 +3162,7 @@ class BulkQuestionImportService
     {
         if (
             !preg_match(
-                '/^SOAL(?:\s+\d+)?\s*(?:\[(PILIHAN_GANDA_KOMPLEKS|PILIHAN_GANDA|BENAR_SALAH)\])?\s*[:.]?\s*(.*?)$/iu',
+                '/^SOAL(?:\s+\d+)?\s*(?:\[(BENAR_SALAH_PERNYATAAN|PILIHAN_GANDA_KOMPLEKS|PILIHAN_GANDA|BENAR_SALAH)\])?\s*[:.]?\s*(.*?)$/iu',
                 $text,
                 $matches
             )
@@ -3130,6 +3181,7 @@ class BulkQuestionImportService
                 'PILIHAN_GANDA' => 'multiple_choice',
                 'PILIHAN_GANDA_KOMPLEKS' => 'multiple_select',
                 'BENAR_SALAH' => 'true_false',
+                'BENAR_SALAH_PERNYATAAN' => 'statement_true_false',
                 default => null,
             };
         }
