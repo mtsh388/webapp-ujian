@@ -1811,10 +1811,12 @@ class BulkQuestionImportService
         }
 
         $header = implode(' ', $tableRows[0] ?? []);
+        $allTableText = implode(' ', array_merge(...array_values($tableRows ?: [[]])));
 
-        // Some DOCX-to-HTML fragments have table markup that libxml repairs
-        // unexpectedly. Retry with a simple row/cell extraction before giving up.
-        if (empty($tableRows) || !preg_match('/pernyataan/iu', $header)) {
+        // DOCX exports sometimes place the statement labels in the first row
+        // and the "Pernyataan / Benar / Salah" headings in a later row.
+        // Inspect the whole table before rejecting it.
+        if (empty($tableRows) || !preg_match('/pernyataan/iu', $allTableText)) {
             $tableRows = [];
             preg_match_all('/<tr\\b[^>]*>(.*?)<\\/tr>/isu', $html, $rowMatches);
             foreach ($rowMatches[1] ?? [] as $rowHtml) {
@@ -1832,18 +1834,27 @@ class BulkQuestionImportService
             $header = implode(' ', $tableRows[0] ?? []);
         }
 
+        $allTableText = implode(' ', array_merge(...array_values($tableRows ?: [[]])));
         if (
-            !preg_match('/pernyataan/iu', $header)
-            || !preg_match('/benar/iu', $header)
-            || !preg_match('/salah/iu', $header)
+            !preg_match('/pernyataan/iu', $allTableText)
+            || !preg_match('/benar/iu', $allTableText)
+            || !preg_match('/salah/iu', $allTableText)
         ) {
             return [];
         }
 
         $statements = [];
-        foreach (array_slice($tableRows, 1) as $row) {
+        $headerIndex = null;
+        foreach ($tableRows as $rowIndex => $row) {
+            if (preg_match('/pernyataan/iu', implode(' ', $row))) {
+                $headerIndex = $rowIndex;
+                break;
+            }
+        }
+
+        foreach (array_slice($tableRows, ($headerIndex ?? 0) + 1) as $row) {
             $statement = $this->normalizeText((string)($row[0] ?? ''));
-            if ($statement !== '') {
+            if ($statement !== '' && !preg_match('/^(?:benar|salah)$/iu', $statement)) {
                 $statements[] = $statement;
             }
         }
