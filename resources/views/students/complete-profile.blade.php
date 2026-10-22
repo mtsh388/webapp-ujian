@@ -63,9 +63,16 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Nomor HP</label>
+                                <label for="phone" class="form-label">Nomor HP Siswa</label>
                                 <input id="phone" name="phone" type="tel" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $student?->phone) }}" maxlength="30" required>
                                 @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="parent_phone" class="form-label">Nomor HP Orang Tua <span class="text-muted">(Opsional)</span></label>
+                                <input id="parent_phone" name="parent_phone" type="tel" class="form-control @error('parent_phone') is-invalid @enderror" value="{{ old('parent_phone', $student?->parent_phone) }}" maxlength="30" autocomplete="tel">
+                                <div class="form-text">Isi jika ingin mencantumkan nomor HP orang tua atau wali.</div>
+                                @error('parent_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
                             <div class="mb-3">
