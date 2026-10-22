@@ -50,6 +50,7 @@ class StudentProfileController extends Controller
             'full_name' => $data['full_name'],
             'school_name' => $data['school_name'],
             'phone' => $data['phone'],
+            'parent_phone' => $data['parent_phone'] ?? null,
             'education_level' => $data['education_level'],
             'class_id' => $data['class_id'],
         ]);
