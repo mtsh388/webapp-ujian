@@ -795,11 +795,16 @@ class BulkQuestionImportService
                 ? $this->renderOfficeMathChildren($expressionNode)
                 : ['text' => '', 'html' => ''];
 
+            $radicalText = $degree['text'] !== '' ? $degree['text'] : '√';
+
             return [
-                'text' => ($degree['text'] !== '' ? $degree['text'] : '√') . $expression['text'],
-                'html' => '<span class="question-word-math-radical">' .
-                    ($degree['html'] !== '' ? '<sup>' . $degree['html'] . '</sup>' : '') .
-                    '√' . $expression['html'] . '</span>',
+                'text' => $radicalText . '(' . $expression['text'] . ')',
+                'html' => '<span class="question-word-math-radical" style="display:inline-flex;align-items:flex-start;vertical-align:middle;white-space:nowrap;margin:0 0.04em;">' .
+                    ($degree['html'] !== '' ? '<sup style="font-size:0.65em;line-height:1;margin-right:0.02em;">' . $degree['html'] . '</sup>' : '') .
+                    '<span aria-hidden="true" style="font-size:1.25em;line-height:1;">√</span>' .
+                    '<span class="question-word-math-radicand" style="display:inline-block;border-top:1px solid currentColor;padding:0.03em 0.08em 0;margin-top:0.12em;">' .
+                    $expression['html'] .
+                    '</span></span>',
             ];
         }
 
