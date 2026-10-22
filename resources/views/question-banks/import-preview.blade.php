@@ -78,6 +78,13 @@
             <span class="badge bg-label-secondary">Nilai default: {{ number_format((float) $pending['default_score'], 2, ',', '.') }}</span>
         </div>
 
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-outline-primary" id="scroll-to-import-bottom">
+                <i class="bx bx-chevrons-down me-1"></i>
+                Ke Bagian Paling Bawah
+            </button>
+        </div>
+
         <div class="d-flex flex-column gap-3 mb-4">
             @foreach ($preview['questions'] as $item)
                 <div class="card">
@@ -156,7 +163,7 @@
             @endforeach
         </div>
 
-        <div class="card">
+        <div id="import-preview-bottom" class="card">
             <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <div>
                     <div class="fw-semibold">Apakah hasil preview sudah benar?</div>
@@ -173,6 +180,15 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('scroll-to-import-bottom')?.addEventListener('click', function () {
+            document.getElementById('import-preview-bottom')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'end'
+            });
+        });
+    </script>
 
     <style>
         .question-preview img,
