@@ -529,23 +529,47 @@
                                     @php
                                         $statementGroups = $questionBank->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
                                     @endphp
-                                    @foreach ($statementGroups as $groupKey => $groupOptions)
-                                        @php
-                                            $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
-                                            $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
-                                        @endphp
-                                        <div class="option-item border rounded-3 p-3 {{ $correctStatementOption ? 'correct' : '' }}">
-                                            <div class="fw-semibold mb-2">Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}</div>
-                                            <div class="option-content">
-                                                {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
-                                            </div>
-                                            <div class="mt-3">
-                                                <span class="badge bg-label-success">
-                                                    Kunci jawaban: {{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered align-middle statement-question-table mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 70px;">No.</th>
+                                                    <th>Pernyataan</th>
+                                                    <th class="text-center" style="width: 110px;">Benar</th>
+                                                    <th class="text-center" style="width: 110px;">Salah</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($statementGroups as $groupKey => $groupOptions)
+                                                    @php
+                                                        $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                                        $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                                        $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                                    @endphp
+                                                    <tr>
+                                                        <th scope="row" class="text-center">{{ preg_replace('/^S/', '', $groupKey) }}</th>
+                                                        <td class="option-content">
+                                                            {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? $falseOption?->option_text ?? '') !!}
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if ($correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T'))
+                                                                <span class="badge bg-success">Kunci</span>
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if ($correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'F'))
+                                                                <span class="badge bg-success">Kunci</span>
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 @else
                                 @forelse ($questionBank->options as $option)
 
