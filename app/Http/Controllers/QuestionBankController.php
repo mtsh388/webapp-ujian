@@ -318,6 +318,24 @@ class QuestionBankController extends Controller
             );
     }
 
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['required', 'integer', 'distinct', 'exists:question_banks,id'],
+        ]);
+
+        $questions = QuestionBank::query()->whereIn('id', $validated['ids'])->get();
+
+        foreach ($questions as $question) {
+            $this->service->delete($question);
+        }
+
+        return redirect()
+            ->route('questions.index')
+            ->with('success', $questions->count() . ' soal berhasil dihapus.');
+    }
+
     public function destroy(
         QuestionBank $question
     ): RedirectResponse
