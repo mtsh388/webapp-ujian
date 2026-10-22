@@ -20,6 +20,9 @@
                         <p class="text-muted mb-0">Kelola soal dan pilihan jawaban.</p>
                     </div>
                     <div class="d-flex gap-2">
+                        <button type="button" id="deleteSelectedQuestions" class="btn btn-outline-danger" disabled>
+                            <i class="bx bx-trash me-1"></i> Hapus Pilihan (<span id="selectedQuestionCount">0</span>)
+                        </button>
                         <a href="{{ route('questions.import') }}" class="btn btn-outline-primary">
                             <i class="bx bx-import me-1"></i> Import Word
                         </a>
@@ -65,11 +68,14 @@
                     </div>
                 </div>
 
-                <!-- Datatable Server-Side -->
-                <div class="table-responsive">
+                <form id="bulkDeleteQuestionsForm" method="POST" action="{{ route('questions.bulk-destroy') }}">
+                    @csrf
+                    @method('DELETE')
+                    <div class="table-responsive">
                     <table id="questionsTable" class="table table-hover align-middle border-top w-100">
                         <thead>
                         <tr>
+                            <th width="40" class="text-center"><input type="checkbox" class="form-check-input" id="selectAllQuestions" aria-label="Pilih semua soal pada halaman ini"></th>
                             <th width="50">No</th>
                             <th>Kode</th>
                             <th>Soal</th>
@@ -82,7 +88,8 @@
                         </tr>
                         </thead>
                     </table>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -96,6 +103,24 @@
 
             if (!tableElement) {
                 return;
+            }
+
+            const selectAll = document.querySelector('#selectAllQuestions');
+            const deleteSelectedButton = document.querySelector('#deleteSelectedQuestions');
+            const selectedCount = document.querySelector('#selectedQuestionCount');
+            const bulkDeleteForm = document.querySelector('#bulkDeleteQuestionsForm');
+
+            function selectedCheckboxes() {
+                return Array.from(tableElement.querySelectorAll('.question-row-checkbox:checked'));
+            }
+
+            function updateSelectionState() {
+                const checkboxes = Array.from(tableElement.querySelectorAll('.question-row-checkbox'));
+                const selected = selectedCheckboxes();
+                selectedCount.textContent = selected.length;
+                deleteSelectedButton.disabled = selected.length === 0;
+                selectAll.checked = checkboxes.length > 0 && checkboxes.every((checkbox) => checkbox.checked);
+                selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
             }
 
             const dataTable = new DataTable(
@@ -149,6 +174,12 @@
                     },
 
                     columns: [
+                        {
+                            data: 'selection',
+                            name: 'selection',
+                            orderable: false,
+                            searchable: false
+                        },
                         {
                             data: 'DT_RowIndex',
                             name: 'DT_RowIndex',
@@ -238,6 +269,49 @@
                     }
                 }
             );
+
+            tableElement.addEventListener('change', function (event) {
+                if (event.target.matches('.question-row-checkbox')) {
+                    updateSelectionState();
+                }
+            });
+
+            selectAll.addEventListener('change', function () {
+                tableElement.querySelectorAll('.question-row-checkbox').forEach((checkbox) => {
+                    checkbox.checked = selectAll.checked;
+                });
+                updateSelectionState();
+            });
+
+            dataTable.on('draw', function () {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+                updateSelectionState();
+            });
+
+            deleteSelectedButton.addEventListener('click', async function () {
+                const selectedIds = selectedCheckboxes().map((checkbox) => checkbox.value);
+                if (selectedIds.length === 0) return;
+                const result = await Swal.fire({
+                    title: 'Hapus soal terpilih?',
+                    text: selectedIds.length + ' soal akan dihapus. Tindakan ini tidak dapat dibatalkan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: '#d33'
+                });
+                if (!result.isConfirmed) return;
+                bulkDeleteForm.querySelectorAll('input[name="ids[]"]').forEach((input) => input.remove());
+                selectedIds.forEach((id) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = id;
+                    bulkDeleteForm.appendChild(input);
+                });
+                bulkDeleteForm.submit();
+            });
 
             document
                 .querySelectorAll(
