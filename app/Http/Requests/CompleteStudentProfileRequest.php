@@ -20,6 +20,7 @@ class CompleteStudentProfileRequest extends FormRequest
             'full_name' => ['required', 'string', 'max:255'],
             'school_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
+            'parent_phone' => ['nullable', 'string', 'max:30'],
             'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
             'class_id' => [
                 'required',
@@ -40,6 +41,7 @@ class CompleteStudentProfileRequest extends FormRequest
             'full_name' => 'nama lengkap',
             'school_name' => 'nama sekolah',
             'phone' => 'nomor HP',
+            'parent_phone' => 'nomor HP orang tua',
             'education_level' => 'jenjang pendidikan',
             'class_id' => 'kelas',
         ];
