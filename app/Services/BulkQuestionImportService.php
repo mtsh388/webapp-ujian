@@ -2142,27 +2142,18 @@ class BulkQuestionImportService
                     )
                 ) {
                     if ($current['type'] === 'true_false') {
-                        $truthOptions = [];
-
                         foreach ($optionResult['options'] as $option) {
-                            $truthOptions[$option['key']] = $this->normalizeAnswerForMatching(
-                                (string)($option['text'] ?? '')
-                            );
+                            $current['options'][$option['key']] = [
+                                'key' => $option['key'],
+                                'text' => $option['text'],
+                                'html' => $option['html'],
+                                'images' => $option['images'],
+                            ];
                         }
 
-                        if (
-                            ($truthOptions['A'] ?? null) === 'benar' &&
-                            ($truthOptions['B'] ?? null) === 'salah' &&
-                            count($truthOptions) === 2
-                        ) {
-                            $currentOption = null;
-                            $inExplanation = false;
-                            continue;
-                        }
-
-                        throw new RuntimeException(
-                            'Soal dengan penanda [BENAR_SALAH] harus menggunakan A. Benar dan B. Salah.'
-                        );
+                        $currentOption = null;
+                        $inExplanation = false;
+                        continue;
                     }
 
                     if ($current['type'] === null) {
