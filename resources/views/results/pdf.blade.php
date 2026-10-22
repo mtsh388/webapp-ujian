@@ -561,26 +561,37 @@
                     @php
                         $statementGroups = $question->options->groupBy(fn ($option) => preg_replace('/[TF]$/', '', (string) $option->option_key));
                     @endphp
-                    @foreach ($statementGroups as $groupKey => $groupOptions)
-                        @php
-                            $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
-                            $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
-                            $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
-                        @endphp
-                        <div class="option {{ $selectedStatementOption && $selectedStatementOption->is_correct ? 'option-correct' : ($selectedStatementOption ? 'option-wrong' : '') }}">
-                            <strong>Pernyataan {{ preg_replace('/^S/', '', $groupKey) }}.</strong>
-                            <div class="option-content">
-                                {!! \App\Support\QuestionHtml::sanitize($trueOption?->option_text ?? '') !!}
-                            </div>
-                            <div>
-                                Jawaban Anda:
-                                <strong>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</strong>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 8px;" border="1" cellpadding="6">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;">No.</th>
+                                <th>Pernyataan</th>
+                                <th style="width: 18%;">Jawaban Anda</th>
                                 @if ($showCorrectAnswers)
-                                    <span class="badge badge-success">Kunci: {{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</span>
+                                    <th style="width: 18%;">Kunci</th>
                                 @endif
-                            </div>
-                        </div>
-                    @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($statementGroups as $groupKey => $groupOptions)
+                                @php
+                                    $trueOption = $groupOptions->firstWhere('option_key', $groupKey . 'T');
+                                    $falseOption = $groupOptions->firstWhere('option_key', $groupKey . 'F');
+                                    $statementOption = $trueOption ?: $falseOption;
+                                    $selectedStatementOption = $groupOptions->first(fn ($option) => in_array((int) $option->id, array_map('intval', $selectedOptionIds), true));
+                                    $correctStatementOption = $groupOptions->firstWhere('is_correct', true);
+                                @endphp
+                                <tr>
+                                    <td style="text-align: center;">{{ preg_replace('/^S/', '', $groupKey) }}</td>
+                                    <td>{!! \App\Support\QuestionHtml::sanitize($statementOption?->option_text ?? '') !!}</td>
+                                    <td>{{ $selectedStatementOption ? (str_ends_with((string) $selectedStatementOption->option_key, 'T') ? 'Benar' : 'Salah') : 'Belum dijawab' }}</td>
+                                    @if ($showCorrectAnswers)
+                                        <td>{{ $correctStatementOption && str_ends_with((string) $correctStatementOption->option_key, 'T') ? 'Benar' : 'Salah' }}</td>
+                                    @endif
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 @else
                     @foreach ($question->options as $option)
                         @php
