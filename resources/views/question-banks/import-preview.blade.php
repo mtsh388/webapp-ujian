@@ -78,9 +78,14 @@
             <span class="badge bg-label-secondary">Nilai default: {{ number_format((float) $pending['default_score'], 2, ',', '.') }}</span>
         </div>
 
-        <button type="button" class="btn btn-primary rounded-circle shadow import-preview-scroll-button" id="scroll-to-import-bottom" aria-label="Ke bagian paling bawah" title="Ke bagian paling bawah">
-            <i class="bx bx-chevrons-down"></i>
-        </button>
+        <div class="import-preview-scroll-controls">
+            <button type="button" class="btn btn-primary rounded-circle shadow import-preview-scroll-button" id="scroll-to-import-top" aria-label="Ke bagian paling atas" title="Ke bagian paling atas">
+                <i class="bx bx-chevrons-up"></i>
+            </button>
+            <button type="button" class="btn btn-primary rounded-circle shadow import-preview-scroll-button" id="scroll-to-import-bottom" aria-label="Ke bagian paling bawah" title="Ke bagian paling bawah">
+                <i class="bx bx-chevrons-down"></i>
+            </button>
+        </div>
 
         <div class="d-flex flex-column gap-3 mb-4">
             @foreach ($preview['questions'] as $item)
@@ -179,8 +184,13 @@
     </div>
 
     <script>
+        const scrollToImportTopButton = document.getElementById('scroll-to-import-top');
         const scrollToImportBottomButton = document.getElementById('scroll-to-import-bottom');
         const importPreviewBottom = document.getElementById('import-preview-bottom');
+
+        scrollToImportTopButton?.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
 
         scrollToImportBottomButton?.addEventListener('click', function () {
             importPreviewBottom?.scrollIntoView({
@@ -189,21 +199,37 @@
             });
         });
 
-        if (scrollToImportBottomButton && importPreviewBottom && 'IntersectionObserver' in window) {
-            const importPreviewBottomObserver = new IntersectionObserver(([entry]) => {
-                scrollToImportBottomButton.classList.toggle('d-none', entry.isIntersecting);
-            }, { threshold: 0.15 });
+        if ('IntersectionObserver' in window) {
+            if (scrollToImportTopButton) {
+                const importPreviewTopObserver = new IntersectionObserver(([entry]) => {
+                    scrollToImportTopButton.classList.toggle('d-none', entry.isIntersecting);
+                }, { threshold: 0.1 });
 
-            importPreviewBottomObserver.observe(importPreviewBottom);
+                importPreviewTopObserver.observe(document.querySelector('.container-fluid'));
+            }
+
+            if (scrollToImportBottomButton && importPreviewBottom) {
+                const importPreviewBottomObserver = new IntersectionObserver(([entry]) => {
+                    scrollToImportBottomButton.classList.toggle('d-none', entry.isIntersecting);
+                }, { threshold: 0.15 });
+
+                importPreviewBottomObserver.observe(importPreviewBottom);
+            }
         }
     </script>
 
     <style>
-        .import-preview-scroll-button {
+        .import-preview-scroll-controls {
             position: fixed;
             right: 1.5rem;
             bottom: 1.5rem;
             z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            gap: .75rem;
+        }
+
+        .import-preview-scroll-button {
             width: 3.25rem;
             height: 3.25rem;
             display: inline-flex;
@@ -217,7 +243,7 @@
         }
 
         @media (max-width: 576px) {
-            .import-preview-scroll-button {
+            .import-preview-scroll-controls {
                 right: 1rem;
                 bottom: 1rem;
             }
