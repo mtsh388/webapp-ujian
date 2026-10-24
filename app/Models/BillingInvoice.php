@@ -10,6 +10,7 @@ class BillingInvoice extends Model
 {
     protected $fillable = [
         'student_id',
+        'fee_rate_id',
         'title',
         'period_type',
         'period_label',
@@ -26,6 +27,11 @@ class BillingInvoice extends Model
             'amount' => 'decimal:2',
             'due_date' => 'date',
         ];
+    }
+
+    public function feeRate(): BelongsTo
+    {
+        return $this->belongsTo(BillingFeeRate::class, 'fee_rate_id');
     }
 
     public function student(): BelongsTo
