@@ -12,6 +12,7 @@ use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BillingMasterDataController;
+use App\Http\Controllers\BillingScheduleController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
