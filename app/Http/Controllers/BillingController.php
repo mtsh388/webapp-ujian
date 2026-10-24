@@ -29,7 +29,7 @@ class BillingController extends Controller
         ]);
     }
 
-    public function data(Request $request): \\Illuminate\\Http\\JsonResponse
+    public function data(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = auth()->user();
         $query = BillingInvoice::query()
