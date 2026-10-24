@@ -3,6 +3,30 @@
 @section('title', 'Master Data Keuangan')
 
 @section('content')
+
+@section('styles')
+<style>
+    #billingMasterTabs { flex-wrap: wrap; gap: .25rem; }
+    #billingMasterTabs .nav-link { white-space: nowrap; border-radius: .375rem .375rem 0 0; }
+    .billing-master-form-card .card-header,
+    .billing-master-table-card .card-header { padding: 1rem 1.25rem; }
+    .billing-master-form-card .card-body { padding: 1.25rem; }
+    .billing-master-table-card .card-datatable { padding: 0 1rem 1rem; }
+    .billing-master-table-card .dt-layout-row,
+    .billing-master-table-card .row { row-gap: .75rem; }
+    .billing-master-table-card table { width: 100% !important; margin-bottom: 0; }
+    .billing-master-table-card .dataTables_filter input { margin-left: .5rem; max-width: 100%; }
+    .billing-master-table-card .dataTables_length select { margin: 0 .35rem; }
+    @media (max-width: 767.98px) {
+        .billing-master-table-card .card-datatable { padding: 0 .75rem .75rem; }
+        .billing-master-table-card .dataTables_filter,
+        .billing-master-table-card .dataTables_length { text-align: left !important; width: 100%; }
+        .billing-master-table-card .dataTables_filter input { width: min(100%, 15rem); }
+    }
+</style>
+@endsection
+
+
 <div class="container-xxl flex-grow-1 container-p-y">
         <div class="card px-3 mb-4">
             <div class="card-header border-bottom">
@@ -11,7 +35,7 @@
                     <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary"><i class="bx bx-arrow-back me-1"></i>Kembali ke Tagihan</a>
                 </div>
             </div>
-            <div class="card-body pb-0"><ul class="nav nav-tabs" role="tablist">
+            <div class="card-body pb-0"><ul id="billingMasterTabs" class="nav nav-tabs" role="tablist">
                 <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fee-types" type="button">Jenis Biaya</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#academic-years" type="button">Tahun Ajaran</button></li>
                 <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#fee-rates" type="button">Tarif Biaya</button></li>
@@ -24,13 +48,13 @@
 
         <div class="tab-content">
             <div class="tab-pane fade show active" id="fee-types">
-                <div class="card px-3 mb-4"><div class="card-header border-bottom"><h5 class="card-title mb-0">Form Jenis Biaya</h5></div><div class="card-body">
+                <div class="card px-3 mb-4 billing-master-form-card"><div class="card-header border-bottom"><h5 class="card-title mb-0">Form Jenis Biaya</h5></div><div class="card-body">
                     <form method="POST" action="{{ route('billing.master.fee-types.store') }}" id="fee-type-form">@csrf<input type="hidden" name="id" id="fee-type-id">
                         <div class="row g-3"><div class="col-md-3"><label class="form-label">Kode</label><input class="form-control" name="code" id="fee-type-code" maxlength="40" required placeholder="SPP"></div><div class="col-md-4"><label class="form-label">Nama Biaya</label><input class="form-control" name="name" id="fee-type-name" required maxlength="120" placeholder="SPP Bulanan"></div><div class="col-md-5"><label class="form-label">Keterangan</label><input class="form-control" name="description" id="fee-type-description" maxlength="3000"></div><div class="col-12"><div class="form-check"><input class="form-check-input" type="checkbox" name="is_active" value="1" id="fee-type-is_active" checked><label class="form-check-label" for="fee-type-is_active">Aktif</label></div></div></div>
                         <div class="mt-3 d-flex gap-2"><button class="btn btn-primary">Simpan Jenis Biaya</button><button class="btn btn-outline-secondary" type="button" onclick="resetForm('fee-type-form')">Batal edit</button></div>
                     </form>
                 </div></div>
-                <div class="card px-3"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Jenis Biaya</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="feeTypesTable" class="table table-bordered"><thead><tr><th>Kode</th><th>Jenis Biaya</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
+                <div class="card px-3 billing-master-table-card"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Jenis Biaya</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="feeTypesTable" class="table table-bordered"><thead><tr><th>Kode</th><th>Jenis Biaya</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
             </div>
 
             <div class="tab-pane fade" id="academic-years">
@@ -64,6 +88,7 @@
             </div>
         </div>
     </div>
+@endsection
 
 @section('scripts')
 <script>
