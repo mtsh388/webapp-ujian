@@ -27,6 +27,13 @@
                 </div>
             </div>
 
+            @if($outstandingInvoices->isNotEmpty())
+                <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" role="alert">
+                    <div><strong>Pengingat tagihan:</strong> Anda memiliki {{ $outstandingInvoices->count() }} tagihan yang belum lunas. Kelas dan ujian tetap dapat diikuti.</div>
+                    <a href="{{ route('billing.index') }}" class="btn btn-sm btn-warning">Lihat Tagihan</a>
+                </div>
+            @endif
+
             <div class="row g-4 mb-4">
 
                 <div class="col-sm-6 col-xl-4">

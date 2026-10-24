@@ -27,6 +27,18 @@
                 </div>
             </div>
 
+            @if($outstandingInvoices->isNotEmpty())
+                <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2" role="alert">
+                    <div><strong>Pengingat tagihan anak:</strong> ada {{ $outstandingInvoices->count() }} tagihan yang belum lunas.
+                        @foreach($outstandingInvoices->take(3) as $invoice)
+                            <span class="d-block">{{ $invoice->student->full_name }} — {{ $invoice->title }}: sisa Rp {{ number_format((float)$invoice->outstanding_amount, 0, ',', '.') }}</span>
+                        @endforeach
+                        <small>Keterlambatan pembayaran tidak membatasi kelas atau ujian.</small>
+                    </div>
+                    <a href="{{ route('billing.index') }}" class="btn btn-sm btn-warning">Lihat Tagihan</a>
+                </div>
+            @endif
+
             <div class="row g-4 mb-4">
 
                 <div class="col-sm-6 col-xl-4">

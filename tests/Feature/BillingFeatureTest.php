@@ -2,8 +2,13 @@
 
 use App\Models\BillingInvoice;
 use App\Models\BillingPayment;
+use App\Models\Exam;
+use App\Models\ExamParticipant;
+use App\Models\ExamQuestion;
 use App\Models\Student;
 use App\Models\User;
+use App\Repositories\ExamAttemptRepository;
+use App\Services\ExamAttemptService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -115,4 +120,42 @@ test('rejected payment does not reduce the outstanding invoice amount', function
 
     expect($invoice->fresh()->payment_status)->toBe('unpaid')
         ->and((float) $invoice->fresh()->outstanding_amount)->toBe(1000000.0);
+});
+
+
+test('an unpaid invoice does not prevent an eligible student from starting an exam', function () {
+    $student = makeBillingStudent();
+    makeBillingInvoice($student);
+
+    $exam = Exam::query()->create([
+        'code' => 'BILL-EXAM-' . strtoupper(substr(uniqid(), -6)),
+        'title' => 'Ujian dengan Tagihan Belum Lunas',
+        'duration_minutes' => 30,
+        'max_attempts' => 1,
+        'status' => 'published',
+        'shuffle_questions' => true,
+        'shuffle_options' => true,
+        'show_result_immediately' => true,
+        'show_correct_answers' => false,
+    ]);
+
+    ExamParticipant::query()->create([
+        'exam_id' => $exam->id,
+        'student_id' => $student->id,
+        'assigned_at' => now(),
+        'is_active' => true,
+    ]);
+
+    ExamQuestion::query()->create([
+        'exam_id' => $exam->id,
+        'type' => 'multiple_choice',
+        'question' => '<p>Soal pengujian</p>',
+        'score' => 1,
+        'sort_order' => 1,
+    ]);
+
+    $attempt = (new ExamAttemptService(new ExamAttemptRepository()))->start($exam, $student);
+
+    expect($attempt->status)->toBe('in_progress');
+    expect($student->fresh()->is_active)->toBeTrue();
 });

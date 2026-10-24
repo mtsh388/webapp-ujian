@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BillingInvoice;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\QuestionBank;
@@ -36,6 +37,9 @@ class DashboardController extends Controller
 
         if ($user->hasRole('Siswa')) {
             $student = $user->student;
+            $outstandingInvoices = $student
+                ? BillingInvoice::query()->where('student_id', $student->id)->where('payment_status', '!=', 'paid')->orderBy('due_date')->get()
+                : collect();
 
             $availableExams = Exam::query()
                 ->where('status', 'published')
@@ -65,6 +69,7 @@ class DashboardController extends Controller
                 'totalAttempts' => $totalAttempts,
                 'completedAttempts' => $completedAttempts,
                 'recentAttempts' => $recentAttempts,
+                'outstandingInvoices' => $outstandingInvoices,
             ]);
         }
 
@@ -76,6 +81,12 @@ class DashboardController extends Controller
                 : collect();
 
             $studentIds = $children->pluck('id');
+            $outstandingInvoices = BillingInvoice::query()
+                ->with('student')
+                ->whereIn('student_id', $studentIds)
+                ->where('payment_status', '!=', 'paid')
+                ->orderBy('due_date')
+                ->get();
 
             $totalAttempts = ExamAttempt::whereIn('student_id', $studentIds)->count();
 
@@ -95,6 +106,7 @@ class DashboardController extends Controller
                 'totalAttempts' => $totalAttempts,
                 'completedAttempts' => $completedAttempts,
                 'recentAttempts' => $recentAttempts,
+                'outstandingInvoices' => $outstandingInvoices,
             ]);
         }
 
