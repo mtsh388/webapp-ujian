@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Version selector / path prefix for the current application release.
+    'route_prefix' => trim(env('APP_ROUTE_PREFIX', 'v2'), '/'),
+    'legacy_app_url' => env('LEGACY_APP_URL', '/v1'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
