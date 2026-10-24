@@ -33,6 +33,77 @@ class BillingController extends Controller
         ]);
     }
 
+
+    public function data(Request $request): \\Illuminate\\Http\\JsonResponse
+    {
+        $user = auth()->user();
+        $query = BillingInvoice::query()
+            ->with('student')
+            ->withSum(['payments as verified_amount_sum' => fn ($q) => $q->where('status', 'verified')], 'amount')
+            ->withExists(['payments as has_pending_payment' => fn ($q) => $q->where('status', 'pending')]);
+
+        if (!$user->can('billing.manage')) {
+            $query->whereIn('student_id', $this->accessibleStudentIds());
+        }
+
+        $recordsTotal = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search, $user) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('period_label', 'like', "%{$search}%")
+                    ->orWhere('payment_status', 'like', "%{$search}%")
+                    ->orWhereHas('student', function ($studentQuery) use ($search, $user) {
+                        $studentQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('student_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $orderColumns = [0 => 'title', 1 => 'due_date', 2 => 'amount', 3 => 'payment_status', 4 => 'created_at'];
+        $orderIndex = (int) $request->input('order.0.column', 1);
+        $orderColumn = $orderColumns[$orderIndex] ?? 'due_date';
+        $direction = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $length = (int) $request->input('length', 10);
+        $length = $length === -1 ? 100 : max(1, min($length, 100));
+        $start = max(0, (int) $request->input('start', 0));
+
+        $invoices = $query->orderBy($orderColumn, $direction)
+            ->orderByDesc('id')
+            ->skip($start)->take($length)->get();
+
+        $data = $invoices->map(function (BillingInvoice $invoice) {
+            $verified = (float) ($invoice->verified_amount_sum ?? 0);
+            $amount = (float) $invoice->amount;
+            $overdue = $invoice->payment_status !== 'paid'
+                && $invoice->due_date->toDateString() < now()->toDateString();
+
+            return [
+                'id' => $invoice->id,
+                'title' => $invoice->title,
+                'student_name' => $invoice->student?->full_name ?? '-',
+                'student_number' => $invoice->student?->student_number ?? '-',
+                'period_type' => $invoice->period_type,
+                'period_label' => $invoice->period_label,
+                'due_date' => $invoice->due_date?->format('d/m/Y') ?? '-',
+                'amount' => $amount,
+                'verified_amount' => $verified,
+                'outstanding_amount' => max(0, $amount - $verified),
+                'payment_status' => $invoice->payment_status,
+                'is_overdue' => $overdue,
+                'has_pending_payment' => (bool) $invoice->has_pending_payment,
+            ];
+        });
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
+    }
+
     public function create(): View
     {
         $students = Student::query()
