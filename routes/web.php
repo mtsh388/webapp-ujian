@@ -327,6 +327,13 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
     });
 
 
+    Route::prefix('keuangan/jadwal-tagihan')->middleware('permission:billing.manage')->group(function () {
+        Route::get('/', [BillingScheduleController::class, 'index'])->name('billing.schedules.index');
+        Route::post('/', [BillingScheduleController::class, 'store'])->name('billing.schedules.store');
+        Route::patch('/{schedule}/status', [BillingScheduleController::class, 'toggle'])->name('billing.schedules.toggle');
+        Route::delete('/{schedule}', [BillingScheduleController::class, 'destroy'])->name('billing.schedules.destroy');
+    });
+
     Route::prefix('keuangan/master-data')->middleware('permission:billing.manage')->group(function () {
         Route::get('/', [BillingMasterDataController::class, 'index'])->name('billing.master.index');
         Route::post('/jenis-biaya', [BillingMasterDataController::class, 'storeFeeType'])->name('billing.master.fee-types.store');
