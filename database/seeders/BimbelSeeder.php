@@ -32,14 +32,6 @@ class BimbelSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
 
-        $keuangan = User::firstOrCreate(
-            ['email' => 'keuangan@bimbel.test'],
-            [
-                'name' => 'Keuangan',
-                'password' => Hash::make('password'),
-            ]
-        );
-
         $parentUser1 = User::create([
             'name' => 'Budi Santoso',
             'email' => 'budi.orangtua@bimbel.test',
@@ -310,7 +302,6 @@ class BimbelSeeder extends Seeder
             ]);
         }
         $admin->assignRole('Admin');
-        $keuangan->syncRoles(['Keuangan']);
 
         $tentor->assignRole('Tentor');
 
