@@ -97,7 +97,7 @@ class BillingController extends Controller
         return view('billing.show', [
             'invoice' => $invoice,
             'canManage' => auth()->user()->can('billing.manage'),
-            'canSubmitPayment' => auth()->user()->can('billing.payment.submit') || auth()->user()->can('billing.manage'),
+            'canSubmitPayment' => auth()->user()->can('billing.manage'),
         ]);
     }
 
@@ -139,7 +139,7 @@ class BillingController extends Controller
         });
 
         return redirect()->route('billing.show', $invoice)
-            ->with('success', 'Transaksi dicatat dan menunggu verifikasi admin. Pembayaran belum dihitung sebagai pemasukan sebelum diverifikasi.');
+            ->with('success', 'Transaksi dicatat dan menunggu verifikasi petugas Keuangan atau Admin. Pembayaran belum dihitung sebagai pemasukan sebelum diverifikasi.');
     }
 
     public function verifyPayment(Request $request, BillingPayment $payment): RedirectResponse
