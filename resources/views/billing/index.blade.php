@@ -12,6 +12,7 @@
             </div>
             @if($canManage)
                 <div class="d-flex gap-2">
+                    <a href="{{ route('billing.schedules.index') }}" class="btn btn-outline-secondary">Jadwal Otomatis</a>
                     <a href="{{ route('billing.report') }}" class="btn btn-outline-primary">Laporan Pemasukan</a>
                     <a href="{{ route('billing.create') }}" class="btn btn-primary">Buat Tagihan</a>
                 </div>
