@@ -329,6 +329,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
 
 
     Route::prefix('keuangan/jadwal-tagihan')->middleware('permission:billing.manage')->group(function () {
+        Route::get('/data', [BillingScheduleController::class, 'data'])->name('billing.schedules.data');
         Route::get('/', [BillingScheduleController::class, 'index'])->name('billing.schedules.index');
         Route::post('/', [BillingScheduleController::class, 'store'])->name('billing.schedules.store');
         Route::patch('/{schedule}/status', [BillingScheduleController::class, 'toggle'])->name('billing.schedules.toggle');
