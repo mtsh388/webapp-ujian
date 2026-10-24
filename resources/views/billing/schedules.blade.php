@@ -209,7 +209,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     return '<div class="dropdown">' +
                         '<button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-label="Aksi jadwal"><i class="bx bx-dots-vertical-rounded"></i></button>' +
                         '<div class="dropdown-menu dropdown-menu-end">' +
-                        '<form method="POST" action="/keuangan/jadwal-tagihan/' + id + '/status">@csrf<form>' +
                         '<form method="POST" action="/keuangan/jadwal-tagihan/' + id + '/status">' +
                         '<input type="hidden" name="_token" value="' + escapeHtml(document.querySelector('meta[name="csrf-token"]')?.content || '') + '">' +
                         '<input type="hidden" name="_method" value="PATCH">' +
