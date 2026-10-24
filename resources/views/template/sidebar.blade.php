@@ -211,16 +211,26 @@
             </li>
         @endcan
 
-        @if(auth()->user()->can('billing.view') || auth()->user()->can('billing.view_own') || auth()->user()->can('billing.view_child'))
+        @if(auth()->user()->can('billing.view') || auth()->user()->can('billing.view_own') || auth()->user()->can('billing.view_child') || auth()->user()->can('billing.manage'))
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Keuangan</span>
             </li>
-            <li class="menu-item {{ request()->routeIs('billing.*') ? 'active open' : '' }}">
-                <a href="{{ route('billing.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-wallet"></i>
-                    <div>Tagihan & Pemasukan</div>
-                </a>
-            </li>
+            @can('billing.manage')
+                <li class="menu-item {{ request()->routeIs('billing.master.*') ? 'active open' : '' }}">
+                    <a href="{{ route('billing.master.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-list-check"></i>
+                        <div>Master Data Keuangan</div>
+                    </a>
+                </li>
+            @endcan
+            @if(auth()->user()->can('billing.manage') || auth()->user()->can('billing.view') || auth()->user()->can('billing.view_own') || auth()->user()->can('billing.view_child'))
+                <li class="menu-item {{ request()->routeIs('billing.*') && !request()->routeIs('billing.master.*') ? 'active' : '' }}">
+                    <a href="{{ route('billing.index') }}" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-wallet"></i>
+                        <div>Tagihan & Pemasukan</div>
+                    </a>
+                </li>
+            @endif
         @endif
 
         <li class="menu-header small text-uppercase">
