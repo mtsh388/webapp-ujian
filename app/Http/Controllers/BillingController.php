@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BillingInvoice;
 use App\Models\BillingPayment;
+use App\Models\BillingFeeRate;
 use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,14 +39,22 @@ class BillingController extends Controller
             ->where('is_active', true)
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'student_number']);
+        $feeRates = BillingFeeRate::query()
+            ->with(['feeType', 'academicYear', 'classRoom'])
+            ->where('is_active', true)
+            ->whereHas('feeType', fn ($query) => $query->where('is_active', true))
+            ->whereHas('academicYear', fn ($query) => $query->where('is_active', true))
+            ->orderBy('period_label')
+            ->get();
 
-        return view('billing.create', compact('students'));
+        return view('billing.create', compact('students', 'feeRates'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'student_id' => ['required', 'integer', 'exists:students,id'],
+            'fee_rate_id' => ['nullable', 'integer', 'exists:billing_fee_rates,id'],
             'title' => ['required', 'string', 'max:180'],
             'period_type' => ['required', 'in:semester,year'],
             'period_label' => ['required', 'string', 'max:80'],
@@ -57,9 +66,22 @@ class BillingController extends Controller
         $student = Student::query()->findOrFail($validated['student_id']);
         abort_unless($student->is_active, 422, 'Tagihan hanya dapat dibuat untuk siswa aktif.');
 
+        if (!empty($validated['fee_rate_id'])) {
+            $rate = BillingFeeRate::query()->with(['feeType', 'academicYear'])->findOrFail($validated['fee_rate_id']);
+            abort_unless($rate->is_active && $rate->feeType->is_active && $rate->academicYear->is_active, 422, 'Tarif yang dipilih tidak aktif.');
+            if ($rate->class_id !== null) {
+                abort_unless((int) $student->class_id === (int) $rate->class_id, 422, 'Tarif ini hanya berlaku untuk kelas tertentu.');
+            }
+            $validated['title'] = $rate->feeType->name;
+            $validated['period_type'] = $rate->period_type;
+            $validated['period_label'] = trim($rate->period_label . ' ' . $rate->academicYear->name);
+            $validated['amount'] = $rate->amount;
+        }
+
         $invoice = BillingInvoice::query()->create([
             ...$validated,
             'payment_status' => 'unpaid',
+            'fee_rate_id' => $validated['fee_rate_id'] ?? null,
             'created_by' => auth()->id(),
         ]);
 
