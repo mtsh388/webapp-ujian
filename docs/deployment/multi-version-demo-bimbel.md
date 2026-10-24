@@ -17,9 +17,11 @@ Variabel lingkungan:
 APP_URL=https://demo-bimbel.dtgroup.co.id
 APP_ROUTE_PREFIX=v2
 LEGACY_APP_URL=/v1
+SESSION_PATH=/v2
+SESSION_COOKIE=webapp_ujian_v2_session
 ```
 
-Jangan menambahkan `/v2` ke `APP_URL`; prefix route diatur melalui `APP_ROUTE_PREFIX`. Pertahankan asset URL ke root domain kecuali konfigurasi web server memang memakai strategi asset terpisah.
+Jangan menambahkan `/v2` ke `APP_URL`; prefix route diatur melalui `APP_ROUTE_PREFIX`. Pertahankan asset URL ke root domain kecuali konfigurasi web server memang memakai strategi asset terpisah. Cookie sesi versi 2 dibatasi ke path `/v2` dan memakai nama tersendiri agar tidak bertabrakan dengan sesi aplikasi lama.
 
 ## Arsitektur server yang diperlukan
 
@@ -40,6 +42,7 @@ Setelah menarik perubahan terbaru dan membersihkan cache:
 
 ```powershell
 git pull origin main
+# Sesuaikan .env lokal dengan SESSION_PATH=/v2 dan SESSION_COOKIE=webapp_ujian_v2_session
 php artisan optimize:clear
 php artisan route:list --path=v2
 ```
