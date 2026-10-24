@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -132,5 +134,15 @@ class RolePermissionSeeder extends Seeder
             'billing.view',
             'billing.manage',
         ]);
+
+        $userKeuangan = User::firstOrCreate(
+            ['email' => 'keuangan@bimbel.test'],
+            [
+                'name' => 'Keuangan',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        $userKeuangan->syncRoles([$keuangan]);
     }
 }
