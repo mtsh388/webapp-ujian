@@ -57,12 +57,6 @@ class RolePermissionSeeder extends Seeder
             'billing.view_own',
             'billing.view_child',
             'billing.payment.submit',
-
-            'billing.view',
-            'billing.manage',
-            'billing.view_own',
-            'billing.view_child',
-            'billing.payment.submit',
         ];
 
         foreach ($permissions as $permission) {
@@ -96,27 +90,20 @@ class RolePermissionSeeder extends Seeder
 
         $tentor->syncPermissions([
             'dashboard.view',
-
             'class.view',
-
             'subject.view',
-
             'student.view',
-
             'parent.view',
-
             'question.view',
             'question.create',
             'question.update',
             'question.delete',
-
             'exam.view',
             'exam.create',
             'exam.update',
             'exam.delete',
             'exam.publish',
             'exam.close',
-
             'result.view',
             'exam.violation.view',
         ]);
