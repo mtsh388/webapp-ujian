@@ -67,7 +67,7 @@ class BillingMasterDataController extends Controller
         $orderColumns = match ($type) {
             'fee-types' => ['code', 'name', 'rates_count', 'is_active'],
             'academic-years' => ['name', 'starts_on', 'ends_on', 'fee_rates_count', 'is_active'],
-            'fee-rates' => ['id', 'amount', 'period_type', 'is_active'],
+            'fee-rates' => ['id', 'id', 'id', 'period_label', 'amount', 'is_active'],
             default => ['bank_name', 'account_name', 'account_number', 'branch', 'is_active'],
         };
         $orderIndex = (int) $request->input('order.0.column', 0);
