@@ -3,8 +3,7 @@
 @section('title', 'Master Data Keuangan')
 
 @section('content')
-<div class="content-wrapper">
-    <div class="container-xxl flex-grow-1 container-p-y">
+<div class="container-xxl flex-grow-1 container-p-y">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
             <div><h4 class="fw-bold mb-1">Master Data Keuangan</h4><p class="text-muted mb-0">Atur jenis biaya, tahun ajaran, tarif, dan rekening pembayaran.</p></div>
             <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary">Kembali ke Tagihan</a>
@@ -27,9 +26,7 @@
                         <div class="mt-3 d-flex gap-2"><button class="btn btn-primary">Simpan Jenis Biaya</button><button class="btn btn-outline-secondary" type="button" onclick="resetForm('fee-type-form')">Batal edit</button></div>
                     </form>
                 </div></div>
-                <div class="card"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Kode</th><th>Jenis Biaya</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                    @forelse($feeTypes as $item)<tr><td>{{ $item->code }}</td><td>{{ $item->name }}<div class="text-muted small">{{ $item->description }}</div></td><td>{{ $item->rates_count }}</td><td><span class="badge {{ $item->is_active ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span></td><td class="text-nowrap"><button class="btn btn-sm btn-outline-primary" type="button" onclick='editRecord("fee-type", {{ Illuminate\Support\Js::from($item->only(["id", "code", "name", "description", "is_active"])) }})'>Edit</button><form class="d-inline" method="POST" action="{{ route('billing.master.fee-types.destroy', $item) }}" onsubmit="return confirm('Hapus jenis biaya ini?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Hapus</button></form></td></tr>@empty<tr><td colspan="5" class="text-center text-muted p-4">Belum ada jenis biaya.</td></tr>@endforelse
-                </tbody></table></div></div>
+                <div class="card px-3"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Jenis Biaya</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="feeTypesTable" class="table table-bordered"><thead><tr><th>Kode</th><th>Jenis Biaya</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
             </div>
 
             <div class="tab-pane fade" id="academic-years">
@@ -39,9 +36,7 @@
                         <div class="mt-3 d-flex gap-2"><button class="btn btn-primary">Simpan Tahun Ajaran</button><button class="btn btn-outline-secondary" type="button" onclick="resetForm('academic-year-form')">Batal edit</button></div>
                     </form>
                 </div></div>
-                <div class="card"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Tahun Ajaran</th><th>Mulai</th><th>Selesai</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                    @forelse($academicYears as $item)<tr><td>{{ $item->name }}</td><td>{{ $item->starts_on->format('d/m/Y') }}</td><td>{{ $item->ends_on->format('d/m/Y') }}</td><td>{{ $item->fee_rates_count }}</td><td><span class="badge {{ $item->is_active ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span></td><td class="text-nowrap"><button class="btn btn-sm btn-outline-primary" type="button" onclick='editRecord("academic-year", {{ Illuminate\Support\Js::from(["id" => $item->id, "name" => $item->name, "starts_on" => $item->starts_on->format("Y-m-d"), "ends_on" => $item->ends_on->format("Y-m-d"), "is_active" => $item->is_active]) }})'>Edit</button><form class="d-inline" method="POST" action="{{ route('billing.master.academic-years.destroy', $item) }}" onsubmit="return confirm('Hapus tahun ajaran ini?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Hapus</button></form></td></tr>@empty<tr><td colspan="6" class="text-center text-muted p-4">Belum ada tahun ajaran.</td></tr>@endforelse
-                </tbody></table></div></div>
+                <div class="card px-3"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Tahun Ajaran</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="academicYearsTable" class="table table-bordered"><thead><tr><th>Tahun Ajaran</th><th>Mulai</th><th>Selesai</th><th>Tarif</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
             </div>
 
             <div class="tab-pane fade" id="fee-rates">
@@ -51,9 +46,7 @@
                         <div class="mt-3 d-flex gap-2"><button class="btn btn-primary">Simpan Tarif</button><button class="btn btn-outline-secondary" type="button" onclick="resetForm('fee-rate-form')">Batal edit</button></div>
                     </form>
                 </div></div>
-                <div class="card"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Jenis Biaya</th><th>Tahun Ajaran</th><th>Kelas</th><th>Periode</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                    @forelse($feeRates as $item)<tr><td>{{ $item->feeType->name }}</td><td>{{ $item->academicYear->name }}</td><td>{{ $item->classRoom?->name ?? 'Semua kelas' }}</td><td>{{ $item->period_label }} ({{ $item->period_type === 'year' ? 'Tahunan' : 'Semesteran' }})</td><td>Rp {{ number_format((float) $item->amount, 0, ',', '.') }}</td><td><span class="badge {{ $item->is_active ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span></td><td class="text-nowrap"><button class="btn btn-sm btn-outline-primary" type="button" onclick='editRecord("fee-rate", {{ Illuminate\Support\Js::from($item->only(["id", "fee_type_id", "academic_year_id", "class_id", "period_type", "period_label", "amount", "due_day", "is_active"])) }})'>Edit</button><form class="d-inline" method="POST" action="{{ route('billing.master.fee-rates.destroy', $item) }}" onsubmit="return confirm('Hapus tarif ini?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Hapus</button></form></td></tr>@empty<tr><td colspan="7" class="text-center text-muted p-4">Belum ada tarif biaya.</td></tr>@endforelse
-                </tbody></table></div></div>
+                <div class="card px-3"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Tarif Biaya</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="feeRatesTable" class="table table-bordered"><thead><tr><th>Jenis Biaya</th><th>Tahun Ajaran</th><th>Kelas</th><th>Periode</th><th>Nominal</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
             </div>
 
             <div class="tab-pane fade" id="bank-accounts">
@@ -63,13 +56,12 @@
                         <div class="mt-3 d-flex gap-2"><button class="btn btn-primary">Simpan Rekening</button><button class="btn btn-outline-secondary" type="button" onclick="resetForm('bank-account-form')">Batal edit</button></div>
                     </form>
                 </div></div>
-                <div class="card"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Bank</th><th>Pemilik</th><th>Nomor Rekening</th><th>Cabang</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                    @forelse($bankAccounts as $item)<tr><td>{{ $item->bank_name }}</td><td>{{ $item->account_name }}</td><td>{{ $item->account_number }}</td><td>{{ $item->branch ?: '-' }}</td><td><span class="badge {{ $item->is_active ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Nonaktif' }}</span></td><td class="text-nowrap"><button class="btn btn-sm btn-outline-primary" type="button" onclick='editRecord("bank-account", {{ Illuminate\Support\Js::from($item->only(["id", "bank_name", "account_name", "account_number", "branch", "is_active"])) }})'>Edit</button><form class="d-inline" method="POST" action="{{ route('billing.master.bank-accounts.destroy', $item) }}" onsubmit="return confirm('Hapus rekening ini?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger">Hapus</button></form></td></tr>@empty<tr><td colspan="6" class="text-center text-muted p-4">Belum ada rekening pembayaran.</td></tr>@endforelse
-                </tbody></table></div></div>
+                <div class="card px-3"><div class="card-header border-bottom"><div><h5 class="card-title mb-1">Daftar Rekening Pembayaran</h5><p class="card-subtitle text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p></div></div><div class="card-datatable table-responsive"><table id="bankAccountsTable" class="table table-bordered"><thead><tr><th>Bank</th><th>Pemilik</th><th>Nomor Rekening</th><th>Cabang</th><th>Status</th><th>Aksi</th></tr></thead></table></div></div>
             </div>
         </div>
     </div>
-</div>
+
+@section('scripts')
 <script>
 function editRecord(prefix, data) {
     const form = document.getElementById(prefix + '-form');
@@ -94,5 +86,50 @@ function resetForm(formId) {
     const hidden = form.querySelector('input[name="id"]');
     if (hidden) hidden.value = '';
 }
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    const statusBadge = active => active ? '<span class="badge bg-label-success">Aktif</span>' : '<span class="badge bg-label-secondary">Nonaktif</span>';
+    const actions = (prefix, row, deleteUrl, editData) => '<div class="d-flex gap-1"><button class="btn btn-sm btn-outline-primary" type="button" onclick=\'editRecord("' + prefix + '",' + JSON.stringify(editData).replace(/'/g, '&#039;') + ')\'><i class="bx bx-edit-alt"></i> Edit</button><form method="POST" action="' + deleteUrl + '" onsubmit="return confirm(\'Hapus data ini?\')"><input type="hidden" name="_token" value="' + esc(csrfToken) + '"><input type="hidden" name="_method" value="DELETE"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bx bx-trash"></i> Hapus</button></form></div>';
+    const initTable = (selector, type, columns, order) => {
+        const table = document.querySelector(selector);
+        if (!table || !window.DataTable) return;
+        new DataTable(table, {
+            processing: true, serverSide: true, pageLength: 10,
+            lengthMenu: [[10,25,50,75,100],[10,25,50,75,100]],
+            ajax: {url: @json(route('billing.master.data', ['type' => '__TYPE__'])).replace('__TYPE__', type), type:'GET'},
+            columns, order: order || [[0,'asc']], responsive:false, scrollX:true,
+            dom: '<"row mx-2"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-end"f>>t<"row mx-2 mt-3 mb-4"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-end"p>>',
+            language: {processing:'Memuat...',search:'',searchPlaceholder:'Cari data...',lengthMenu:'_MENU_',info:'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',infoEmpty:'Menampilkan 0 hasil',zeroRecords:'Data tidak ditemukan',emptyTable:'Belum ada data',paginate:{first:'Pertama',last:'Terakhir',next:'Selanjutnya',previous:'Sebelumnya'}},
+            initComplete:function(){const wrapper=this.api().table().container();wrapper.querySelectorAll('.dataTables_filter input').forEach(el=>el.classList.add('form-control'));wrapper.querySelectorAll('.dataTables_length select').forEach(el=>el.classList.add('form-select'));}
+        });
+    };
+    initTable('#feeTypesTable','fee-types',[
+        {data:'code',render:(d,t,r)=>t==='display'?'<span class="fw-semibold">'+esc(d)+'</span>':d},
+        {data:'name',render:(d,t,r)=>t==='display'?esc(d)+'<small class="d-block text-muted">'+esc(r.description || '')+'</small>':d},
+        {data:'rates_count',orderable:false,searchable:false},
+        {data:'is_active',orderable:false,searchable:false,render:(d,t)=>t==='display'?statusBadge(d):d},
+        {data:'id',orderable:false,searchable:false,render:(id,t,r)=>t!=='display'?id:actions('fee-type',r,'/keuangan/master-data/jenis-biaya/'+id,{id,code:r.code,name:r.name,description:r.description,is_active:r.is_active})}
+    ],[[1,'asc']]);
+    initTable('#academicYearsTable','academic-years',[
+        {data:'name'}, {data:'starts_on'}, {data:'ends_on'},
+        {data:'fee_rates_count',orderable:false,searchable:false},
+        {data:'is_active',orderable:false,searchable:false,render:(d,t)=>t==='display'?statusBadge(d):d},
+        {data:'id',orderable:false,searchable:false,render:(id,t,r)=>t!=='display'?id:actions('academic-year',r,'/keuangan/master-data/tahun-ajaran/'+id,{id,name:r.name,starts_on:r.starts_on_value,ends_on:r.ends_on_value,is_active:r.is_active})}
+    ],[[0,'desc']]);
+    initTable('#feeRatesTable','fee-rates',[
+        {data:'fee_type',orderable:false}, {data:'academic_year',orderable:false}, {data:'class_name',orderable:false},
+        {data:'period_label',render:(d,t,r)=>t==='display'?esc(d)+' <small class="text-muted">('+ (r.period_type==='year'?'Tahunan':'Semesteran') +')</small>':d},
+        {data:'amount',render:(d,t)=>t==='display'?'Rp '+Number(d).toLocaleString('id-ID'):d},
+        {data:'is_active',orderable:false,searchable:false,render:(d,t)=>t==='display'?statusBadge(d):d},
+        {data:'id',orderable:false,searchable:false,render:(id,t,r)=>t!=='display'?id:actions('fee-rate',r,'/keuangan/master-data/tarif/'+id,{id,fee_type_id:r.fee_type_id,academic_year_id:r.academic_year_id,class_id:r.class_id,period_type:r.period_type,period_label:r.period_label,amount:r.amount,due_day:r.due_day,is_active:r.is_active})}
+    ],[[3,'asc']]);
+    initTable('#bankAccountsTable','bank-accounts',[
+        {data:'bank_name'}, {data:'account_name'}, {data:'account_number'}, {data:'branch',render:d=>esc(d || '-')},
+        {data:'is_active',orderable:false,searchable:false,render:(d,t)=>t==='display'?statusBadge(d):d},
+        {data:'id',orderable:false,searchable:false,render:(id,t,r)=>t!=='display'?id:actions('bank-account',r,'/keuangan/master-data/rekening/'+id,{id,bank_name:r.bank_name,account_name:r.account_name,account_number:r.account_number,branch:r.branch,is_active:r.is_active})}
+    ]);
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab=>tab.addEventListener('shown.bs.tab',()=>window.dispatchEvent(new Event('resize'))));
+});
 </script>
 @endsection
