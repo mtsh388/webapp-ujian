@@ -76,6 +76,18 @@ class BillingController extends Controller
             $validated['period_type'] = $rate->period_type;
             $validated['period_label'] = trim($rate->period_label . ' ' . $rate->academicYear->name);
             $validated['amount'] = $rate->amount;
+
+            $duplicate = BillingInvoice::query()
+                ->where('student_id', $student->id)
+                ->where('fee_rate_id', $rate->id)
+                ->where('period_label', $validated['period_label'])
+                ->exists();
+
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'fee_rate_id' => 'Tagihan untuk siswa, tarif, dan periode ini sudah ada.',
+                ]);
+            }
         }
 
         $invoice = BillingInvoice::query()->create([
