@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const columns = [
         {data:'title', name:'title', render:(value,type,row)=>type!=='display'?value:'<span class="fw-semibold">'+esc(value)+'</span><small class="d-block text-muted">'+esc(row.student_number)+'</small>'}
     ];
-    if (canManage) columns.push({data:'student_name', name:'student_name', render:(value,type,row)=>type!=='display'?value:esc(value)+'<small class="d-block text-muted">'+esc(row.student_number)+'</small>'});
+    if (canManage) columns.push({data:'student_name', name:'student_name', orderable:false, render:(value,type,row)=>type!=='display'?value:esc(value)+'<small class="d-block text-muted">'+esc(row.student_number)+'</small>'});
     columns.push(
         {data:'period_label', name:'period_label', render:(value,type,row)=>type!=='display'?value:esc(row.period_type==='semester'?'Semester':'Tahunan')+'<small class="d-block text-muted">'+esc(value)+'</small>'},
         {data:'due_date', name:'due_date'},
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ajax:{url:@json(route('billing.data')),type:'GET'},
         pageLength:10,
         lengthMenu:[[10,25,50,75,100],[10,25,50,75,100]],
-        order:[[canManage ? 1 : 1,'desc']],
+        order:[[canManage ? 3 : 2,'desc']],
         responsive:false,
         scrollX:true,
         dom:'<"row mx-2"<"col-sm-12 col-md-6 d-flex align-items-center"l><"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>>t<"row mx-2 mt-3 mb-4"<"col-sm-12 col-md-6 d-flex align-items-center"i><"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"p>>',
