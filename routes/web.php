@@ -365,7 +365,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             ->name('billing.show');
 
         Route::post('/{invoice}/pembayaran', [BillingController::class, 'storePayment'])
-            ->middleware('permission:billing.payment.submit|billing.manage')
+            ->middleware('permission:billing.manage')
             ->name('billing.payments.store');
     });
 
