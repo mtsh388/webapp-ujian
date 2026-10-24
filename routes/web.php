@@ -337,6 +337,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
     });
 
     Route::prefix('keuangan/master-data')->middleware('permission:billing.manage')->group(function () {
+        Route::get('/data/{type}', [BillingMasterDataController::class, 'data'])->name('billing.master.data');
         Route::get('/', [BillingMasterDataController::class, 'index'])->name('billing.master.index');
         Route::post('/jenis-biaya', [BillingMasterDataController::class, 'storeFeeType'])->name('billing.master.fee-types.store');
         Route::delete('/jenis-biaya/{feeType}', [BillingMasterDataController::class, 'destroyFeeType'])->name('billing.master.fee-types.destroy');
@@ -349,6 +350,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
     });
 
     Route::prefix('tagihan')->group(function () {
+        Route::get('/data', [BillingController::class, 'data'])
+            ->middleware('permission:billing.view|billing.view_own|billing.view_child')
+            ->name('billing.data');
+
         Route::get('/', [BillingController::class, 'index'])
             ->middleware('permission:billing.view|billing.view_own|billing.view_child')
             ->name('billing.index');
