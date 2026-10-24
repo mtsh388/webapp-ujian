@@ -86,6 +86,11 @@ class RolePermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        $keuangan = Role::firstOrCreate([
+            'name' => 'Keuangan',
+            'guard_name' => 'web',
+        ]);
+
         $admin->syncPermissions(Permission::all());
 
         $tentor->syncPermissions([
@@ -122,6 +127,12 @@ class RolePermissionSeeder extends Seeder
             'result.view_child',
             'billing.view_child',
             'billing.payment.submit',
+        ]);
+
+        $keuangan->syncPermissions([
+            'dashboard.view',
+            'billing.view',
+            'billing.manage',
         ]);
     }
 }
