@@ -119,14 +119,12 @@ class RolePermissionSeeder extends Seeder
             'exam.take',
             'result.view_own',
             'billing.view_own',
-            'billing.payment.submit',
         ]);
 
         $orangTua->syncPermissions([
             'dashboard.view',
             'result.view_child',
             'billing.view_child',
-            'billing.payment.submit',
         ]);
 
         $keuangan->syncPermissions([
