@@ -2,8 +2,6 @@
 
 @section('title', 'Master Data Keuangan')
 
-@section('content')
-
 @section('styles')
 <style>
     #billingMasterTabs { flex-wrap: wrap; gap: .25rem; }
@@ -26,7 +24,7 @@
 </style>
 @endsection
 
-
+@section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
         <div class="card px-3 mb-4">
             <div class="card-header border-bottom">
