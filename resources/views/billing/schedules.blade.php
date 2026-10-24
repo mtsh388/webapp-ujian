@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
     }[char]));
@@ -210,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         '<button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-label="Aksi jadwal"><i class="bx bx-dots-vertical-rounded"></i></button>' +
                         '<div class="dropdown-menu dropdown-menu-end">' +
                         '<form method="POST" action="/keuangan/jadwal-tagihan/' + id + '/status">' +
-                        '<input type="hidden" name="_token" value="' + escapeHtml(document.querySelector('meta[name="csrf-token"]')?.content || '') + '">' +
+                        '<input type="hidden" name="_token" value="' + escapeHtml(csrfToken) + '">' +
                         '<input type="hidden" name="_method" value="PATCH">' +
                         '<button type="submit" class="dropdown-item ' + toggleClass + '"><i class="bx ' + toggleIcon + ' me-1"></i>' + toggleLabel + '</button></form>' +
                         '<form method="POST" action="/keuangan/jadwal-tagihan/' + id + '" onsubmit="return confirm(\'Hapus jadwal ini?\')">' +
