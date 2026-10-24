@@ -17,22 +17,17 @@ class BillingController extends Controller
     public function index(): View
     {
         $user = auth()->user();
-        $query = BillingInvoice::query()->with(['student', 'payments']);
+        $query = BillingInvoice::query();
 
-        if ($user->can('billing.manage')) {
-            $invoices = $query->latest()->paginate(20);
-        } else {
-            $studentIds = $this->accessibleStudentIds();
-            $invoices = $query->whereIn('student_id', $studentIds)->latest()->paginate(20);
+        if (!$user->can('billing.manage')) {
+            $query->whereIn('student_id', $this->accessibleStudentIds());
         }
 
         return view('billing.index', [
-            'invoices' => $invoices,
             'canManage' => $user->can('billing.manage'),
-            'totalOutstanding' => $invoices->getCollection()->sum(fn (BillingInvoice $invoice) => (float) $invoice->outstanding_amount),
+            'hasOutstanding' => (clone $query)->where('payment_status', '!=', 'paid')->exists(),
         ]);
     }
-
 
     public function data(Request $request): \\Illuminate\\Http\\JsonResponse
     {
