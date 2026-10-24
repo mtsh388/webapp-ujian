@@ -4,20 +4,24 @@
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-            <div><h4 class="fw-bold mb-1">Master Data Keuangan</h4><p class="text-muted mb-0">Atur jenis biaya, tahun ajaran, tarif, dan rekening pembayaran.</p></div>
-            <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary">Kembali ke Tagihan</a>
+        <div class="card px-3 mb-4">
+            <div class="card-header border-bottom">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div><h4 class="card-title mb-1">Master Data Keuangan</h4><p class="card-subtitle text-muted mb-0">Atur jenis biaya, tahun ajaran, tarif, dan rekening pembayaran.</p></div>
+                    <a href="{{ route('billing.index') }}" class="btn btn-outline-secondary"><i class="bx bx-arrow-back me-1"></i>Kembali ke Tagihan</a>
+                </div>
+            </div>
+            <div class="card-body pb-0"><ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fee-types" type="button">Jenis Biaya</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#academic-years" type="button">Tahun Ajaran</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#fee-rates" type="button">Tarif Biaya</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#bank-accounts" type="button">Rekening Pembayaran</button></li>
+            </ul></div>
         </div>
         @if(session('success'))<div class="alert alert-success alert-dismissible" role="alert">{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
         @if(session('error'))<div class="alert alert-danger alert-dismissible" role="alert">{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
         @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
-        <ul class="nav nav-tabs mb-3" role="tablist">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#fee-types" type="button">Jenis Biaya</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#academic-years" type="button">Tahun Ajaran</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#fee-rates" type="button">Tarif Biaya</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#bank-accounts" type="button">Rekening Pembayaran</button></li>
-        </ul>
         <div class="tab-content">
             <div class="tab-pane fade show active" id="fee-types">
                 <div class="card mb-4"><div class="card-header fw-semibold">Form Jenis Biaya</div><div class="card-body">
@@ -80,6 +84,10 @@ function editRecord(prefix, data) {
     if (tab && window.bootstrap) bootstrap.Tab.getOrCreateInstance(tab).show();
     form.scrollIntoView({behavior:'smooth', block:'center'});
 }
+function editRecordFromButton(button) {
+    try { editRecord(button.dataset.editPrefix, JSON.parse(button.dataset.record || '{}')); }
+    catch (error) { console.error('Data edit tidak valid', error); }
+}
 function resetForm(formId) {
     const form = document.getElementById(formId);
     form.reset();
@@ -90,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
     const statusBadge = active => active ? '<span class="badge bg-label-success">Aktif</span>' : '<span class="badge bg-label-secondary">Nonaktif</span>';
-    const actions = (prefix, row, deleteUrl, editData) => '<div class="d-flex gap-1"><button class="btn btn-sm btn-outline-primary" type="button" onclick=\'editRecord("' + prefix + '",' + JSON.stringify(editData).replace(/'/g, '&#039;') + ')\'><i class="bx bx-edit-alt"></i> Edit</button><form method="POST" action="' + deleteUrl + '" onsubmit="return confirm(\'Hapus data ini?\')"><input type="hidden" name="_token" value="' + esc(csrfToken) + '"><input type="hidden" name="_method" value="DELETE"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bx bx-trash"></i> Hapus</button></form></div>';
+    const actions = (prefix, row, deleteUrl, editData) => '<div class="d-flex gap-1"><button class="btn btn-sm btn-outline-primary" type="button" data-edit-prefix="' + prefix + '" data-record="' + esc(JSON.stringify(editData)) + '" onclick="editRecordFromButton(this)"><i class="bx bx-edit-alt"></i> Edit</button><form method="POST" action="' + deleteUrl + '" onsubmit="return confirm(\\'Hapus data ini?\\')"><input type="hidden" name="_token" value="' + esc(csrfToken) + '"><input type="hidden" name="_method" value="DELETE"><button class="btn btn-sm btn-outline-danger" type="submit"><i class="bx bx-trash"></i> Hapus</button></form></div>';
     const initTable = (selector, type, columns, order) => {
         const table = document.querySelector(selector);
         if (!table || !window.DataTable) return;
