@@ -1,23 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\\Http\\Controllers;
 
-use App\Models\AcademicYear;
-use App\Models\BillingFeeRate;
-use App\Models\BillingGenerationSchedule;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
+use App\\Models\\BillingFeeRate;
+use App\\Models\\BillingGenerationSchedule;
+use Illuminate\\Http\\JsonResponse;
+use Illuminate\\Http\\RedirectResponse;
+use Illuminate\\Http\\Request;
+use Illuminate\\View\\View;
 
 class BillingScheduleController extends Controller
 {
     public function index(): View
     {
         return view('billing.schedules', [
-            'schedules' => BillingGenerationSchedule::query()
-                ->with(['feeRate.feeType', 'feeRate.academicYear', 'feeRate.classRoom'])
-                ->orderByDesc('scheduled_at')
-                ->paginate(20),
             'feeRates' => BillingFeeRate::query()
                 ->with(['feeType', 'academicYear', 'classRoom'])
                 ->where('is_active', true)
@@ -25,6 +21,72 @@ class BillingScheduleController extends Controller
                 ->whereHas('academicYear', fn ($query) => $query->where('is_active', true))
                 ->orderBy('period_label')
                 ->get(),
+        ]);
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $baseQuery = BillingGenerationSchedule::query()
+            ->with(['feeRate.feeType', 'feeRate.academicYear', 'feeRate.classRoom']);
+
+        $recordsTotal = (clone $baseQuery)->count();
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('period_label', 'like', '%' . $search . '%')
+                    ->orWhere('last_result', 'like', '%' . $search . '%')
+                    ->orWhereHas('feeRate.feeType', fn ($q) => $q->where('name', 'like', '%' . $search . '%'))
+                    ->orWhereHas('feeRate.academicYear', fn ($q) => $q->where('name', 'like', '%' . $search . '%'))
+                    ->orWhereHas('feeRate.classRoom', fn ($q) => $q->where('name', 'like', '%' . $search . '%'));
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count();
+        $orderColumns = [
+            0 => 'id',
+            1 => 'scheduled_at',
+            2 => 'due_date',
+            3 => 'generated_count',
+            4 => 'is_active',
+        ];
+        $orderIndex = (int) $request->input('order.0.column', 1);
+        $orderColumn = $orderColumns[$orderIndex] ?? 'scheduled_at';
+        $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $length = (int) $request->input('length', 10);
+        $length = $length === -1 ? 100 : max(1, min($length, 100));
+        $start = max(0, (int) $request->input('start', 0));
+
+        $schedules = $baseQuery
+            ->orderBy($orderColumn, $orderDirection)
+            ->orderByDesc('id')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $rows = $schedules->map(function (BillingGenerationSchedule $schedule) {
+            $rate = $schedule->feeRate;
+            return [
+                'id' => $schedule->id,
+                'fee_type' => $rate?->feeType?->name ?? 'Tarif dihapus',
+                'period_label' => $schedule->period_label,
+                'academic_year' => $rate?->academicYear?->name ?? '-',
+                'class_name' => $rate?->classRoom?->name ?? 'Semua kelas',
+                'scheduled_at' => $schedule->scheduled_at?->format('d/m/Y H:i') ?? '-',
+                'due_date' => $schedule->due_date?->format('d/m/Y') ?? '-',
+                'generated_count' => $schedule->generated_count,
+                'last_run_at' => $schedule->last_run_at?->format('d/m/Y H:i'),
+                'last_result' => $schedule->last_result,
+                'is_active' => $schedule->is_active,
+            ];
+        });
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $rows,
         ]);
     }
 
