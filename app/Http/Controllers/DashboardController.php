@@ -110,6 +110,13 @@ class DashboardController extends Controller
             ]);
         }
 
+        if ($user->hasRole('Keuangan')) {
+            return view('dashboard.keuangan', [
+                'totalInvoices' => BillingInvoice::count(),
+                'outstandingInvoices' => BillingInvoice::where('payment_status', '!=', 'paid')->count(),
+            ]);
+        }
+
         abort(403);
     }
 }
