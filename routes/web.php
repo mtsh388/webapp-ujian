@@ -11,6 +11,7 @@ use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BillingMasterDataController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -325,6 +326,18 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         });
     });
 
+
+    Route::prefix('keuangan/master-data')->middleware('permission:billing.manage')->group(function () {
+        Route::get('/', [BillingMasterDataController::class, 'index'])->name('billing.master.index');
+        Route::post('/jenis-biaya', [BillingMasterDataController::class, 'storeFeeType'])->name('billing.master.fee-types.store');
+        Route::delete('/jenis-biaya/{feeType}', [BillingMasterDataController::class, 'destroyFeeType'])->name('billing.master.fee-types.destroy');
+        Route::post('/tahun-ajaran', [BillingMasterDataController::class, 'storeAcademicYear'])->name('billing.master.academic-years.store');
+        Route::delete('/tahun-ajaran/{academicYear}', [BillingMasterDataController::class, 'destroyAcademicYear'])->name('billing.master.academic-years.destroy');
+        Route::post('/tarif', [BillingMasterDataController::class, 'storeFeeRate'])->name('billing.master.fee-rates.store');
+        Route::delete('/tarif/{feeRate}', [BillingMasterDataController::class, 'destroyFeeRate'])->name('billing.master.fee-rates.destroy');
+        Route::post('/rekening', [BillingMasterDataController::class, 'storeBankAccount'])->name('billing.master.bank-accounts.store');
+        Route::delete('/rekening/{bankAccount}', [BillingMasterDataController::class, 'destroyBankAccount'])->name('billing.master.bank-accounts.destroy');
+    });
 
     Route::prefix('tagihan')->group(function () {
         Route::get('/', [BillingController::class, 'index'])
