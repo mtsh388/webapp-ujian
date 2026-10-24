@@ -50,7 +50,19 @@ class RolePermissionSeeder extends Seeder
 
             'result.view',
             'result.view_own',
-            'result.view_child',\n\n            'billing.view',\n            'billing.manage',\n            'billing.view_own',\n            'billing.view_child',\n            'billing.payment.submit',
+            'result.view_child',
+
+            'billing.view',
+            'billing.manage',
+            'billing.view_own',
+            'billing.view_child',
+            'billing.payment.submit',
+
+            'billing.view',
+            'billing.manage',
+            'billing.view_own',
+            'billing.view_child',
+            'billing.payment.submit',
         ];
 
         foreach ($permissions as $permission) {
@@ -114,11 +126,15 @@ class RolePermissionSeeder extends Seeder
             'exam.view',
             'exam.take',
             'result.view_own',
+            'billing.view_own',
+            'billing.payment.submit',
         ]);
 
         $orangTua->syncPermissions([
             'dashboard.view',
             'result.view_child',
+            'billing.view_child',
+            'billing.payment.submit',
         ]);
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
+use App\Http\Controllers\BillingController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
