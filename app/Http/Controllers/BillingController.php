@@ -57,8 +57,8 @@ class BillingController extends Controller
 
         $recordsFiltered = (clone $query)->count();
         $orderColumns = $user->can('billing.manage')
-            ? [0 => 'title', 1 => 'created_at', 2 => 'created_at', 3 => 'due_date', 4 => 'amount', 7 => 'payment_status']
-            : [0 => 'title', 1 => 'created_at', 2 => 'due_date', 3 => 'amount', 6 => 'payment_status'];
+            ? [0 => 'title', 1 => 'created_at', 2 => 'period_label', 3 => 'due_date', 4 => 'amount', 7 => 'payment_status']
+            : [0 => 'title', 1 => 'period_label', 2 => 'due_date', 3 => 'amount', 6 => 'payment_status'];
         $orderIndex = (int) $request->input('order.0.column', 1);
         $orderColumn = $orderColumns[$orderIndex] ?? 'due_date';
         $direction = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
