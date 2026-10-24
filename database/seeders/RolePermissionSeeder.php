@@ -50,7 +50,7 @@ class RolePermissionSeeder extends Seeder
 
             'result.view',
             'result.view_own',
-            'result.view_child',
+            'result.view_child',\n\n            'billing.view',\n            'billing.manage',\n            'billing.view_own',\n            'billing.view_child',\n            'billing.payment.submit',
         ];
 
         foreach ($permissions as $permission) {

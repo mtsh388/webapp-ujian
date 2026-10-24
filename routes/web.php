@@ -324,6 +324,37 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         });
     });
 
+
+    Route::prefix('tagihan')->group(function () {
+        Route::get('/', [BillingController::class, 'index'])
+            ->middleware('permission:billing.view|billing.view_own|billing.view_child')
+            ->name('billing.index');
+
+        Route::get('/buat', [BillingController::class, 'create'])
+            ->middleware('permission:billing.manage')
+            ->name('billing.create');
+
+        Route::post('/', [BillingController::class, 'store'])
+            ->middleware('permission:billing.manage')
+            ->name('billing.store');
+
+        Route::get('/laporan/pemasukan', [BillingController::class, 'report'])
+            ->middleware('permission:billing.manage')
+            ->name('billing.report');
+
+        Route::post('/pembayaran/{payment}/verifikasi', [BillingController::class, 'verifyPayment'])
+            ->middleware('permission:billing.manage')
+            ->name('billing.payments.verify');
+
+        Route::get('/{invoice}', [BillingController::class, 'show'])
+            ->middleware('permission:billing.view|billing.view_own|billing.view_child')
+            ->name('billing.show');
+
+        Route::post('/{invoice}/pembayaran', [BillingController::class, 'storePayment'])
+            ->middleware('permission:billing.payment.submit|billing.manage')
+            ->name('billing.payments.store');
+    });
+
     Route::prefix('hasil-ujian')->group(function () {
 
         Route::get('/', [ResultController::class, 'index'])

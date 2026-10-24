@@ -211,6 +211,18 @@
             </li>
         @endcan
 
+        @if(auth()->user()->can('billing.view') || auth()->user()->can('billing.view_own') || auth()->user()->can('billing.view_child'))
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Keuangan</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('billing.*') ? 'active open' : '' }}">
+                <a href="{{ route('billing.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-wallet"></i>
+                    <div>Tagihan & Pemasukan</div>
+                </a>
+            </li>
+        @endif
+
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Akun</span>
         </li>
