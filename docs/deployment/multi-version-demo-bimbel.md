@@ -25,7 +25,7 @@ Jangan menambahkan `/v2` ke `APP_URL`; prefix route diatur melalui `APP_ROUTE_PR
 
 ## Arsitektur server yang diperlukan
 
-Repository ini hanya berisi kode versi terbaru. Kode versi lama tidak disalin atau ditimpa oleh perubahan ini. Agar `/v1` tetap hidup, konfigurasi web server harus memetakan `/v1` ke direktori publik aplikasi lama, dan memetakan permintaan aplikasi baru ke `public/index.php` versi terbaru. Karena Laravel biasanya dihidangkan dari document root `public`, implementasi pemetaan subpath harus disesuaikan dengan konfigurasi Nginx/PHP-FPM server yang sebenarnya; jangan menebak atau menyalin konfigurasi ke production tanpa menguji syntax dan routing.
+Kode versi lama telah dipulihkan sebagai branch terpisah `legacy-v1`, berdasarkan commit `e60864d6f358a2b37083c2c223124b03a59e54f5` sebelum fitur keuangan ditambahkan. Lihat `docs/deployment/legacy-v1-local.md` untuk langkah menyiapkan source legacy secara lokal. Branch `main` tetap berisi kode versi terbaru. Source legacy tidak otomatis dipasang di URL `/v1` hanya karena branch tersedia. Agar `/v1` tetap hidup, konfigurasi web server harus memetakan `/v1` ke direktori publik aplikasi lama, dan memetakan permintaan aplikasi baru ke `public/index.php` versi terbaru. Karena Laravel biasanya dihidangkan dari document root `public`, implementasi pemetaan subpath harus disesuaikan dengan konfigurasi Nginx/PHP-FPM server yang sebenarnya; jangan menebak atau menyalin konfigurasi ke production tanpa menguji syntax dan routing.
 
 Sebelum mengaktifkan konfigurasi server:
 1. Backup source code lama dan database.
@@ -47,7 +47,7 @@ php artisan optimize:clear
 php artisan route:list --path=v2
 ```
 
-Dengan konfigurasi default, uji halaman pemilihan pada `http://webapp-ujian.test/` dan login versi terbaru pada `http://webapp-ujian.test/v2/login`. Jalur `/v1` hanya akan berfungsi secara lokal jika aplikasi legacy juga dipetakan oleh web server lokal; repository ini tidak berisi source legacy tersebut.
+Dengan konfigurasi default, uji halaman pemilihan pada `http://webapp-ujian.test/` dan login versi terbaru pada `http://webapp-ujian.test/v2/login`. Jalur `/v1` hanya akan berfungsi secara lokal setelah aplikasi pada branch `legacy-v1` di-clone ke direktori terpisah dan dipetakan oleh web server lokal. Ikuti `docs/deployment/legacy-v1-local.md`; branch dan tautan saja tidak mengonfigurasi Herd.
 
 ## Catatan database bersama
 
