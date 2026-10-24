@@ -17,10 +17,17 @@ use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
-});
+    return view('versions.index');
+})->name('versions.index');
 
-Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
+// All current-release routes are grouped under APP_ROUTE_PREFIX (default: v2).
+// The legacy /v1 application is served separately by the web-server configuration.
+Route::prefix(config('app.route_prefix', 'v2'))->group(function () {
+    Route::get('/', function () {
+        return redirect()->route('login');
+    })->name('versions.current');
+
+    Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
@@ -424,6 +431,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             ->name('results.show');
     });
 
-});
+    });
 
-require __DIR__ . '/auth.php';
+    require __DIR__ . '/auth.php';
+});
