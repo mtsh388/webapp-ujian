@@ -16,25 +16,15 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h4 class="card-title mb-1">{{ $formTitle }}</h4>
-            <p class="text-muted mb-0">Tentukan jenis, nominal, dan sasaran biaya jika diperlukan.</p>
+            <p class="text-muted mb-0">Isi jenis biaya dengan teks bebas, lalu tentukan nominal dan sasaran jika diperlukan.</p>
         </div>
         <div class="card-body">
             <div class="row g-4">
                 <div class="col-md-6">
                     <label for="fee_type" class="form-label">Jenis Biaya <span class="text-danger">*</span></label>
-                    <select id="fee_type" name="fee_type" class="form-select" required>
-                        @foreach($typeLabels as $type => $label)
-                            <option value="{{ $type }}" @selected(old('fee_type', $registrationFee->fee_type ?? 'registration') === $type)>{{ $label }}</option>
-                        @endforeach
-                        <option value="custom" @selected(old('fee_type') === 'custom' || (isset($registrationFee) && !array_key_exists($registrationFee->fee_type, $typeLabels)))>Jenis Khusus</option>
-                    </select>
+                    <input type="text" id="fee_type" name="fee_type" maxlength="100" value="{{ old('fee_type', $registrationFee->fee_type_label ?? 'Pendaftaran') }}" class="form-control" placeholder="Contoh: SPP Bulanan, Study Tour, Laboratorium" required>
+                    <div class="form-text">Bebas diisi sesuai kebutuhan. Untuk tarif registrasi berbayar, gunakan jenis Pendaftaran.</div>
                     @error('fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-6" id="custom_fee_type_group" hidden>
-                    <label for="custom_fee_type" class="form-label">Nama Jenis Biaya Khusus <span class="text-danger">*</span></label>
-                    <input type="text" id="custom_fee_type" name="custom_fee_type" maxlength="40" value="{{ old('custom_fee_type', isset($registrationFee) && !array_key_exists($registrationFee->fee_type, $typeLabels) ? \Illuminate\Support\Str::headline($registrationFee->fee_type) : '') }}" class="form-control" placeholder="Contoh: Laboratorium">
-                    <div class="form-text">Nama ini akan menjadi kategori yang dapat digunakan untuk biaya berikutnya.</div>
-                    @error('custom_fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6" id="fee_name_group">
                     <label for="name" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
@@ -105,15 +95,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const type = document.getElementById('fee_type');
     const name = document.getElementById('name');
     const nameGroup = document.getElementById('fee_name_group');
-    const customTypeGroup = document.getElementById('custom_fee_type_group');
-    const customType = document.getElementById('custom_fee_type');
     const level = document.getElementById('education_level');
     const grade = document.getElementById('grade_level');
     const levelGroup = document.getElementById('education_level_group');
     const gradeGroup = document.getElementById('grade_level_group');
     const billing = document.getElementById('billing_period');
-    const billingGroup = document.getElementById('billing_period_group');
     const gradesByLevel = { SD: [4, 5, 6], SMP: [7, 8, 9], SMA: [10, 11, 12] };
+
+    function isRegistrationType() {
+        const normalized = type.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return ['registration', 'pendaftaran', 'biaya-pendaftaran'].includes(normalized);
+    }
 
     function filterGrades() {
         const allowed = gradesByLevel[level.value] || [];
@@ -131,32 +123,25 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function toggleFields() {
-        const isRegistration = type.value === 'registration';
-        const isCustom = type.value === 'custom';
-        customTypeGroup.hidden = !isCustom;
-        customType.required = isCustom;
-        nameGroup.hidden = isRegistration;
-        name.required = !isRegistration;
-        level.required = isRegistration;
-        grade.required = isRegistration;
-        document.getElementById('level_required_mark').hidden = !isRegistration;
-        document.getElementById('grade_required_mark').hidden = !isRegistration;
-        if (isRegistration) {
+        const registration = isRegistrationType();
+        nameGroup.hidden = registration;
+        name.required = !registration;
+        level.required = registration;
+        grade.required = registration;
+        document.getElementById('level_required_mark').hidden = !registration;
+        document.getElementById('grade_required_mark').hidden = !registration;
+        if (registration) {
             name.value = 'Biaya Pendaftaran';
             billing.value = 'once';
             billing.disabled = true;
-            levelGroup.classList.remove('col-md-6');
-            gradeGroup.classList.remove('col-md-6');
         } else {
             if (name.value === 'Biaya Pendaftaran') name.value = '';
             billing.disabled = false;
-            levelGroup.classList.add('col-md-6');
-            gradeGroup.classList.add('col-md-6');
         }
         filterGrades();
     }
 
-    type.addEventListener('change', toggleFields);
+    type.addEventListener('input', toggleFields);
     level.addEventListener('change', filterGrades);
     toggleFields();
 });
