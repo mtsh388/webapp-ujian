@@ -117,6 +117,7 @@ class StudentService
                     'class_id' => $student->class_id,
                     'class_name' => $student->classRoom?->name,
                     'is_active' => $student->is_active,
+                    'account_is_active' => (bool) $student->user?->is_active,
                 ];
             })
             ->all();
@@ -231,6 +232,14 @@ class StudentService
         bool    $isActive
     ): Student
     {
+        $student->loadMissing('user');
+
+        if ($isActive && $student->user && ! $student->user->is_active) {
+            throw ValidationException::withMessages([
+                'is_active' => 'Aktifkan Status Akun terlebih dahulu sebelum mengaktifkan siswa.',
+            ]);
+        }
+
         $this->repository->update(
             $student,
             [
@@ -238,6 +247,33 @@ class StudentService
             ]
         );
 
-        return $student->refresh()->load('classRoom');
+        return $student->refresh()->load('classRoom', 'user');
+    }
+
+    public function updateAccountStatus(
+        Student $student,
+        bool $isActive
+    ): Student {
+        return DB::transaction(function () use ($student, $isActive): Student {
+            $student->loadMissing('user');
+
+            if (! $student->user) {
+                throw ValidationException::withMessages([
+                    'account_is_active' => 'Akun pengguna untuk siswa ini tidak ditemukan.',
+                ]);
+            }
+
+            $student->user->forceFill([
+                'is_active' => $isActive,
+            ])->save();
+
+            if (! $isActive) {
+                $this->repository->update($student, [
+                    'is_active' => false,
+                ]);
+            }
+
+            return $student->refresh()->load('classRoom', 'user');
+        });
     }
 }

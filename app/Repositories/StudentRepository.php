@@ -17,7 +17,7 @@ class StudentRepository
     {
         return $this->model
             ->newQuery()
-            ->with('classRoom');
+            ->with(['classRoom', 'user']);
     }
 
     public function findOrFail(int $id): Student

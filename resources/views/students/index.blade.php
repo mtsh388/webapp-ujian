@@ -15,6 +15,17 @@
         .student-status-switch:checked {
             background-size: 1.25rem 1.25rem;
         }
+
+        .student-account-status-switch {
+            width: 2.75rem !important;
+            height: 1.5rem !important;
+            cursor: pointer;
+            margin-top: 0 !important;
+        }
+
+        .student-account-status-switch:checked {
+            background-size: 1.25rem 1.25rem;
+        }
     </style>
 
     <div class="container-xxl flex-grow-1 container-p-y">
@@ -97,7 +108,8 @@
                         <th>Jenis Kelamin</th>
                         <th>Kelas</th>
                         <th>No. Telepon</th>
-                        <th>Status</th>
+                        <th>Status Siswa</th>
+                        <th>Status Akun</th>
                         <th>Aksi</th>
                     </tr>
                     </thead>
@@ -120,7 +132,7 @@
                 return;
             }
 
-            new DataTable(table, {
+            window.studentsDataTable = new DataTable(table, {
                 processing: true,
                 serverSide: true,
 
@@ -170,35 +182,35 @@
                                 extend: 'print',
                                 text: '<i class="bx bx-printer me-1"></i>Print',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                                 }
                             },
                             {
                                 extend: 'copy',
                                 text: '<i class="bx bx-copy me-1"></i>Copy',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                                 }
                             },
                             {
                                 extend: 'csv',
                                 text: '<i class="bx bx-file me-1"></i>CSV',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                                 }
                             },
                             {
                                 extend: 'excel',
                                 text: '<i class="bx bx-spreadsheet me-1"></i>Excel',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                                 }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="bx bxs-file-pdf me-1"></i>PDF',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
                                 }
                             }
                         ]
@@ -321,6 +333,35 @@
                     },
 
                     {
+                        data: 'account_is_active',
+                        name: 'account_is_active',
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row) {
+                            const checked = data ? 'checked' : '';
+                            const label = data ? 'Aktif' : 'Tidak Aktif';
+
+                            @can('student.update')
+                            return `
+                                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                                    <input
+                                        class="form-check-input student-account-status-switch"
+                                        type="checkbox"
+                                        role="switch"
+                                        data-id="${row.id}"
+                                        ${checked}>
+                                    <label class="form-check-label mb-0">
+                                        ${label}
+                                    </label>
+                                </div>
+                            `;
+                            @else
+                            return `<span class="badge ${data ? 'bg-label-success' : 'bg-label-secondary'}">${label}</span>`;
+                            @endcan
+                        }
+                    },
+
+                    {
                         data: 'id',
                         name: 'id',
                         searchable: false,
@@ -432,6 +473,110 @@
                 switchElement
             );
         });
+
+        document.addEventListener('change', function (event) {
+            const accountSwitch = event.target.closest('.student-account-status-switch');
+
+            if (!accountSwitch) {
+                return;
+            }
+
+            updateStudentAccountStatus(
+                accountSwitch.dataset.id,
+                accountSwitch.checked,
+                accountSwitch
+            );
+        });
+
+        function updateStudentAccountStatus(id, isActive, switchElement) {
+            const previousState = !isActive;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+            if (!csrfToken) {
+                switchElement.checked = previousState;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'CSRF token tidak ditemukan.'
+                });
+                return;
+            }
+
+            Swal.fire({
+                icon: 'warning',
+                title: isActive ? 'Aktifkan akun siswa?' : 'Nonaktifkan akun siswa?',
+                text: isActive
+                    ? 'Status siswa tidak otomatis diaktifkan kembali.'
+                    : 'Siswa tidak dapat login dan Status Siswa akan menjadi Tidak Aktif.',
+                showCancelButton: true,
+                confirmButtonText: isActive ? 'Ya, aktifkan' : 'Ya, nonaktifkan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then(function (result) {
+                if (!result.isConfirmed) {
+                    switchElement.checked = previousState;
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Memperbarui Status Akun...',
+                    text: 'Mohon tunggu sebentar.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: function () {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch(`/master-data/siswa/${id}/account-status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    },
+                    body: JSON.stringify({ account_is_active: isActive })
+                })
+                    .then(function (response) {
+                        return response.json().then(function (data) {
+                            if (!response.ok) {
+                                throw new Error(data.message || 'Gagal memperbarui status akun.');
+                            }
+                            return data;
+                        });
+                    })
+                    .then(function (response) {
+                        if (!response.status) {
+                            throw new Error(response.message || 'Gagal memperbarui status akun.');
+                        }
+
+                        switchElement.checked = response.account_is_active;
+                        const label = switchElement.closest('.form-check').querySelector('.form-check-label');
+                        label.textContent = response.account_is_active ? 'Aktif' : 'Tidak Aktif';
+
+                        if (window.studentsDataTable) {
+                            window.studentsDataTable.ajax.reload(null, false);
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message,
+                            timer: 1800,
+                            showConfirmButton: false
+                        });
+                    })
+                    .catch(function (error) {
+                        switchElement.checked = previousState;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: error.message || 'Terjadi kesalahan saat memperbarui status akun.'
+                        });
+                    });
+            });
+        }
 
         function updateStudentStatus(
             id,
