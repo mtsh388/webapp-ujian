@@ -144,3 +144,39 @@ test('admin cannot use a reserved type as a custom fee category', function () {
         ->assertRedirect(route('registration-fees.create'))
         ->assertSessionHasErrors('custom_fee_type');
 });
+
+
+test('admin can reuse an existing custom fee category', function () {
+    RegistrationFee::create([
+        'fee_type' => 'laboratorium-komputer',
+        'name' => 'Praktikum Komputer',
+        'billing_period' => 'once',
+        'education_level' => 'SMP',
+        'grade_level' => 7,
+        'amount' => 75000,
+        'is_active' => true,
+    ]);
+
+    $this->get(route('registration-fees.create'))
+        ->assertOk()
+        ->assertSee('Laboratorium Komputer');
+
+    $this->post(route('registration-fees.store'), [
+        'fee_type' => 'laboratorium-komputer',
+        'name' => 'Pemeliharaan Laboratorium',
+        'billing_period' => 'yearly',
+        'education_level' => '',
+        'grade_level' => '',
+        'amount' => 25000,
+        'is_active' => 1,
+    ])->assertRedirect(route('registration-fees.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('registration_fees', [
+        'fee_type' => 'laboratorium-komputer',
+        'name' => 'Pemeliharaan Laboratorium',
+        'amount' => 25000,
+        'education_level' => null,
+        'grade_level' => null,
+    ]);
+});
