@@ -31,7 +31,7 @@
                     </div>
 
                     <h4 class="mb-1">Daftar sebagai Siswa</h4>
-                    <p class="mb-5">Pilih jenis pendaftaran. Tarif Berbayar dihitung otomatis berdasarkan kelas.</p>
+                    <p class="mb-5">Pilih jenis pendaftaran. Biaya Berbayar mengikuti Master Data Biaya QSEE.</p>
 
                     @if ($errors->any())
                         <div class="alert alert-danger mb-5">
@@ -94,7 +94,7 @@
                                     <select class="form-select" id="class_id" name="class_id">
                                         <option value="">Pilih Kelas</option>
                                         @foreach ($classes as $class)
-                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-grade="{{ $class->grade_level }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
+                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-grade="{{ $class->grade_level }}" data-fee="{{ $fees->get($class->education_level . '-' . $class->grade_level)?->amount ?? '' }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -143,12 +143,11 @@
 
                             <hr class="my-5">
                             <h5 class="mb-3">Biaya dan Bukti Pembayaran</h5>
-                            <div class="alert alert-info">
-                                <div class="fw-semibold mb-1">Total Biaya Pendaftaran</div>
-                                <div id="registrationFeeAmount" class="fs-4 fw-bold" aria-live="polite">Pilih jenjang dan kelas</div>
-                                <div id="registrationFeeDescription" class="mt-1">Biaya akan ditampilkan setelah kelas dipilih.</div>
-                                <hr>
-                                <small>Tarif: SD Rp200.000 · SMP Rp300.000 · SMA kelas 10–11 Rp400.000 · SMA kelas 12 Rp500.000. Tarif final ditentukan oleh server. Pendaftaran tidak menerima kode promo dan tidak dapat dicicil.</small>
+                            <div class="mb-4">
+                                <label for="registration_fee_display" class="form-label">Biaya Pendaftaran (Rp)</label>
+                                <input type="text" id="registration_fee_display" class="form-control fw-semibold" value="" placeholder="Pilih jenjang dan kelas terlebih dahulu" readonly aria-live="polite">
+                                <div id="registrationFeeDescription" class="form-text">Nominal diambil dari Master Data Biaya QSEE dan tidak dapat diubah pada formulir ini.</div>
+                                <div class="form-text">Pendaftaran tidak menerima kode promo dan tidak dapat dicicil.</div>
                             </div>
                             <div class="mb-4">
                                 <label for="payment_proof" class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
@@ -196,7 +195,7 @@
             submitButton.textContent = type === 'paid' ? 'Daftar Berbayar' : 'Daftar Trial';
         }
 
-        const feeAmount = document.getElementById('registrationFeeAmount');
+        const feeInput = document.getElementById('registration_fee_display');
         const feeDescription = document.getElementById('registrationFeeDescription');
         const rupiah = new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -207,28 +206,23 @@
         function updateFee() {
             const selected = classSelect.options[classSelect.selectedIndex];
             if (!selected || !selected.value || selected.dataset.level !== levelSelect.value) {
-                feeAmount.textContent = 'Pilih jenjang dan kelas';
-                feeDescription.textContent = 'Biaya akan ditampilkan setelah kelas dipilih.';
+                feeInput.value = '';
+                feeInput.placeholder = 'Pilih jenjang dan kelas terlebih dahulu';
+                feeDescription.textContent = 'Nominal diambil dari Master Data Biaya QSEE.';
                 return;
             }
 
-            const level = selected.dataset.level;
-            const grade = Number(selected.dataset.grade);
-            let amount = null;
-
-            if (level === 'SD') amount = 200000;
-            if (level === 'SMP') amount = 300000;
-            if (level === 'SMA' && [10, 11].includes(grade)) amount = 400000;
-            if (level === 'SMA' && grade === 12) amount = 500000;
-
-            if (amount === null) {
-                feeAmount.textContent = 'Tarif belum tersedia';
-                feeDescription.textContent = 'Silakan hubungi admin QSEE untuk memastikan biaya kelas ini.';
+            const amount = selected.dataset.fee;
+            if (!amount) {
+                feeInput.value = '';
+                feeInput.placeholder = 'Biaya belum tersedia';
+                feeDescription.textContent = 'Biaya untuk jenjang dan kelas ini belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE.';
                 return;
             }
 
-            feeAmount.textContent = rupiah.format(amount);
-            feeDescription.textContent = 'Biaya untuk ' + selected.textContent.trim() + '. Nominal akhir diverifikasi oleh server.';
+            feeInput.value = rupiah.format(Number(amount));
+            feeInput.placeholder = '';
+            feeDescription.textContent = 'Tarif aktif dari Master Data Biaya untuk ' + selected.textContent.trim() + '. Nominal akhir diperiksa kembali oleh server.';
         }
 
         function filterClasses() {
