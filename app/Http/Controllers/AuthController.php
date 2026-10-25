@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\ParentModel;
 use App\Models\RegistrationPayment;
+use App\Models\RegistrationFee;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
@@ -43,7 +44,9 @@ class AuthController extends Controller
             ->orderBy('grade_level')
             ->get();
 
-        return view('auth.register', compact('classes'));
+        $fees = RegistrationFee::active()->get()->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
+
+        return view('auth.register', compact('classes', 'fees'));
     }
 
     public function register(Request $request): RedirectResponse
@@ -103,22 +106,19 @@ class AuthController extends Controller
                 ->whereNull('deleted_at')
                 ->firstOrFail();
 
-            $amount = match ($classRoom->education_level) {
-                'SD' => 200000,
-                'SMP' => 300000,
-                'SMA' => match ((int) $classRoom->grade_level) {
-                    10, 11 => 400000,
-                    12 => 500000,
-                    default => null,
-                },
-                default => null,
-            };
+            $registrationFee = RegistrationFee::query()
+                ->active()
+                ->where('education_level', $classRoom->education_level)
+                ->where('grade_level', $classRoom->grade_level)
+                ->first();
 
-            if ($amount === null) {
+            if (! $registrationFee) {
                 return back()
                     ->withInput($request->except(['password', 'payment_proof']))
-                    ->withErrors(['class_id' => 'Tarif untuk kelas yang dipilih belum ditetapkan.']);
+                    ->withErrors(['class_id' => 'Biaya pendaftaran untuk jenjang dan kelas ini belum tersedia atau tidak aktif.']);
             }
+
+            $amount = $registrationFee->amount;
 
             $proofPath = $request->file('payment_proof')->store('registration-proofs', 'local');
 
