@@ -379,6 +379,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             ->middleware('permission:result.view_child')
             ->name('results.children');
 
+        Route::get('/anak/data', [ResultController::class, 'childrenResultsData'])
+            ->middleware('permission:result.view_child')
+            ->name('results.children.data');
+
         Route::get('/anak/{attempt}', [ResultController::class, 'childResult'])
             ->middleware('permission:result.view_child')
             ->name('results.children.show');
