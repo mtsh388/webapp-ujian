@@ -25,7 +25,12 @@ test('inactive student accounts cannot authenticate', function () {
 });
 
 test('deactivating a student account also deactivates the student without auto-reactivating the student later', function () {
-    $permission = Permission::firstOrCreate([
+    $viewPermission = Permission::firstOrCreate([
+        'name' => 'student.view',
+        'guard_name' => 'web',
+    ]);
+
+    $updatePermission = Permission::firstOrCreate([
         'name' => 'student.update',
         'guard_name' => 'web',
     ]);
@@ -34,7 +39,7 @@ test('deactivating a student account also deactivates the student without auto-r
     $admin->forceFill([
         'must_change_password' => false,
     ])->save();
-    $admin->givePermissionTo($permission);
+    $admin->givePermissionTo([$viewPermission, $updatePermission]);
 
     $studentRole = Role::firstOrCreate([
         'name' => 'Siswa',
