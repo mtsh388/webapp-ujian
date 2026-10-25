@@ -10,6 +10,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
+use App\Http\Controllers\RegistrationFeeController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -174,6 +175,27 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             });
 
     });
+
+    Route::prefix('master-data/biaya-pendaftaran')
+        ->middleware('permission:registration-fee.view')
+        ->group(function () {
+            Route::get('/', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
+            Route::get('/create', [RegistrationFeeController::class, 'create'])
+                ->middleware('permission:registration-fee.create')
+                ->name('registration-fees.create');
+            Route::post('/', [RegistrationFeeController::class, 'store'])
+                ->middleware('permission:registration-fee.create')
+                ->name('registration-fees.store');
+            Route::get('/{registrationFee}/edit', [RegistrationFeeController::class, 'edit'])
+                ->middleware('permission:registration-fee.update')
+                ->name('registration-fees.edit');
+            Route::put('/{registrationFee}', [RegistrationFeeController::class, 'update'])
+                ->middleware('permission:registration-fee.update')
+                ->name('registration-fees.update');
+            Route::delete('/{registrationFee}', [RegistrationFeeController::class, 'destroy'])
+                ->middleware('permission:registration-fee.delete')
+                ->name('registration-fees.destroy');
+        });
 
     Route::prefix('bank-soal')
         ->middleware('permission:question.view')
