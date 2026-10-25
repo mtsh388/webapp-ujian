@@ -7,7 +7,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class RegistrationFeeController extends Controller
@@ -21,7 +20,7 @@ class RegistrationFeeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $typeLabels = RegistrationFee::typeLabels();
+        $typeLabels = $this->feeTypeOptions();
 
         return view('registration-fees.index', compact('fees', 'typeLabels'));
     }
@@ -64,10 +63,28 @@ class RegistrationFeeController extends Controller
             ->with('success', 'Data biaya berhasil dihapus.');
     }
 
+    private function feeTypeOptions(): array
+    {
+        $options = RegistrationFee::typeLabels();
+
+        RegistrationFee::query()
+            ->whereNotIn('fee_type', array_keys($options))
+            ->select('fee_type')
+            ->distinct()
+            ->orderBy('fee_type')
+            ->pluck('fee_type')
+            ->each(function (string $type) use (&$options): void {
+                $options[$type] = \Illuminate\Support\Str::headline($type);
+            });
+
+        return $options;
+    }
+
     private function validatedData(Request $request, ?RegistrationFee $registrationFee = null): array
     {
+        $typeOptions = $this->feeTypeOptions();
         $validated = $request->validate([
-            'fee_type' => ['required', Rule::in([...array_keys(RegistrationFee::typeLabels()), 'custom'])],
+            'fee_type' => ['required', Rule::in([...array_keys($typeOptions), 'custom'])],
             'custom_fee_type' => ['nullable', 'string', 'max:40'],
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -88,7 +105,7 @@ class RegistrationFeeController extends Controller
                 'custom_fee_type' => ['required', 'string', 'max:40'],
             ]);
 
-            $customType = Str::slug($validated['custom_fee_type']);
+            $customType = \Illuminate\Support\Str::slug($validated['custom_fee_type']);
 
             if ($customType === '' || $customType === 'registration' || in_array($customType, array_keys(RegistrationFee::typeLabels()), true)) {
                 throw ValidationException::withMessages([
