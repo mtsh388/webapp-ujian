@@ -144,9 +144,11 @@
                             <hr class="my-5">
                             <h5 class="mb-3">Biaya dan Bukti Pembayaran</h5>
                             <div class="alert alert-info">
-                                <div class="fw-semibold mb-1">Tarif pendaftaran</div>
-                                <div>SD: Rp200.000 · SMP: Rp300.000 · SMA kelas 10–11: Rp400.000 · SMA kelas 12: Rp500.000.</div>
-                                <small>Tarif final ditentukan oleh server. Pendaftaran tidak menerima kode promo dan tidak dapat dicicil.</small>
+                                <div class="fw-semibold mb-1">Total Biaya Pendaftaran</div>
+                                <div id="registrationFeeAmount" class="fs-4 fw-bold" aria-live="polite">Pilih jenjang dan kelas</div>
+                                <div id="registrationFeeDescription" class="mt-1">Biaya akan ditampilkan setelah kelas dipilih.</div>
+                                <hr>
+                                <small>Tarif: SD Rp200.000 · SMP Rp300.000 · SMA kelas 10–11 Rp400.000 · SMA kelas 12 Rp500.000. Tarif final ditentukan oleh server. Pendaftaran tidak menerima kode promo dan tidak dapat dicicil.</small>
                             </div>
                             <div class="mb-4">
                                 <label for="payment_proof" class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
@@ -194,23 +196,66 @@
             submitButton.textContent = type === 'paid' ? 'Daftar Berbayar' : 'Daftar Trial';
         }
 
+        const feeAmount = document.getElementById('registrationFeeAmount');
+        const feeDescription = document.getElementById('registrationFeeDescription');
+        const rupiah = new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0,
+        });
+
+        function updateFee() {
+            const selected = classSelect.options[classSelect.selectedIndex];
+            if (!selected || !selected.value || selected.dataset.level !== levelSelect.value) {
+                feeAmount.textContent = 'Pilih jenjang dan kelas';
+                feeDescription.textContent = 'Biaya akan ditampilkan setelah kelas dipilih.';
+                return;
+            }
+
+            const level = selected.dataset.level;
+            const grade = Number(selected.dataset.grade);
+            let amount = null;
+
+            if (level === 'SD') amount = 200000;
+            if (level === 'SMP') amount = 300000;
+            if (level === 'SMA' && [10, 11].includes(grade)) amount = 400000;
+            if (level === 'SMA' && grade === 12) amount = 500000;
+
+            if (amount === null) {
+                feeAmount.textContent = 'Tarif belum tersedia';
+                feeDescription.textContent = 'Silakan hubungi admin QSEE untuk memastikan biaya kelas ini.';
+                return;
+            }
+
+            feeAmount.textContent = rupiah.format(amount);
+            feeDescription.textContent = 'Biaya untuk ' + selected.textContent.trim() + '. Nominal akhir diverifikasi oleh server.';
+        }
+
         function filterClasses() {
             const level = levelSelect.value;
             Array.from(classSelect.options).forEach((option) => {
                 if (!option.value) {
                     option.hidden = false;
+                    option.disabled = false;
                     return;
                 }
-                option.hidden = option.dataset.level !== level;
+
+                const matchesLevel = Boolean(level) && option.dataset.level === level;
+                option.hidden = !matchesLevel;
+                option.disabled = !matchesLevel;
             });
+
             const selected = classSelect.options[classSelect.selectedIndex];
             if (selected && selected.value && selected.dataset.level !== level) {
                 classSelect.value = '';
             }
+
+            updateFee();
         }
 
         typeButtons.forEach((button) => button.addEventListener('click', () => setType(button.dataset.registrationType)));
         levelSelect.addEventListener('change', filterClasses);
+        classSelect.addEventListener('change', updateFee);
         setType(typeInput.value);
         filterClasses();
     })();
