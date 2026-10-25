@@ -121,8 +121,8 @@ class RegistrationFeeController extends Controller
             'discount_value' => ['nullable', 'integer', 'min:1', 'max:999999999'],
             'max_installments' => ['nullable', 'integer', 'min:1', 'max:5'],
         ], [
-            'fee_type.required' => 'Jenis biaya wajib diisi.',
-            'fee_type.max' => 'Jenis biaya maksimal 100 karakter.',
+            'fee_type.required' => 'Nama biaya wajib diisi.',
+            'fee_type.max' => 'Nama biaya maksimal 100 karakter.',
             'education_level.in' => 'Jenjang pendidikan tidak valid.',
             'grade_level.in' => 'Tingkat kelas tidak valid.',
             'amount.min' => 'Biaya tidak boleh negatif.',
@@ -136,7 +136,7 @@ class RegistrationFeeController extends Controller
 
         if ($feeTypeSlug === '') {
             throw ValidationException::withMessages([
-                'fee_type' => 'Jenis biaya harus berisi huruf atau angka.',
+                'fee_type' => 'Nama biaya harus berisi huruf atau angka.',
             ]);
         }
 
