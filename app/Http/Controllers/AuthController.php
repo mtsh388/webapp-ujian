@@ -7,6 +7,7 @@ use App\Models\ParentModel;
 use App\Models\RegistrationPayment;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\ExamService;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
@@ -23,6 +24,10 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    public function __construct(protected ExamService $examService)
+    {
+    }
+
     public function index(): View
     {
         return view('auth.login');
@@ -176,6 +181,8 @@ class AuthController extends Controller
                         'relationship' => 'Orang Tua/Wali',
                         'is_primary' => true,
                     ]);
+
+                    $this->examService->assignStudentToAutoExams($student->fresh('classRoom'));
 
                     RegistrationPayment::create([
                         'user_id' => $studentUser->id,
