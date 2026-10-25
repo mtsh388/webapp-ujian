@@ -15,7 +15,7 @@
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <h4 class="card-title mb-1">Master Data Biaya</h4>
-                <p class="text-muted mb-0">Kelola tarif, diskon/promo, dan cicilan. Biaya Pendaftaran selalu dibayar penuh tanpa promo.</p>
+                <p class="text-muted mb-0">Kelola tarif dan ketentuan pembayaran. Biaya Pendaftaran selalu dibayar penuh tanpa diskon/promo.</p>
             </div>
             @can('registration-fee.create')
                 <a href="{{ route('registration-fees.create') }}" class="btn btn-primary">
@@ -73,11 +73,9 @@ document.addEventListener('DOMContentLoaded', function () {
             { data: 'grade_level', render: value => value ? 'Kelas ' + escapeHtml(value) : 'Semua' },
             { data: 'billing_period', render: value => ({ once: 'Sekali', monthly: 'Bulanan', semester: 'Per Semester', yearly: 'Tahunan' })[value] || '—' },
             { data: 'amount', render: value => escapeHtml(money(value)) },
-            { data: 'promo_code', orderable: false, render: (value, type, row) => {
-                if (row.fee_type === 'registration') return '<span class="badge bg-label-secondary">Tidak berlaku</span>';
-                if (!row.discount_enabled) return '<span class="badge bg-label-secondary">Tidak</span>';
-                const discount = row.discount_type === 'percentage' ? escapeHtml(row.discount_value) + '%' : escapeHtml(money(row.discount_value));
-                return '<div class="fw-semibold">' + escapeHtml(value || '-') + '</div><small class="text-muted">' + discount + '<br>' + escapeHtml(row.promo_starts_at || '-') + ' – ' + escapeHtml(row.promo_ends_at || '-') + '</small>';
+            { data: 'discount_enabled', orderable: false, render: (value, type, row) => {
+                if (row.fee_type === 'registration') return '<span class="badge bg-label-secondary">Tidak</span>';
+                return value ? '<span class="badge bg-label-success">Ya</span>' : '<span class="badge bg-label-secondary">Tidak</span>';
             }},
             { data: 'max_installments', render: (value, type, row) => row.fee_type === 'registration' ? 'Tidak bisa dicicil' : escapeHtml(value || 1) + ' kali' },
             { data: 'is_active', render: value => value ? '<span class="badge bg-label-success">Aktif</span>' : '<span class="badge bg-label-secondary">Tidak Aktif</span>' },
