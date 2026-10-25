@@ -116,6 +116,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
                     ->middleware('permission:student.update')
                     ->name('students.status');
 
+                Route::patch('/{student}/account-status', [StudentController::class, 'updateAccountStatus'])
+                    ->middleware('permission:student.update')
+                    ->name('students.account-status');
+
                 Route::get('/{student}/edit', [StudentController::class, 'edit'])
                     ->middleware('permission:student.update')
                     ->name('students.edit');

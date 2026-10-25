@@ -139,4 +139,30 @@ class StudentController extends Controller
             'is_active' => $student->is_active,
         ]);
     }
+
+    public function updateAccountStatus(
+        Request $request,
+        Student $student
+    ): JsonResponse {
+        $request->validate([
+            'account_is_active' => [
+                'required',
+                'boolean',
+            ],
+        ]);
+
+        $student = $this->service->updateAccountStatus(
+            $student,
+            $request->boolean('account_is_active')
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => $student->user->is_active
+                ? 'Akun siswa berhasil diaktifkan. Status siswa tidak berubah otomatis.'
+                : 'Akun siswa berhasil dinonaktifkan dan status siswa diubah menjadi Tidak Aktif.',
+            'account_is_active' => (bool) $student->user->is_active,
+            'is_active' => $student->is_active,
+        ]);
+    }
 }
