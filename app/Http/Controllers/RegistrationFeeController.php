@@ -27,7 +27,7 @@ class RegistrationFeeController extends Controller
 
     public function create(): View
     {
-        $typeLabels = RegistrationFee::typeLabels();
+        $typeLabels = $this->feeTypeOptions();
 
         return view('registration-fees.create', compact('typeLabels'));
     }
@@ -42,7 +42,7 @@ class RegistrationFeeController extends Controller
 
     public function edit(RegistrationFee $registrationFee): View
     {
-        $typeLabels = RegistrationFee::typeLabels();
+        $typeLabels = $this->feeTypeOptions();
 
         return view('registration-fees.edit', compact('registrationFee', 'typeLabels'));
     }
