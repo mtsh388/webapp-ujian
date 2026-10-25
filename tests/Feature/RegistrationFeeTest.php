@@ -34,6 +34,12 @@ test('admin can view the registration fee master data', function () {
         ->assertSee('Nama Biaya')
         ->assertDontSee('Jenis Biaya')
         ->assertDontSee("data: 'name'", false)
+        ->assertDontSee('Kode Promo')
+        ->assertDontSee('Jenis Diskon')
+        ->assertDontSee('Nilai Diskon')
+        ->assertDontSee('Promo Mulai')
+        ->assertDontSee('Promo Berakhir')
+        ->assertSee('Diskon / Promo')
         ->assertSee('serverSide: true');
 
     $this->getJson(route('registration-fees.data'))
@@ -173,10 +179,7 @@ test('admin can reuse a free-text fee type', function () {
 });
 
 
-test('admin can configure promo discounts and up to five installments for a general fee', function () {
-    $startsAt = now()->subDay()->format('Y-m-d H:i:s');
-    $endsAt = now()->addDays(7)->format('Y-m-d H:i:s');
-
+test('admin can mark a general fee as eligible for promo without configuring promo details', function () {
     $this->post(route('registration-fees.store'), [
         'fee_type' => 'Study Tour',
         'billing_period' => 'once',
@@ -185,11 +188,6 @@ test('admin can configure promo discounts and up to five installments for a gene
         'amount' => 1000000,
         'is_active' => 1,
         'discount_enabled' => 1,
-        'promo_code' => 'HEMAT20',
-        'promo_starts_at' => $startsAt,
-        'promo_ends_at' => $endsAt,
-        'discount_type' => 'percentage',
-        'discount_value' => 20,
         'max_installments' => 5,
     ])->assertRedirect(route('registration-fees.index'))
         ->assertSessionHas('success');
@@ -198,15 +196,15 @@ test('admin can configure promo discounts and up to five installments for a gene
         'fee_type_label' => 'Study Tour',
         'name' => 'Study Tour',
         'discount_enabled' => true,
-        'promo_code' => 'HEMAT20',
-        'discount_type' => 'percentage',
-        'discount_value' => 20,
+        'promo_code' => null,
+        'discount_type' => null,
+        'discount_value' => null,
         'max_installments' => 5,
     ]);
 
     $this->getJson(route('registration-fees.data'))
         ->assertOk()
-        ->assertJsonFragment(['promo_code' => 'HEMAT20', 'max_installments' => 5]);
+        ->assertJsonFragment(['discount_enabled' => true, 'max_installments' => 5]);
 });
 
 test('registration fees cannot be configured with promo or installments', function () {
