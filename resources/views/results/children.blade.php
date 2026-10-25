@@ -41,7 +41,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <span class="text-muted">Total Percobaan Ujian</span>
-                                <h3 class="mb-0 mt-2">{{ $attempts->count() }}</h3>
+                                <h3 class="mb-0 mt-2">{{ $totalAttempts }}</h3>
                             </div>
                             <span class="avatar-initial rounded bg-label-info p-3">
                                 <i class="bx bx-book-open fs-3"></i>
@@ -58,7 +58,7 @@
                             <div>
                                 <span class="text-muted">Ujian Selesai</span>
                                 <h3 class="mb-0 mt-2">
-                                    {{ $attempts->whereNotNull('submitted_at')->count() }}
+                                    {{ $totalFinished }}
                                 </h3>
                             </div>
                             <span class="avatar-initial rounded bg-label-success p-3">
@@ -83,12 +83,7 @@
                     <span class="input-group-text">
                         <i class="bx bx-search"></i>
                     </span>
-                    <input
-                        type="text"
-                        id="searchResults"
-                        class="form-control"
-                        placeholder="Cari nama anak atau ujian..."
-                    >
+                    <input type="search" id="searchResults" class="form-control" placeholder="Cari nama anak atau ujian...">
                 </div>
             </div>
 
@@ -106,117 +101,63 @@
                         <th class="text-center">Aksi</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    @forelse ($attempts as $attempt)
-                        @php
-                            $status = $attempt->status ?? null;
-                            $isFinished = !is_null($attempt->submitted_at);
-
-                            $statusClass = $isFinished
-                                ? 'bg-label-success'
-                                : 'bg-label-warning';
-
-                            $statusLabel = $isFinished
-                                ? 'Selesai'
-                                : 'Belum Selesai';
-                        @endphp
-
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>
-                                <div class="d-flex flex-column">
-                                        <span class="fw-semibold">
-                                            {{ $attempt->student->full_name }}
-                                        </span>
-                                    <small class="text-muted">
-                                        {{ $attempt->student->student_number ?? '-' }}
-                                    </small>
-                                </div>
-                            </td>
-                            <td>
-                                {{ $attempt->exam->title ?? $attempt->exam->name ?? '-' }}
-                            </td>
-                            <td>
-                                {{ $attempt->started_at
-                                    ? \Illuminate\Support\Carbon::parse($attempt->started_at)->format('d/m/Y H:i')
-                                    : '-' }}
-                            </td>
-                            <td>
-                                {{ $attempt->submitted_at
-                                    ? \Illuminate\Support\Carbon::parse($attempt->submitted_at)->format('d/m/Y H:i')
-                                    : '-' }}
-                            </td>
-                            <td>
-                                @if ($isFinished)
-                                    <span class="fw-semibold">
-                                            {{ number_format((float) ($attempt->score ?? 0), 2, ',', '.') }}
-                                        </span>
-                                @else
-                                    <span class="text-muted">-</span>
-                                @endif
-                            </td>
-                            <td>
-                                    <span class="badge {{ $statusClass }}">
-                                        {{ $statusLabel }}
-                                    </span>
-                            </td>
-                            <td class="text-center">
-                                @if ($isFinished)
-                                    <a
-                                        href="{{ route('results.children.show', $attempt->id) }}"
-                                        class="btn btn-sm btn-primary"
-                                    >
-                                        <i class="bx bx-show-alt me-1"></i>
-                                        Detail
-                                    </a>
-                                @else
-                                    <button
-                                        type="button"
-                                        class="btn btn-sm btn-outline-secondary"
-                                        disabled
-                                    >
-                                        <i class="bx bx-time me-1"></i>
-                                        Menunggu
-                                    </button>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center py-5">
-                                <i class="bx bx-folder-open fs-1 text-muted"></i>
-                                <h6 class="mt-2 mb-1">Belum Ada Hasil Ujian</h6>
-                                <p class="text-muted mb-0">
-                                    Hasil ujian anak akan muncul setelah anak mulai mengikuti ujian.
-                                </p>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
-            @if ($attempts->isNotEmpty())
-                <div class="card-footer text-muted">
-                    Menampilkan {{ $attempts->count() }} percobaan ujian.
-                </div>
-            @endif
+            <div class="card-footer text-muted" id="childrenResultsFooter"></div>
         </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('searchResults');
-            const tableRows = document.querySelectorAll('#childrenResultsTable tbody tr');
-
-            searchInput.addEventListener('input', function () {
-                const keyword = this.value.toLowerCase().trim();
-
-                tableRows.forEach(function (row) {
-                    row.style.display = row.textContent.toLowerCase().includes(keyword)
-                        ? ''
-                        : 'none';
-                });
+            const table = new DataTable('#childrenResultsTable', {
+                processing: true,
+                serverSide: true,
+                ajax: @json(route('results.children.data')),
+                pageLength: 10,
+                order: [[4, 'desc']],
+                columns: [
+                    { data: 'no', orderable: false, searchable: false },
+                    { data: 'student_name', render: (value, type, row) => '<div class="d-flex flex-column"><span class="fw-semibold">' + escapeHtml(value) + '</span><small class="text-muted">' + escapeHtml(row.student_number || '-') + '</small></div>' },
+                    { data: 'exam_title', render: value => escapeHtml(value || '-') },
+                    { data: 'started_at', render: value => formatDate(value) },
+                    { data: 'submitted_at', render: value => formatDate(value) },
+                    { data: 'score', render: value => value === null ? '-' : Number(value).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+                    { data: 'status', render: value => value === 'Selesai' ? '<span class="badge bg-label-success">Selesai</span>' : '<span class="badge bg-label-warning">Belum Selesai</span>' },
+                    { data: 'detail_url', orderable: false, searchable: false, className: 'text-center', render: value => value ? '<a href="' + escapeHtml(value) + '" class="btn btn-sm btn-primary"><i class="bx bx-show-alt me-1"></i>Detail</a>' : '<button type="button" class="btn btn-sm btn-outline-secondary" disabled><i class="bx bx-time me-1"></i>Menunggu</button>' }
+                ],
+                language: {
+                    processing: 'Memuat data...',
+                    search: 'Cari:',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    info: 'Menampilkan _START_–_END_ dari _TOTAL_ data',
+                    infoEmpty: 'Tidak ada data',
+                    zeroRecords: 'Data tidak ditemukan',
+                    emptyTable: 'Belum ada hasil ujian anak.',
+                    paginate: { first: 'Pertama', last: 'Terakhir', next: 'Berikutnya', previous: 'Sebelumnya' }
+                },
+                drawCallback: function (settings) {
+                    document.getElementById('childrenResultsFooter').textContent = 'Total ' + settings.json.recordsFiltered + ' percobaan ujian.';
+                }
             });
+
+            document.getElementById('searchResults').addEventListener('input', function () {
+                table.search(this.value).draw();
+            });
+
+            function escapeHtml(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+                })[char]);
+            }
+
+            function formatDate(value) {
+                if (!value) return '-';
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('id-ID', {
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            }
         });
     </script>
 @endsection
