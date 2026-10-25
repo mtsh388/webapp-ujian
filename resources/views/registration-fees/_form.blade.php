@@ -26,8 +26,15 @@
                         @foreach($typeLabels as $type => $label)
                             <option value="{{ $type }}" @selected(old('fee_type', $registrationFee->fee_type ?? 'registration') === $type)>{{ $label }}</option>
                         @endforeach
+                        <option value="custom" @selected(old('fee_type') === 'custom' || (isset($registrationFee) && !array_key_exists($registrationFee->fee_type, $typeLabels)))>Jenis Khusus</option>
                     </select>
                     @error('fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6" id="custom_fee_type_group" hidden>
+                    <label for="custom_fee_type" class="form-label">Nama Jenis Biaya Khusus <span class="text-danger">*</span></label>
+                    <input type="text" id="custom_fee_type" name="custom_fee_type" maxlength="40" value="{{ old('custom_fee_type', isset($registrationFee) && !array_key_exists($registrationFee->fee_type, $typeLabels) ? \Illuminate\Support\Str::headline($registrationFee->fee_type) : '') }}" class="form-control" placeholder="Contoh: Laboratorium">
+                    <div class="form-text">Nama ini akan menjadi kategori yang dapat digunakan untuk biaya berikutnya.</div>
+                    @error('custom_fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6" id="fee_name_group">
                     <label for="name" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
@@ -98,6 +105,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const type = document.getElementById('fee_type');
     const name = document.getElementById('name');
     const nameGroup = document.getElementById('fee_name_group');
+    const customTypeGroup = document.getElementById('custom_fee_type_group');
+    const customType = document.getElementById('custom_fee_type');
     const level = document.getElementById('education_level');
     const grade = document.getElementById('grade_level');
     const levelGroup = document.getElementById('education_level_group');
@@ -123,6 +132,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function toggleFields() {
         const isRegistration = type.value === 'registration';
+        const isCustom = type.value === 'custom';
+        customTypeGroup.hidden = !isCustom;
+        customType.required = isCustom;
         nameGroup.hidden = isRegistration;
         name.required = !isRegistration;
         level.required = isRegistration;
