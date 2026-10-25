@@ -90,9 +90,11 @@ class RegistrationFeeController extends Controller
         }
 
         $knownTypes = [];
+        $knownLabels = [];
         foreach (RegistrationFee::typeLabels() as $key => $label) {
             $knownTypes[Str::slug($key)] = $key;
             $knownTypes[Str::slug($label)] = $key;
+            $knownLabels[$key] = $label;
         }
         $knownTypes['biaya-pendaftaran'] = 'registration';
         $knownTypes['pendaftaran'] = 'registration';
@@ -100,8 +102,8 @@ class RegistrationFeeController extends Controller
         $feeType = $knownTypes[$feeTypeSlug] ?? $feeTypeSlug;
         $isRegistration = $feeType === 'registration';
 
-        if ($isRegistration) {
-            $feeTypeLabel = 'Pendaftaran';
+        if (isset($knownLabels[$feeType])) {
+            $feeTypeLabel = $knownLabels[$feeType];
         }
 
         if ($isRegistration) {
