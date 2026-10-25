@@ -48,8 +48,8 @@
                 <div class="col-md-6">
                     <label for="is_active" class="form-label">Status <span class="text-danger">*</span></label>
                     <select id="is_active" name="is_active" class="form-select" required>
-                        <option value="1" @selected((string) old('is_active', isset($registrationFee) && $registrationFee->is_active ? '1' : '1') === '1')>Aktif</option>
-                        <option value="0" @selected((string) old('is_active', isset($registrationFee) && !$registrationFee->is_active ? '0' : '1') === '0')>Tidak Aktif</option>
+                        <option value="1" @selected((string) old('is_active', isset($registrationFee) ? ($registrationFee->is_active ? '1' : '0') : '1') === '1')>Aktif</option>
+                        <option value="0" @selected((string) old('is_active', isset($registrationFee) ? ($registrationFee->is_active ? '1' : '0') : '1') === '0')>Tidak Aktif</option>
                     </select>
                     @error('is_active')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
