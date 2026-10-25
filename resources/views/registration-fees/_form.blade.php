@@ -16,7 +16,7 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h4 class="card-title mb-1">{{ $formTitle }}</h4>
-            <p class="text-muted mb-0">Atur nama biaya, tarif, promo, dan ketentuan cicilan.</p>
+            <p class="text-muted mb-0">Atur nama biaya, sasaran, nominal, dan ketentuan pembayaran.</p>
         </div>
         <div class="card-body">
             <div class="row g-4">
@@ -83,38 +83,6 @@
                             @error('discount_enabled')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
                     </div>
-                    <div class="row g-4 mt-1" id="promo_fields">
-                        <div class="col-md-6">
-                            <label for="promo_code" class="form-label">Kode Promo <span class="text-danger">*</span></label>
-                            <input type="text" id="promo_code" name="promo_code" maxlength="100" value="{{ old('promo_code', $registrationFee->promo_code ?? '') }}" class="form-control" placeholder="Contoh: HEMAT20">
-                            @error('promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="discount_type" class="form-label">Jenis Diskon <span class="text-danger">*</span></label>
-                            <select id="discount_type" name="discount_type" class="form-select">
-                                <option value="">Pilih Jenis Diskon</option>
-                                <option value="fixed" @selected(old('discount_type', $registrationFee->discount_type ?? '') === 'fixed')>Nominal Rupiah</option>
-                                <option value="percentage" @selected(old('discount_type', $registrationFee->discount_type ?? '') === 'percentage')>Persentase (%)</option>
-                            </select>
-                            @error('discount_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="discount_value" class="form-label">Nilai Diskon <span class="text-danger">*</span></label>
-                            <input type="number" id="discount_value" name="discount_value" min="1" max="999999999" step="1" value="{{ old('discount_value', $registrationFee->discount_value ?? '') }}" class="form-control">
-                            <div class="form-text" id="discount_value_help">Isi nominal rupiah atau persentase sesuai jenis diskon.</div>
-                            @error('discount_value')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="promo_starts_at" class="form-label">Promo Mulai <span class="text-danger">*</span></label>
-                            <input type="datetime-local" id="promo_starts_at" name="promo_starts_at" value="{{ old('promo_starts_at', isset($registrationFee) && $registrationFee->promo_starts_at ? $registrationFee->promo_starts_at->format('Y-m-d\TH:i') : '') }}" class="form-control">
-                            @error('promo_starts_at')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="promo_ends_at" class="form-label">Promo Berakhir <span class="text-danger">*</span></label>
-                            <input type="datetime-local" id="promo_ends_at" name="promo_ends_at" value="{{ old('promo_ends_at', isset($registrationFee) && $registrationFee->promo_ends_at ? $registrationFee->promo_ends_at->format('Y-m-d\TH:i') : '') }}" class="form-control">
-                            @error('promo_ends_at')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                        </div>
-                    </div>
                 </div>
 
                 <div class="col-md-6" id="installment_group">
@@ -151,13 +119,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const grade = document.getElementById('grade_level');
     const billing = document.getElementById('billing_period');
     const discountEnabled = document.getElementById('discount_enabled');
-    const promoFields = document.getElementById('promo_fields');
     const discountSettings = document.getElementById('discount_settings');
     const installmentGroup = document.getElementById('installment_group');
     const maxInstallments = document.getElementById('max_installments');
     const gradesByLevel = { SD: [4, 5, 6], SMP: [7, 8, 9], SMA: [10, 11, 12] };
-    const promoInputs = ['promo_code', 'discount_type', 'discount_value', 'promo_starts_at', 'promo_ends_at']
-        .map(id => document.getElementById(id));
 
     function isRegistrationType() {
         const normalized = type.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -179,15 +144,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (grade.value && level.value && !allowed.includes(Number(grade.value))) grade.value = '';
     }
 
-    function togglePromoFields() {
-        const enabled = discountEnabled.value === '1' && !isRegistrationType();
-        promoFields.hidden = !enabled;
-        promoInputs.forEach(input => {
-            input.required = enabled;
-            input.disabled = !enabled;
-        });
-    }
-
     function toggleFields() {
         const registration = isRegistrationType();
         level.required = registration;
@@ -206,19 +162,11 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             billing.disabled = false;
         }
-        togglePromoFields();
         filterGrades();
     }
 
     type.addEventListener('input', toggleFields);
     level.addEventListener('change', filterGrades);
-    discountEnabled.addEventListener('change', togglePromoFields);
-    document.getElementById('discount_type').addEventListener('change', function () {
-        document.getElementById('discount_value').max = this.value === 'percentage' ? '100' : '999999999';
-        document.getElementById('discount_value_help').textContent = this.value === 'percentage'
-            ? 'Masukkan persentase antara 1 hingga 100.'
-            : 'Masukkan nominal potongan dalam rupiah.';
-    });
     toggleFields();
 });
 </script>
