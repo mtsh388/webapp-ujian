@@ -30,7 +30,7 @@ beforeEach(function () {
 test('admin can view the registration fee master data', function () {
     $this->get(route('registration-fees.index'))
         ->assertOk()
-        ->assertSee('Master Data Biaya Pendaftaran')
+        ->assertSee('Master Data Biaya')
         ->assertSee('Kelas 12')
         ->assertSee('Rp500.000');
 });
@@ -41,6 +41,7 @@ test('admin can update an existing registration fee', function () {
         ->firstOrFail();
 
     $this->put(route('registration-fees.update', $fee), [
+        'fee_type' => 'registration',
         'education_level' => 'SMA',
         'grade_level' => 11,
         'amount' => 425000,
@@ -64,6 +65,7 @@ test('admin cannot assign a grade outside its education level', function () {
 
     $this->from(route('registration-fees.edit', $fee))
         ->put(route('registration-fees.update', $fee), [
+            'fee_type' => 'registration',
             'education_level' => 'SMP',
             'grade_level' => 12,
             'amount' => 300000,
@@ -72,3 +74,29 @@ test('admin cannot assign a grade outside its education level', function () {
         ->assertRedirect(route('registration-fees.edit', $fee))
         ->assertSessionHasErrors('grade_level');
 });
+
+
+test('admin can create a general fee without targeting a class', function () {
+    $this->post(route('registration-fees.store'), [
+        'fee_type' => 'books',
+        'name' => 'Modul Pembelajaran',
+        'description' => 'Biaya modul untuk siswa',
+        'billing_period' => 'semester',
+        'education_level' => '',
+        'grade_level' => '',
+        'amount' => 150000,
+        'is_active' => 1,
+    ])->assertRedirect(route('registration-fees.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('registration_fees', [
+        'fee_type' => 'books',
+        'name' => 'Modul Pembelajaran',
+        'billing_period' => 'semester',
+        'education_level' => null,
+        'grade_level' => null,
+        'amount' => 150000,
+        'is_active' => true,
+    ]);
+});
+
