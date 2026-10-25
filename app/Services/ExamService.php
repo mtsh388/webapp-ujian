@@ -446,6 +446,11 @@ class ExamService
         }, 3);
     }
 
+    public function getAvailableStudentsForExam(int $examId)
+    {
+        return $this->repository->getAvailableStudentsForExam($examId);
+    }
+
     public function getExamParticipants(
         int $examId
     ): array
