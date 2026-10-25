@@ -31,8 +31,12 @@ test('admin can view the registration fee master data', function () {
     $this->get(route('registration-fees.index'))
         ->assertOk()
         ->assertSee('Master Data Biaya')
-        ->assertSee('Kelas 12')
-        ->assertSee('Rp500.000');
+        ->assertSee('serverSide: true');
+
+    $this->getJson(route('registration-fees.data'))
+        ->assertOk()
+        ->assertJsonPath('data.0.education_level', 'SMA')
+        ->assertJsonFragment(['amount' => 500000]);
 });
 
 test('admin can update an existing registration fee', function () {
@@ -125,9 +129,9 @@ test('admin can create a fee with any free-text type', function () {
         'is_active' => true,
     ]);
 
-    $this->get(route('registration-fees.index'))
+    $this->getJson(route('registration-fees.data'))
         ->assertOk()
-        ->assertSee('Laboratorium Komputer');
+        ->assertJsonFragment(['fee_type_label' => 'Laboratorium Komputer']);
 });
 
 test('admin can reuse a free-text fee type', function () {
@@ -201,10 +205,9 @@ test('admin can configure promo discounts and up to five installments for a gene
         'max_installments' => 5,
     ]);
 
-    $this->get(route('registration-fees.index'))
+    $this->getJson(route('registration-fees.data'))
         ->assertOk()
-        ->assertSee('HEMAT20')
-        ->assertSee('5 kali');
+        ->assertJsonFragment(['promo_code' => 'HEMAT20', 'max_installments' => 5]);
 });
 
 test('registration fees cannot be configured with promo or installments', function () {
