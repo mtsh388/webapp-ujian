@@ -8,6 +8,7 @@ class RegistrationFee extends Model
 {
     protected $fillable = [
         'fee_type',
+        'fee_type_label',
         'name',
         'description',
         'billing_period',
