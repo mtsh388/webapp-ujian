@@ -30,6 +30,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::table('registration_fees')->where('fee_type', '!=', 'registration')->delete();
+
         Schema::table('registration_fees', function (Blueprint $table): void {
             $table->unsignedTinyInteger('grade_level')->nullable(false)->change();
             $table->string('education_level', 10)->nullable(false)->change();
