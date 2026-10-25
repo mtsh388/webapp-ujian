@@ -180,6 +180,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('permission:registration-fee.view')
         ->group(function () {
             Route::get('/', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
+        Route::get('/data', [RegistrationFeeController::class, 'data'])->name('registration-fees.data');
             Route::get('/create', [RegistrationFeeController::class, 'create'])
                 ->middleware('permission:registration-fee.create')
                 ->name('registration-fees.create');
