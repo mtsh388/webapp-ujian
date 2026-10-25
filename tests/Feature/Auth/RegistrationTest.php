@@ -219,3 +219,42 @@ test('paid registration applies the configured tariff for SD SMP and SMA grades 
             ->toBe($tariff['amount']);
     }
 });
+
+test('paid registration is rejected when the selected master fee is inactive', function () {
+    Storage::fake('local');
+
+    $class = ClassRoom::create([
+        'name' => 'Kelas 12 SMA Nonaktif',
+        'code' => 'SMA-12-NONAKTIF',
+        'education_level' => 'SMA',
+        'grade_level' => 12,
+        'is_active' => true,
+    ]);
+
+    RegistrationFee::where('education_level', 'SMA')
+        ->where('grade_level', 12)
+        ->update(['is_active' => false]);
+
+    $this->from('/register')
+        ->post('/register', [
+            'registration_type' => 'paid',
+            'email' => 'siswa.biaya.nonaktif@example.com',
+            'password' => 'password123',
+            'full_name' => 'Siswa Biaya Nonaktif',
+            'school_name' => 'SMA Negeri 1',
+            'education_level' => 'SMA',
+            'class_id' => $class->id,
+            'phone' => '081234567890',
+            'parent_phone' => '081234567891',
+            'parent_full_name' => 'Orang Tua Siswa',
+            'parent_email' => 'orangtua.biaya.nonaktif@example.com',
+            'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
+        ])
+        ->assertRedirect('/register')
+        ->assertSessionHasErrors('class_id');
+
+    $this->assertDatabaseMissing('users', [
+        'email' => 'siswa.biaya.nonaktif@example.com',
+    ]);
+});
+
