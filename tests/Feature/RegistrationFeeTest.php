@@ -100,3 +100,47 @@ test('admin can create a general fee without targeting a class', function () {
     ]);
 });
 
+
+
+test('admin can create a custom fee category', function () {
+    $this->post(route('registration-fees.store'), [
+        'fee_type' => 'custom',
+        'custom_fee_type' => 'Laboratorium Komputer',
+        'name' => 'Praktikum Komputer',
+        'description' => 'Biaya praktikum khusus',
+        'billing_period' => 'once',
+        'education_level' => 'SMP',
+        'grade_level' => '',
+        'amount' => 75000,
+        'is_active' => 1,
+    ])->assertRedirect(route('registration-fees.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('registration_fees', [
+        'fee_type' => 'laboratorium-komputer',
+        'name' => 'Praktikum Komputer',
+        'education_level' => 'SMP',
+        'grade_level' => null,
+        'amount' => 75000,
+        'is_active' => true,
+    ]);
+
+    $this->get(route('registration-fees.index'))
+        ->assertOk()
+        ->assertSee('Laboratorium Komputer');
+});
+
+test('admin cannot use a reserved type as a custom fee category', function () {
+    $this->from(route('registration-fees.create'))
+        ->post(route('registration-fees.store'), [
+            'fee_type' => 'custom',
+            'custom_fee_type' => 'Pendaftaran',
+            'name' => 'Biaya Pendaftaran Khusus',
+            'education_level' => 'SMP',
+            'grade_level' => 7,
+            'amount' => 100000,
+            'is_active' => 1,
+        ])
+        ->assertRedirect(route('registration-fees.create'))
+        ->assertSessionHasErrors('custom_fee_type');
+});
