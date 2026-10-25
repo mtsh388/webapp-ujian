@@ -135,7 +135,7 @@
                                     </small>
 
                                     <span class="fw-semibold">
-                                        {{ $participants->count() }} peserta
+                                        <span id="participantTotal">Memuat...</span> peserta
                                     </span>
                                 </div>
                             </div>
@@ -224,7 +224,7 @@
             </div>
 
             <div class="card-datatable table-responsive">
-                <table class="table table-hover border-top">
+                <table id="participantsTable" class="table table-hover border-top w-100">
                     <thead>
                     <tr>
                         <th style="width: 5%">No</th>
@@ -237,139 +237,7 @@
                     </tr>
                     </thead>
 
-                    <tbody>
-                    @forelse($participants as $index => $participant)
-                        <tr>
-                            <td>
-                                {{ $index + 1 }}
-                            </td>
-
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar avatar-sm flex-shrink-0 me-3">
-                                            <span class="avatar-initial rounded-circle bg-label-primary">
-                                                {{ strtoupper(substr($participant->student?->full_name ?? 'S', 0, 1)) }}
-                                            </span>
-                                    </div>
-
-                                    <div>
-                                            <span class="fw-semibold d-block">
-                                                {{ $participant->student?->full_name ?? '-' }}
-                                            </span>
-
-                                        <small class="text-muted">
-                                            {{ $participant->student?->user?->email ?? '-' }}
-                                        </small>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td>
-                                {{ $participant->student?->student_number ?? '-' }}
-                            </td>
-
-                            <td>
-                                {{ $participant->student?->classRoom?->name ?? '-' }}
-                            </td>
-
-                            <td>
-                                <small>
-                                    {{ $participant->assigned_at?->format('d M Y H:i') ?? '-' }}
-                                </small>
-                            </td>
-
-                            <td>
-                                @if($participant->is_active)
-                                    <span class="badge bg-label-success">
-                                            Aktif
-                                        </span>
-                                @else
-                                    <span class="badge bg-label-secondary">
-                                            Nonaktif
-                                        </span>
-                                @endif
-                            </td>
-
-                            <td>
-                                <div class="dropdown">
-                                    <button
-                                        type="button"
-                                        class="btn p-0 dropdown-toggle hide-arrow"
-                                        data-bs-toggle="dropdown"
-                                        aria-expanded="false">
-                                        <i class="bx bx-dots-vertical-rounded"></i>
-                                    </button>
-
-                                    <div class="dropdown-menu dropdown-menu-end">
-
-                                        @can('exam.update')
-                                            <button
-                                                type="button"
-                                                class="dropdown-item"
-                                                onclick="toggleParticipantStatus(
-                                                        {{ $exam->id }},
-                                                        {{ $participant->id }},
-                                                        {{ $participant->is_active ? 'true' : 'false' }}
-                                                    )">
-
-                                                @if($participant->is_active)
-                                                    <i class="bx bx-user-x me-1"></i>
-                                                    Nonaktifkan
-                                                @else
-                                                    <i class="bx bx-user-check me-1"></i>
-                                                    Aktifkan
-                                                @endif
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                class="dropdown-item text-danger"
-                                                onclick="deleteParticipant(
-                                                        {{ $exam->id }},
-                                                        {{ $participant->id }}
-                                                    )">
-                                                <i class="bx bx-trash me-1"></i>
-                                                Hapus
-                                            </button>
-                                        @endcan
-
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center">
-                                    <div class="avatar mb-3">
-                                            <span class="avatar-initial rounded bg-label-secondary">
-                                                <i class="bx bx-group fs-3"></i>
-                                            </span>
-                                    </div>
-
-                                    <h6 class="mb-1">
-                                        Belum Ada Peserta
-                                    </h6>
-
-                                    <p class="text-muted mb-3">
-                                        Belum ada siswa yang ditambahkan ke ujian ini.
-                                    </p>
-
-                                    @can('exam.update')
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#addParticipantModal">
-                                            <i class="bx bx-user-plus me-1"></i>
-                                            Tambah Peserta Sekarang
-                                        </button>
-                                    @endcan
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -551,6 +419,50 @@
     </form>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const participantsTable = new DataTable('#participantsTable', {
+                processing: true,
+                serverSide: true,
+                ajax: @json(route('exams.participants.data', $exam)),
+                pageLength: 10,
+                order: [[4, 'desc']],
+                columns: [
+                    { data: 'no', orderable: false, searchable: false },
+                    { data: 'student_name', render: (value, type, row) => '<div class="d-flex align-items-center"><div class="avatar avatar-sm flex-shrink-0 me-3"><span class="avatar-initial rounded-circle bg-label-primary">' + escapeHtml((value || 'S').charAt(0).toUpperCase()) + '</span></div><div><span class="fw-semibold d-block">' + escapeHtml(value || '-') + '</span><small class="text-muted">' + escapeHtml(row.email || '-') + '</small></div></div>' },
+                    { data: 'student_number', render: value => escapeHtml(value || '-') },
+                    { data: 'class_name', render: value => escapeHtml(value || '-') },
+                    { data: 'assigned_at', render: value => formatParticipantDate(value) },
+                    { data: 'is_active', render: value => value ? '<span class="badge bg-label-success">Aktif</span>' : '<span class="badge bg-label-secondary">Nonaktif</span>' },
+                    { data: null, orderable: false, searchable: false, className: 'text-center', render: (value, type, row) => {
+                        if (!row.can_update) return '-';
+                        const examId = @json($exam->id);
+                        return '<div class="dropdown"><button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="bx bx-dots-vertical-rounded"></i></button><div class="dropdown-menu dropdown-menu-end"><button type="button" class="dropdown-item" onclick="toggleParticipantStatus(' + examId + ', ' + row.id + ', ' + (row.is_active ? 'true' : 'false') + ')">' + (row.is_active ? '<i class="bx bx-user-x me-1"></i>Nonaktifkan' : '<i class="bx bx-user-check me-1"></i>Aktifkan') + '</button><button type="button" class="dropdown-item text-danger" onclick="deleteParticipant(' + examId + ', ' + row.id + ')"><i class="bx bx-trash me-1"></i>Hapus</button></div></div>';
+                    }}
+                ],
+                language: {
+                    processing: 'Memuat data...',
+                    search: 'Cari:',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    info: 'Menampilkan _START_–_END_ dari _TOTAL_ peserta',
+                    infoEmpty: 'Tidak ada peserta',
+                    zeroRecords: 'Peserta tidak ditemukan',
+                    emptyTable: 'Belum ada peserta untuk ujian ini.',
+                    paginate: { first: 'Pertama', last: 'Terakhir', next: 'Berikutnya', previous: 'Sebelumnya' }
+                },
+                drawCallback: function (settings) {
+                    document.getElementById('participantTotal').textContent = settings.json.recordsFiltered;
+                }
+            });
+
+            function escapeHtml(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]);
+            }
+
+            function formatParticipantDate(value) {
+                if (!value) return '-';
+                const date = new Date(value.replace(' ', 'T'));
+                return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+
             const studentSearch = document.querySelector('#studentSearch');
             const studentClassFilter = document.querySelector('#studentClassFilter');
             const selectAllStudents = document.querySelector('#selectAllStudents');
