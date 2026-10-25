@@ -32,8 +32,7 @@ class RegistrationFeeController extends Controller
                     ->orWhere('fee_type', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('education_level', 'like', "%{$search}%")
-                    ->orWhere('grade_level', 'like', "%{$search}%")
-                    ->orWhere('promo_code', 'like', "%{$search}%");
+                    ->orWhere('grade_level', 'like', "%{$search}%");
             });
         }
 
@@ -44,7 +43,7 @@ class RegistrationFeeController extends Controller
             2 => 'grade_level',
             3 => 'billing_period',
             4 => 'amount',
-            5 => 'promo_code',
+            5 => 'discount_enabled',
             6 => 'max_installments',
             7 => 'is_active',
         ];
@@ -114,11 +113,6 @@ class RegistrationFeeController extends Controller
             'amount' => ['required', 'integer', 'min:0', 'max:999999999'],
             'is_active' => ['required', 'boolean'],
             'discount_enabled' => ['nullable', 'boolean'],
-            'promo_code' => ['nullable', 'string', 'max:100'],
-            'promo_starts_at' => ['nullable', 'date'],
-            'promo_ends_at' => ['nullable', 'date', 'after:promo_starts_at'],
-            'discount_type' => ['nullable', Rule::in(['fixed', 'percentage'])],
-            'discount_value' => ['nullable', 'integer', 'min:1', 'max:999999999'],
             'max_installments' => ['nullable', 'integer', 'min:1', 'max:5'],
         ], [
             'fee_type.required' => 'Nama biaya wajib diisi.',
@@ -126,8 +120,6 @@ class RegistrationFeeController extends Controller
             'education_level.in' => 'Jenjang pendidikan tidak valid.',
             'grade_level.in' => 'Tingkat kelas tidak valid.',
             'amount.min' => 'Biaya tidak boleh negatif.',
-            'promo_ends_at.after' => 'Waktu berakhir promo harus setelah waktu mulai.',
-            'discount_value.min' => 'Nilai diskon harus lebih besar dari nol.',
             'max_installments.max' => 'Cicilan maksimal 5 kali.',
         ]);
 
@@ -225,21 +217,13 @@ class RegistrationFeeController extends Controller
             $validated['max_installments'] = (int) ($validated['max_installments'] ?? 1);
 
             if ($discountEnabled) {
-                $request->validate([
-                    'promo_code' => ['required', 'string', 'max:100'],
-                    'promo_starts_at' => ['required', 'date'],
-                    'promo_ends_at' => ['required', 'date', 'after:promo_starts_at'],
-                    'discount_type' => ['required', Rule::in(['fixed', 'percentage'])],
-                    'discount_value' => ['required', 'integer', 'min:1', 'max:999999999'],
-                ]);
-
-                if ($validated['discount_type'] === 'percentage' && (int) $validated['discount_value'] > 100) {
-                    throw ValidationException::withMessages([
-                        'discount_value' => 'Diskon persentase maksimal 100%.',
-                    ]);
-                }
-
-                $validated['promo_code'] = trim($validated['promo_code']);
+                unset(
+                    $validated['promo_code'],
+                    $validated['promo_starts_at'],
+                    $validated['promo_ends_at'],
+                    $validated['discount_type'],
+                    $validated['discount_value']
+                );
             } else {
                 $validated['promo_code'] = null;
                 $validated['promo_starts_at'] = null;
