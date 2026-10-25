@@ -152,7 +152,7 @@
             </div>
 
             <div class="card-datatable table-responsive">
-                <table class="table table-hover border-top">
+                <table id="assignedQuestionsTable" class="table table-hover border-top w-100">
                     <thead>
                     <tr>
                         <th style="width: 5%">No</th>
@@ -163,75 +163,7 @@
                     </tr>
                     </thead>
 
-                    <tbody>
-                    @forelse($questions as $index => $q)
-                        <tr class="assigned-question-row" data-question-id="{{ $q->id }}">
-                            <td>{{ $index + 1 }}</td>
-
-                            <td>
-                                    <span
-                                        class="badge bg-label-{{ $q->type === 'multiple_choice' ? 'info' : 'warning' }}">
-                                        {{ $q->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($q->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah') }}
-                                    </span>
-                            </td>
-
-                            <td class="text-wrap" style="min-width: 250px; max-width: 600px;">
-                                {!! strip_tags(\Illuminate\Support\Str::limit($q->question, 120)) !!}
-                            </td>
-
-                            <td>
-                                    <span class="badge bg-label-primary">
-                                        {{ $q->score }}
-                                    </span>
-                            </td>
-
-                            <td>
-                                @can('exam.update')
-                                    <button
-                                        type="button"
-                                        class="btn btn-sm btn-icon text-danger rounded-pill"
-                                        onclick="deleteQuestion({{ $q->id }})"
-                                        data-bs-toggle="tooltip"
-                                        title="Hapus Soal">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
-                                @endcan
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center">
-                                    <div class="avatar mb-3">
-                                            <span class="avatar-initial rounded bg-label-secondary">
-                                                <i class="bx bx-notepad fs-3"></i>
-                                            </span>
-                                    </div>
-
-                                    <h6 class="mb-1">Belum Ada Soal</h6>
-
-                                    <p class="text-muted mb-3">
-                                        Belum ada soal yang ditambahkan ke ujian ini.
-                                    </p>
-
-                                    @can('exam.update')
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalAddQuestions">
-                                            <i class="bx bx-plus me-1"></i>
-                                            Tambah Soal Sekarang
-                                        </button>
-                                    @endcan
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                    <tr id="assignedQuestionNoResults" class="d-none">
-                        <td colspan="5" class="text-center text-muted py-4">Tidak ada soal yang cocok dengan pencarian.</td>
-                    </tr>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
 
@@ -273,7 +205,7 @@
                         </div>
 
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-hover border-top">
+                            <table id="availableQuestionsTable" class="table table-hover border-top w-100">
                                 <thead class="sticky-top bg-body">
                                 <tr>
                                     <th style="width: 5%">
@@ -285,46 +217,7 @@
                                 </tr>
                                 </thead>
 
-                                <tbody>
-                                @forelse($availableQuestions as $avail)
-                                    <tr class="available-question-row">
-                                        <td>
-                                            <input
-                                                class="form-check-input question-checkbox"
-                                                type="checkbox"
-                                                name="question_ids[]"
-                                                value="{{ $avail->id }}">
-                                        </td>
-
-                                        <td>
-                                            <span class="fw-semibold">{{ $avail->code }}</span>
-                                        </td>
-
-                                        <td>
-                                                <span
-                                                    class="badge bg-label-{{ $avail->type === 'multiple_choice' ? 'info' : 'warning' }}">
-                                                    {{ $avail->type === 'multiple_select' ? 'Pilih Semua yang Benar' : ($avail->type === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah') }}
-                                                </span>
-                                        </td>
-
-                                        <td class="text-wrap" style="min-width: 250px;">
-                                            {!! strip_tags(\Illuminate\Support\Str::limit($avail->question, 150)) !!}
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <i class="bx bx-info-circle fs-2 text-muted d-block mb-2"></i>
-                                            <span class="text-muted">
-                                                    Tidak ada soal aktif untuk mata pelajaran, jenjang, kelas, dan topik ini, atau semua soal sudah ditambahkan.
-                                                </span>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                                <tr id="availableQuestionNoResults" class="d-none">
-                                    <td colspan="4" class="text-center text-muted py-4">Tidak ada soal yang cocok dengan pencarian.</td>
-                                </tr>
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -354,171 +247,127 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const checkAll = document.getElementById('checkAll');
-            const checkboxes = Array.from(document.querySelectorAll('.question-checkbox'));
+            const selectedQuestionIds = new Set();
             const submitButton = document.getElementById('btnSubmitSoal');
-            const assignedSearch = document.getElementById('searchAssignedQuestions');
-            const availableSearch = document.getElementById('searchAvailableQuestions');
-            const assignedRows = Array.from(document.querySelectorAll('.assigned-question-row'));
-            const availableRows = Array.from(document.querySelectorAll('.available-question-row'));
-            const assignedNoResults = document.getElementById('assignedQuestionNoResults');
-            const availableNoResults = document.getElementById('availableQuestionNoResults');
-            const assignedSearchInfo = document.getElementById('assignedQuestionSearchInfo');
-            const availableSearchInfo = document.getElementById('availableQuestionSearchInfo');
-
-            function filterRows(searchInput, rows, noResultsRow, infoElement, label) {
-                const query = searchInput.value.trim().toLocaleLowerCase();
-                let visibleCount = 0;
-
-                rows.forEach(row => {
-                    const matches = row.textContent.toLocaleLowerCase().includes(query);
-                    row.classList.toggle('d-none', !matches);
-                    if (matches) visibleCount++;
-                });
-
-                if (noResultsRow) {
-                    noResultsRow.classList.toggle('d-none', visibleCount > 0 || rows.length === 0);
-                }
-
-                if (infoElement) {
-                    infoElement.textContent = `${visibleCount} dari ${rows.length} ${label} ditampilkan`;
-                }
-            }
-
-            function updateSubmitButton() {
-                if (submitButton) {
-                    submitButton.disabled = !Array.from(checkboxes).some(checkbox => checkbox.checked);
-                }
-            }
-
-            if (checkAll) {
-                checkAll.addEventListener('change', function () {
-                    checkboxes.forEach(checkbox => {
-                        const row = checkbox.closest('.available-question-row');
-                        if (row && !row.classList.contains('d-none')) {
-                            checkbox.checked = checkAll.checked;
-                        }
-                    });
-                    checkAll.indeterminate = false;
-
+            const checkAll = document.getElementById('checkAll');
+            const addForm = document.querySelector('#modalAddQuestions')?.closest('form');
+            const assignedTable = new DataTable('#assignedQuestionsTable', {
+                processing: true,
+                serverSide: true,
+                ajax: @json(route('exams.questions.data', $exam)),
+                pageLength: 10,
+                order: [[0, 'asc']],
+                columns: [
+                    { data: 'no', orderable: false, searchable: false },
+                    { data: 'type', render: value => '<span class="badge bg-label-info">' + escapeHtml(questionType(value)) + '</span>' },
+                    { data: 'question', render: value => escapeHtml(value || '-') },
+                    { data: 'score', render: value => '<span class="badge bg-label-primary">' + escapeHtml(value) + '</span>' },
+                    { data: null, orderable: false, searchable: false, render: (value, type, row) => row.can_update ? '<button type="button" class="btn btn-sm btn-icon text-danger" onclick="deleteQuestion(' + row.id + ')"><i class="bx bx-trash"></i></button>' : '-' }
+                ],
+                language: dataTableLanguage()
+            });
+            const availableTable = new DataTable('#availableQuestionsTable', {
+                processing: true,
+                serverSide: true,
+                ajax: @json(route('exams.questions.available.data', $exam)),
+                pageLength: 10,
+                order: [[1, 'asc']],
+                columns: [
+                    { data: 'id', orderable: false, searchable: false, render: (id, type, row) => '<input class="form-check-input question-checkbox" type="checkbox" value="' + Number(id) + '"' + (selectedQuestionIds.has(Number(id)) ? ' checked' : '') + '>' },
+                    { data: 'code', render: value => escapeHtml(value || '-') },
+                    { data: 'type', render: value => '<span class="badge bg-label-info">' + escapeHtml(questionType(value)) + '</span>' },
+                    { data: 'question', render: value => escapeHtml(value || '-') }
+                ],
+                language: dataTableLanguage(),
+                drawCallback: function () {
+                    const boxes = Array.from(document.querySelectorAll('#availableQuestionsTable .question-checkbox'));
+                    checkAll.checked = boxes.length > 0 && boxes.every(box => selectedQuestionIds.has(Number(box.value)));
+                    checkAll.indeterminate = boxes.some(box => selectedQuestionIds.has(Number(box.value))) && !checkAll.checked;
                     updateSubmitButton();
+                }
+            });
+
+            document.getElementById('searchAssignedQuestions')?.addEventListener('input', function () {
+                assignedTable.search(this.value).draw();
+            });
+            document.getElementById('searchAvailableQuestions')?.addEventListener('input', function () {
+                availableTable.search(this.value).draw();
+            });
+
+            document.getElementById('availableQuestionsTable').addEventListener('change', function (event) {
+                const checkbox = event.target.closest('.question-checkbox');
+                if (!checkbox) return;
+                const id = Number(checkbox.value);
+                if (checkbox.checked) selectedQuestionIds.add(id);
+                else selectedQuestionIds.delete(id);
+                updateSubmitButton();
+            });
+
+            checkAll?.addEventListener('change', function () {
+                document.querySelectorAll('#availableQuestionsTable .question-checkbox').forEach(box => {
+                    const id = Number(box.value);
+                    if (checkAll.checked) selectedQuestionIds.add(id);
+                    else selectedQuestionIds.delete(id);
+                    box.checked = checkAll.checked;
                 });
-            }
+                updateSubmitButton();
+            });
 
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    if (checkAll) {
-                        const visibleCheckboxes = checkboxes.filter(item => {
-                            const row = item.closest('.available-question-row');
-                            return row && !row.classList.contains('d-none');
-                        });
-                        const checkedCount = visibleCheckboxes.filter(item => item.checked).length;
-                        checkAll.checked = visibleCheckboxes.length > 0 && checkedCount === visibleCheckboxes.length;
-                        checkAll.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
-                    }
-
-                    updateSubmitButton();
+            addForm?.addEventListener('submit', function () {
+                addForm.querySelectorAll('input.selected-question-hidden').forEach(input => input.remove());
+                selectedQuestionIds.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'question_ids[]';
+                    input.value = String(id);
+                    input.className = 'selected-question-hidden';
+                    addForm.appendChild(input);
                 });
             });
 
-            if (assignedSearch) {
-                assignedSearch.addEventListener('input', () => filterRows(assignedSearch, assignedRows, assignedNoResults, assignedSearchInfo, 'soal'));
+            function updateSubmitButton() {
+                if (submitButton) submitButton.disabled = selectedQuestionIds.size === 0;
             }
 
-            if (availableSearch) {
-                availableSearch.addEventListener('input', () => {
-                    filterRows(availableSearch, availableRows, availableNoResults, availableSearchInfo, 'soal');
-                    if (checkAll) {
-                        const visibleCheckboxes = checkboxes.filter(checkbox => {
-                            const row = checkbox.closest('.available-question-row');
-                            return row && !row.classList.contains('d-none');
-                        });
-                        checkAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
-                        checkAll.indeterminate = visibleCheckboxes.some(checkbox => checkbox.checked) && !checkAll.checked;
-                    }
-                });
+            function escapeHtml(value) {
+                return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]);
             }
 
-            if (assignedSearch) filterRows(assignedSearch, assignedRows, assignedNoResults, assignedSearchInfo, 'soal');
-            if (availableSearch) filterRows(availableSearch, availableRows, availableNoResults, availableSearchInfo, 'soal');
-            updateSubmitButton();
+            function questionType(value) {
+                return value === 'multiple_select' ? 'Pilih Semua yang Benar' : value === 'multiple_choice' ? 'Pilihan Ganda' : 'Benar/Salah';
+            }
+
+            function dataTableLanguage() {
+                return {
+                    processing: 'Memuat data...', search: 'Cari:', lengthMenu: 'Tampilkan _MENU_ data',
+                    info: 'Menampilkan _START_–_END_ dari _TOTAL_ data', infoEmpty: 'Tidak ada data',
+                    zeroRecords: 'Data tidak ditemukan', emptyTable: 'Tidak ada data tersedia',
+                    paginate: { first: 'Pertama', last: 'Terakhir', next: 'Berikutnya', previous: 'Sebelumnya' }
+                };
+            }
 
             const deleteAllButton = document.getElementById('deleteAllQuestions');
-
             if (deleteAllButton) {
                 deleteAllButton.addEventListener('click', async function () {
-                    const questionIds = assignedRows.map(row => row.dataset.questionId).filter(Boolean);
-
-                    if (!questionIds.length) return;
-
                     const confirmation = await Swal.fire({
                         title: 'Hapus semua soal?',
                         text: 'Semua soal akan dilepas dari ujian ini. Soal tetap tersimpan di Bank Soal.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Ya, hapus semua',
-                        cancelButtonText: 'Batal',
-                        reverseButtons: true,
-                        customClass: {
-                            confirmButton: 'btn btn-danger ms-2',
-                            cancelButton: 'btn btn-label-secondary'
-                        },
-                        buttonsStyling: false
+                        icon: 'warning', showCancelButton: true,
+                        confirmButtonText: 'Ya, hapus semua', cancelButtonText: 'Batal'
                     });
-
                     if (!confirmation.isConfirmed) return;
-
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
-
-                    if (!csrfToken) {
-                        await Swal.fire({ icon: 'error', title: 'Gagal', text: 'CSRF token tidak ditemukan.' });
+                    const response = await fetch(@json(route('exams.questions.bulk-destroy', $exam)), {
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+                    });
+                    const result = await response.json();
+                    if (!response.ok) {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: result.message || 'Gagal menghapus soal.' });
                         return;
                     }
-
-                    deleteAllButton.disabled = true;
-
-                    Swal.fire({
-                        title: 'Menghapus semua soal...',
-                        text: 'Mohon tunggu, jangan tutup halaman ini.',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        showConfirmButton: false,
-                        didOpen: function () { Swal.showLoading(); }
-                    });
-
-                    try {
-                        for (let index = 0; index < questionIds.length; index++) {
-                            Swal.update({ text: 'Menghapus soal ' + (index + 1) + ' dari ' + questionIds.length + '.' });
-
-                            const response = await fetch('/ujian/{{ $exam->id }}/soal/' + encodeURIComponent(questionIds[index]), {
-                                method: 'DELETE',
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
-                                }
-                            });
-                            const data = await response.json();
-
-                            if (!response.ok || !data.status) {
-                                throw new Error(data.message || 'Gagal menghapus salah satu soal.');
-                            }
-                        }
-
-                        await Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil',
-                            text: questionIds.length + ' soal berhasil dihapus dari ujian.',
-                            confirmButtonText: 'OK'
-                        });
-                        location.reload();
-                    } catch (error) {
-                        deleteAllButton.disabled = false;
-                        await Swal.fire({
-                            icon: 'error',
-                            title: 'Penghapusan tidak selesai',
-                            text: error.message || 'Terjadi kesalahan saat menghapus soal.'
-                        });
-                    }
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message || 'Semua soal dihapus.' });
+                    assignedTable.ajax.reload();
+                    availableTable.ajax.reload();
                 });
             }
         });
