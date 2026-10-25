@@ -78,7 +78,7 @@
                     @can('registration-fee.view')
                         <li class="menu-item {{ request()->routeIs('registration-fees.*') ? 'active' : '' }}">
                             <a href="{{ route('registration-fees.index') }}" class="menu-link">
-                                <div>Biaya Pendaftaran</div>
+                                <div>Biaya</div>
                             </a>
                         </li>
                     @endcan
