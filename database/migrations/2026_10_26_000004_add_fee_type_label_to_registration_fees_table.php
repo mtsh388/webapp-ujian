@@ -10,6 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('registration_fees', function (Blueprint $table): void {
+            $table->string('fee_type', 100)->change();
             $table->string('fee_type_label', 100)->nullable()->after('fee_type');
         });
 
