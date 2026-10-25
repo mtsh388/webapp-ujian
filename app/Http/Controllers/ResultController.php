@@ -541,7 +541,7 @@ class ResultController extends Controller
                 $builder->where('s.full_name', 'like', '%' . $search . '%')
                     ->orWhere('s.student_number', 'like', '%' . $search . '%')
                     ->orWhere('e.title', 'like', '%' . $search . '%')
-                    ->orWhere('e.name', 'like', '%' . $search . '%');
+;
             });
         }
 
