@@ -495,27 +495,110 @@ class ResultController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        $students = $parent->students()
-            ->with([
-                'examAttempts.exam',
+        $query = DB::table('exam_attempts as ea')
+            ->join('students as s', 's.id', '=', 'ea.student_id')
+            ->join('student_parent as sp', 'sp.student_id', '=', 's.id')
+            ->join('exams as e', 'e.id', '=', 'ea.exam_id')
+            ->where('sp.parent_id', $parent->id)
+            ->whereIn('ea.status', ['submitted', 'expired'])
+            ->whereNotNull('ea.submitted_at')
+            ->where(function ($builder) {
+                $builder->where('e.show_result_immediately', true)
+                    ->orWhere('e.status', 'closed');
+            });
+
+        $totalAttempts = (clone $query)->count('ea.id');
+
+        return view('results.children', [
+            'totalAttempts' => $totalAttempts,
+            'totalFinished' => $totalAttempts,
+        ]);
+    }
+
+    public function childrenResultsData(Request $request): JsonResponse
+    {
+        $parent = \App\Models\ParentModel::query()
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $query = DB::table('exam_attempts as ea')
+            ->join('students as s', 's.id', '=', 'ea.student_id')
+            ->join('student_parent as sp', 'sp.student_id', '=', 's.id')
+            ->join('exams as e', 'e.id', '=', 'ea.exam_id')
+            ->where('sp.parent_id', $parent->id)
+            ->whereIn('ea.status', ['submitted', 'expired'])
+            ->whereNotNull('ea.submitted_at')
+            ->where(function ($builder) {
+                $builder->where('e.show_result_immediately', true)
+                    ->orWhere('e.status', 'closed');
+            });
+
+        $recordsTotal = (clone $query)->count('ea.id');
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('s.full_name', 'like', '%' . $search . '%')
+                    ->orWhere('s.student_number', 'like', '%' . $search . '%')
+                    ->orWhere('e.title', 'like', '%' . $search . '%')
+;
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count('ea.id');
+        $orderColumns = [
+            1 => 's.full_name',
+            2 => 'e.title',
+            3 => 'ea.started_at',
+            4 => 'ea.submitted_at',
+            5 => 'ea.score',
+            6 => 'ea.status',
+        ];
+        $orderIndex = (int) $request->input('order.0.column', 4);
+        $orderColumn = $orderColumns[$orderIndex] ?? 'ea.submitted_at';
+        $direction = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+
+        $rows = $query->select([
+                'ea.id',
+                'ea.started_at',
+                'ea.submitted_at',
+                'ea.score',
+                'ea.status',
+                's.full_name as student_name',
+                's.student_number',
+                'e.title as exam_title',
             ])
-            ->get();
+            ->orderBy($orderColumn, $direction)
+            ->orderByDesc('ea.id')
+            ->offset($start)
+            ->limit($length)
+            ->get()
+            ->map(function ($row, $index) use ($start) {
+                $finished = $row->submitted_at !== null;
 
-        $attempts = $students
-            ->flatMap(function ($student) {
-                return $student->examAttempts
-                    ->whereIn('status', ['submitted', 'expired'])
-                    ->filter(fn ($attempt) => $attempt->submitted_at !== null && ($attempt->exam?->show_result_immediately || $attempt->exam?->status === 'closed'))
-                    ->map(function ($attempt) use ($student) {
-                        $attempt->setRelation('student', $student);
+                return [
+                    'no' => $start + $index + 1,
+                    'id' => $row->id,
+                    'student_name' => $row->student_name,
+                    'student_number' => $row->student_number,
+                    'exam_title' => $row->exam_title ?: '-',
+                    'started_at' => $row->started_at,
+                    'submitted_at' => $row->submitted_at,
+                    'score' => $finished ? (float) ($row->score ?? 0) : null,
+                    'status' => $finished ? 'Selesai' : 'Belum Selesai',
+                    'detail_url' => $finished ? route('results.children.show', $row->id) : null,
+                ];
+            });
 
-                        return $attempt;
-                    });
-            })
-            ->sortByDesc('submitted_at')
-            ->values();
-
-        return view('results.children', compact('attempts'));
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $rows,
+        ]);
     }
 
     public function childResult(\App\Models\ExamAttempt $attempt): \Illuminate\View\View

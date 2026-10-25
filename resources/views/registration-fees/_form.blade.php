@@ -1,0 +1,235 @@
+@if($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0 ps-3">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<form method="POST" action="{{ $formAction }}">
+    @csrf
+    @if($formMethod === 'PUT')
+        @method('PUT')
+    @endif
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h4 class="card-title mb-1">{{ $formTitle }}</h4>
+            <p class="text-muted mb-0">Atur jenis biaya, tarif, promo, dan ketentuan cicilan.</p>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <label for="fee_type" class="form-label">Jenis Biaya <span class="text-danger">*</span></label>
+                    <input type="text" id="fee_type" name="fee_type" maxlength="100" value="{{ old('fee_type', $registrationFee->fee_type_label ?? 'Pendaftaran') }}" class="form-control" placeholder="Contoh: SPP Bulanan, Study Tour, Laboratorium" required>
+                    <div class="form-text">Bebas diisi sesuai kebutuhan. Jenis Pendaftaran tidak dapat menggunakan promo atau cicilan.</div>
+                    @error('fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6" id="fee_name_group">
+                    <label for="name" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
+                    <input type="text" id="name" name="name" maxlength="255" value="{{ old('name', $registrationFee->name ?? '') }}" class="form-control">
+                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6" id="education_level_group">
+                    <label for="education_level" class="form-label">Jenjang Pendidikan <span class="text-danger" id="level_required_mark">*</span></label>
+                    <select id="education_level" name="education_level" class="form-select">
+                        <option value="">Semua Jenjang</option>
+                        @foreach(['SD', 'SMP', 'SMA'] as $level)
+                            <option value="{{ $level }}" @selected(old('education_level', $registrationFee->education_level ?? '') === $level)>{{ $level }}</option>
+                        @endforeach
+                    </select>
+                    @error('education_level')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6" id="grade_level_group">
+                    <label for="grade_level" class="form-label">Kelas <span class="text-danger" id="grade_required_mark">*</span></label>
+                    <select id="grade_level" name="grade_level" class="form-select">
+                        <option value="">Semua Kelas</option>
+                        @foreach([4, 5, 6, 7, 8, 9, 10, 11, 12] as $grade)
+                            <option value="{{ $grade }}" @selected((string) old('grade_level', $registrationFee->grade_level ?? '') === (string) $grade)>{{ $grade }}</option>
+                        @endforeach
+                    </select>
+                    @error('grade_level')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6" id="billing_period_group">
+                    <label for="billing_period" class="form-label">Periode Biaya</label>
+                    <select id="billing_period" name="billing_period" class="form-select">
+                        <option value="">Tidak ditentukan</option>
+                        @foreach(['once' => 'Sekali', 'monthly' => 'Bulanan', 'semester' => 'Per Semester', 'yearly' => 'Tahunan'] as $period => $label)
+                            <option value="{{ $period }}" @selected(old('billing_period', $registrationFee->billing_period ?? '') === $period)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('billing_period')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="amount" class="form-label">Nominal (Rp) <span class="text-danger">*</span></label>
+                    <input type="number" min="0" max="999999999" step="1" id="amount" name="amount" value="{{ old('amount', $registrationFee->amount ?? '') }}" class="form-control" required>
+                    @error('amount')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="is_active" class="form-label">Status <span class="text-danger">*</span></label>
+                    <select id="is_active" name="is_active" class="form-select" required>
+                        <option value="1" @selected((string) old('is_active', isset($registrationFee) ? ($registrationFee->is_active ? '1' : '0') : '1') === '1')>Aktif</option>
+                        <option value="0" @selected((string) old('is_active', isset($registrationFee) ? ($registrationFee->is_active ? '1' : '0') : '1') === '0')>Tidak Aktif</option>
+                    </select>
+                    @error('is_active')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+
+                <div class="col-12" id="discount_settings">
+                    <hr>
+                    <h5 class="mb-3">Diskon / Promo</h5>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label for="discount_enabled" class="form-label">Diskon? <span class="text-danger">*</span></label>
+                            <select id="discount_enabled" name="discount_enabled" class="form-select">
+                                <option value="0" @selected((string) old('discount_enabled', isset($registrationFee) && $registrationFee->discount_enabled ? '1' : '0') === '0')>Tidak</option>
+                                <option value="1" @selected((string) old('discount_enabled', isset($registrationFee) && $registrationFee->discount_enabled ? '1' : '0') === '1')>Ya</option>
+                            </select>
+                            @error('discount_enabled')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <div class="row g-4 mt-1" id="promo_fields">
+                        <div class="col-md-6">
+                            <label for="promo_code" class="form-label">Kode Promo <span class="text-danger">*</span></label>
+                            <input type="text" id="promo_code" name="promo_code" maxlength="100" value="{{ old('promo_code', $registrationFee->promo_code ?? '') }}" class="form-control" placeholder="Contoh: HEMAT20">
+                            @error('promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="discount_type" class="form-label">Jenis Diskon <span class="text-danger">*</span></label>
+                            <select id="discount_type" name="discount_type" class="form-select">
+                                <option value="">Pilih Jenis Diskon</option>
+                                <option value="fixed" @selected(old('discount_type', $registrationFee->discount_type ?? '') === 'fixed')>Nominal Rupiah</option>
+                                <option value="percentage" @selected(old('discount_type', $registrationFee->discount_type ?? '') === 'percentage')>Persentase (%)</option>
+                            </select>
+                            @error('discount_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="discount_value" class="form-label">Nilai Diskon <span class="text-danger">*</span></label>
+                            <input type="number" id="discount_value" name="discount_value" min="1" max="999999999" step="1" value="{{ old('discount_value', $registrationFee->discount_value ?? '') }}" class="form-control">
+                            <div class="form-text" id="discount_value_help">Isi nominal rupiah atau persentase sesuai jenis diskon.</div>
+                            @error('discount_value')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="promo_starts_at" class="form-label">Promo Mulai <span class="text-danger">*</span></label>
+                            <input type="datetime-local" id="promo_starts_at" name="promo_starts_at" value="{{ old('promo_starts_at', isset($registrationFee) && $registrationFee->promo_starts_at ? $registrationFee->promo_starts_at->format('Y-m-d\TH:i') : '') }}" class="form-control">
+                            @error('promo_starts_at')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label for="promo_ends_at" class="form-label">Promo Berakhir <span class="text-danger">*</span></label>
+                            <input type="datetime-local" id="promo_ends_at" name="promo_ends_at" value="{{ old('promo_ends_at', isset($registrationFee) && $registrationFee->promo_ends_at ? $registrationFee->promo_ends_at->format('Y-m-d\TH:i') : '') }}" class="form-control">
+                            @error('promo_ends_at')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6" id="installment_group">
+                    <label for="max_installments" class="form-label">Maksimal Cicilan <span class="text-danger">*</span></label>
+                    <select id="max_installments" name="max_installments" class="form-select">
+                        @for($count = 1; $count <= 5; $count++)
+                            <option value="{{ $count }}" @selected((string) old('max_installments', $registrationFee->max_installments ?? 1) === (string) $count)>{{ $count }} kali{{ $count === 1 ? ' (Lunas sekaligus)' : '' }}</option>
+                        @endfor
+                    </select>
+                    <div class="form-text">Maksimal 5 kali. Cicilan dibagi rata; sisa pembagian rupiah dialokasikan ke cicilan awal.</div>
+                    @error('max_installments')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+
+                <div class="col-12" id="description_group">
+                    <label for="description" class="form-label">Keterangan</label>
+                    <textarea id="description" name="description" rows="3" maxlength="2000" class="form-control">{{ old('description', $registrationFee->description ?? '') }}</textarea>
+                    @error('description')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+            </div>
+            <div class="alert alert-info mt-4 mb-0" id="fee_help">
+                Biaya Pendaftaran wajib ditentukan berdasarkan jenjang dan kelas, tidak memakai promo dan tidak dapat dicicil. Biaya lain dapat berlaku untuk semua siswa atau sasaran jenjang/kelas tertentu.
+            </div>
+        </div>
+        <div class="card-footer border-top d-flex justify-content-end gap-2">
+            <a href="{{ route('registration-fees.index') }}" class="btn btn-label-secondary">Batal</a>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+    </div>
+</form>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const type = document.getElementById('fee_type');
+    const name = document.getElementById('name');
+    const nameGroup = document.getElementById('fee_name_group');
+    const level = document.getElementById('education_level');
+    const grade = document.getElementById('grade_level');
+    const billing = document.getElementById('billing_period');
+    const discountEnabled = document.getElementById('discount_enabled');
+    const promoFields = document.getElementById('promo_fields');
+    const discountSettings = document.getElementById('discount_settings');
+    const installmentGroup = document.getElementById('installment_group');
+    const maxInstallments = document.getElementById('max_installments');
+    const gradesByLevel = { SD: [4, 5, 6], SMP: [7, 8, 9], SMA: [10, 11, 12] };
+    const promoInputs = ['promo_code', 'discount_type', 'discount_value', 'promo_starts_at', 'promo_ends_at']
+        .map(id => document.getElementById(id));
+
+    function isRegistrationType() {
+        const normalized = type.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return ['registration', 'pendaftaran', 'biaya-pendaftaran'].includes(normalized);
+    }
+
+    function filterGrades() {
+        const allowed = gradesByLevel[level.value] || [];
+        Array.from(grade.options).forEach(function (option) {
+            if (!option.value) {
+                option.hidden = false;
+                option.disabled = false;
+                return;
+            }
+            const show = !level.value || allowed.includes(Number(option.value));
+            option.hidden = !show;
+            option.disabled = !show;
+        });
+        if (grade.value && level.value && !allowed.includes(Number(grade.value))) grade.value = '';
+    }
+
+    function togglePromoFields() {
+        const enabled = discountEnabled.value === '1' && !isRegistrationType();
+        promoFields.hidden = !enabled;
+        promoInputs.forEach(input => {
+            input.required = enabled;
+            input.disabled = !enabled;
+        });
+    }
+
+    function toggleFields() {
+        const registration = isRegistrationType();
+        nameGroup.hidden = registration;
+        name.required = !registration;
+        level.required = registration;
+        grade.required = registration;
+        document.getElementById('level_required_mark').hidden = !registration;
+        document.getElementById('grade_required_mark').hidden = !registration;
+        discountSettings.hidden = registration;
+        installmentGroup.hidden = registration;
+        discountEnabled.disabled = registration;
+        maxInstallments.disabled = registration;
+        if (registration) {
+            name.value = 'Biaya Pendaftaran';
+            billing.value = 'once';
+            billing.disabled = true;
+            discountEnabled.value = '0';
+            maxInstallments.value = '1';
+        } else {
+            if (name.value === 'Biaya Pendaftaran') name.value = '';
+            billing.disabled = false;
+        }
+        togglePromoFields();
+        filterGrades();
+    }
+
+    type.addEventListener('input', toggleFields);
+    level.addEventListener('change', filterGrades);
+    discountEnabled.addEventListener('change', togglePromoFields);
+    document.getElementById('discount_type').addEventListener('change', function () {
+        document.getElementById('discount_value').max = this.value === 'percentage' ? '100' : '999999999';
+        document.getElementById('discount_value_help').textContent = this.value === 'percentage'
+            ? 'Masukkan persentase antara 1 hingga 100.'
+            : 'Masukkan nominal potongan dalam rupiah.';
+    });
+    toggleFields();
+});
+</script>

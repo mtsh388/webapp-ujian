@@ -10,6 +10,7 @@ use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
+use App\Http\Controllers\RegistrationFeeController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -175,6 +176,28 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
 
     });
 
+    Route::prefix('master-data/biaya')
+        ->middleware('permission:registration-fee.view')
+        ->group(function () {
+            Route::get('/', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
+        Route::get('/data', [RegistrationFeeController::class, 'data'])->name('registration-fees.data');
+            Route::get('/create', [RegistrationFeeController::class, 'create'])
+                ->middleware('permission:registration-fee.create')
+                ->name('registration-fees.create');
+            Route::post('/', [RegistrationFeeController::class, 'store'])
+                ->middleware('permission:registration-fee.create')
+                ->name('registration-fees.store');
+            Route::get('/{registrationFee}/edit', [RegistrationFeeController::class, 'edit'])
+                ->middleware('permission:registration-fee.update')
+                ->name('registration-fees.edit');
+            Route::put('/{registrationFee}', [RegistrationFeeController::class, 'update'])
+                ->middleware('permission:registration-fee.update')
+                ->name('registration-fees.update');
+            Route::delete('/{registrationFee}', [RegistrationFeeController::class, 'destroy'])
+                ->middleware('permission:registration-fee.delete')
+                ->name('registration-fees.destroy');
+        });
+
     Route::prefix('bank-soal')
         ->middleware('permission:question.view')
         ->group(function () {
@@ -266,14 +289,26 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             Route::put('/{exam}', [ExamController::class, 'update'])
                 ->name('exams.update');
 
+            Route::get('/{exam}/soal/data', [ExamController::class, 'questionsData'])
+                ->name('exams.questions.data');
+
+            Route::get('/{exam}/soal/tersedia/data', [ExamController::class, 'availableQuestionsData'])
+                ->name('exams.questions.available.data');
+
             Route::get('/{exam}/soal', [ExamController::class, 'questions'])
                 ->name('exams.questions');
 
             Route::post('/{exam}/soal', [ExamController::class, 'storeQuestions'])
                 ->name('exams.questions.store');
 
+            Route::delete('/{exam}/soal/bulk-destroy', [ExamController::class, 'bulkDestroyQuestions'])
+                ->name('exams.questions.bulk-destroy');
+
             Route::delete('/{exam}/soal/{questionId}', [ExamController::class, 'destroyQuestion'])
                 ->name('exams.questions.destroy');
+
+            Route::get('/{exam}/peserta/data', [ExamController::class, 'participantsData'])
+                ->name('exams.participants.data');
 
             Route::get('/{exam}/peserta', [ExamController::class, 'participants'])
                 ->name('exams.participants');
@@ -355,6 +390,10 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         Route::get('/anak', [ResultController::class, 'childrenResults'])
             ->middleware('permission:result.view_child')
             ->name('results.children');
+
+        Route::get('/anak/data', [ResultController::class, 'childrenResultsData'])
+            ->middleware('permission:result.view_child')
+            ->name('results.children.data');
 
         Route::get('/anak/{attempt}', [ResultController::class, 'childResult'])
             ->middleware('permission:result.view_child')
