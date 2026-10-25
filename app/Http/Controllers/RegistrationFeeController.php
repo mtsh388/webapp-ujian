@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RegistrationFee;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -14,17 +15,60 @@ class RegistrationFeeController extends Controller
 {
     public function index(): View
     {
-        $fees = RegistrationFee::query()
-            ->orderByRaw("CASE fee_type WHEN 'registration' THEN 1 WHEN 'monthly' THEN 2 WHEN 'exam' THEN 3 WHEN 'books' THEN 4 WHEN 'uniform' THEN 5 WHEN 'activity' THEN 6 ELSE 7 END")
-            ->orderByRaw("CASE education_level WHEN 'SD' THEN 1 WHEN 'SMP' THEN 2 WHEN 'SMA' THEN 3 ELSE 4 END")
-            ->orderBy('grade_level')
-            ->orderBy('fee_type_label')
-            ->orderBy('name')
-            ->get();
-
         $typeLabels = RegistrationFee::typeLabels();
 
-        return view('registration-fees.index', compact('fees', 'typeLabels'));
+        return view('registration-fees.index', compact('typeLabels'));
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $query = RegistrationFee::query();
+        $recordsTotal = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('fee_type_label', 'like', "%{$search}%")
+                    ->orWhere('fee_type', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('education_level', 'like', "%{$search}%")
+                    ->orWhere('grade_level', 'like', "%{$search}%")
+                    ->orWhere('promo_code', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $columns = [
+            0 => 'fee_type_label',
+            1 => 'name',
+            2 => 'education_level',
+            3 => 'grade_level',
+            4 => 'billing_period',
+            5 => 'amount',
+            6 => 'promo_code',
+            7 => 'max_installments',
+            8 => 'is_active',
+        ];
+        $orderIndex = (int) $request->input('order.0.column', 0);
+        $orderColumn = $columns[$orderIndex] ?? 'fee_type_label';
+        $orderDirection = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $query->orderBy($orderColumn, $orderDirection)
+            ->orderBy('id');
+
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length === -1 ? 100 : min(max($length, 1), 100);
+
+        $data = $query->skip($start)->take($length)->get();
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
     }
 
     public function create(): View
