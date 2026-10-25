@@ -103,7 +103,7 @@ class RegistrationFeeController extends Controller
                 ->registration()
                 ->where('education_level', $validated['education_level'])
                 ->where('grade_level', $validated['grade_level'])
-                ->when($registrationFee, fn ($query) => $query->whereKeyNot($registrationFee->id))
+                ->when($registrationFee, fn ($query) => $query->where('id', '!=', $registrationFee->id))
                 ->exists();
 
             if ($duplicate) {
