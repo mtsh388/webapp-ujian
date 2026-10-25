@@ -6,6 +6,7 @@ use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegistrationFeeController extends Controller
@@ -74,7 +75,9 @@ class RegistrationFeeController extends Controller
         };
 
         if (! in_array((int) $validated['grade_level'], $allowedGrades, true)) {
-            return validator([], [])->validate();
+            throw ValidationException::withMessages([
+                'grade_level' => 'Tingkat kelas tidak sesuai dengan jenjang pendidikan.',
+            ]);
         }
 
         $uniqueRule = Rule::unique('registration_fees', 'grade_level')
