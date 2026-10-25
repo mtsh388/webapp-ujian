@@ -570,7 +570,6 @@ class ResultController extends Controller
                 's.full_name as student_name',
                 's.student_number',
                 'e.title as exam_title',
-                'e.name as exam_name',
             ])
             ->orderBy($orderColumn, $direction)
             ->orderByDesc('ea.id')
@@ -585,7 +584,7 @@ class ResultController extends Controller
                     'id' => $row->id,
                     'student_name' => $row->student_name,
                     'student_number' => $row->student_number,
-                    'exam_title' => $row->exam_title ?: $row->exam_name ?: '-',
+                    'exam_title' => $row->exam_title ?: '-',
                     'started_at' => $row->started_at,
                     'submitted_at' => $row->submitted_at,
                     'score' => $finished ? (float) ($row->score ?? 0) : null,
