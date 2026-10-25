@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RegistrationFee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -17,19 +18,18 @@ class RegistrationFeeController extends Controller
             ->orderByRaw("CASE fee_type WHEN 'registration' THEN 1 WHEN 'monthly' THEN 2 WHEN 'exam' THEN 3 WHEN 'books' THEN 4 WHEN 'uniform' THEN 5 WHEN 'activity' THEN 6 ELSE 7 END")
             ->orderByRaw("CASE education_level WHEN 'SD' THEN 1 WHEN 'SMP' THEN 2 WHEN 'SMA' THEN 3 ELSE 4 END")
             ->orderBy('grade_level')
+            ->orderBy('fee_type_label')
             ->orderBy('name')
             ->get();
 
-        $typeLabels = $this->feeTypeOptions();
+        $typeLabels = RegistrationFee::typeLabels();
 
         return view('registration-fees.index', compact('fees', 'typeLabels'));
     }
 
     public function create(): View
     {
-        $typeLabels = $this->feeTypeOptions();
-
-        return view('registration-fees.create', compact('typeLabels'));
+        return view('registration-fees.create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -42,9 +42,7 @@ class RegistrationFeeController extends Controller
 
     public function edit(RegistrationFee $registrationFee): View
     {
-        $typeLabels = $this->feeTypeOptions();
-
-        return view('registration-fees.edit', compact('registrationFee', 'typeLabels'));
+        return view('registration-fees.edit', compact('registrationFee'));
     }
 
     public function update(Request $request, RegistrationFee $registrationFee): RedirectResponse
@@ -63,29 +61,10 @@ class RegistrationFeeController extends Controller
             ->with('success', 'Data biaya berhasil dihapus.');
     }
 
-    private function feeTypeOptions(): array
-    {
-        $options = RegistrationFee::typeLabels();
-
-        RegistrationFee::query()
-            ->whereNotIn('fee_type', array_keys($options))
-            ->select('fee_type')
-            ->distinct()
-            ->orderBy('fee_type')
-            ->pluck('fee_type')
-            ->each(function (string $type) use (&$options): void {
-                $options[$type] = \Illuminate\Support\Str::headline($type);
-            });
-
-        return $options;
-    }
-
     private function validatedData(Request $request, ?RegistrationFee $registrationFee = null): array
     {
-        $typeOptions = $this->feeTypeOptions();
         $validated = $request->validate([
-            'fee_type' => ['required', Rule::in([...array_keys($typeOptions), 'custom'])],
-            'custom_fee_type' => ['nullable', 'string', 'max:40'],
+            'fee_type' => ['required', 'string', 'max:100'],
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'billing_period' => ['nullable', Rule::in(['once', 'monthly', 'semester', 'yearly'])],
@@ -94,39 +73,38 @@ class RegistrationFeeController extends Controller
             'amount' => ['required', 'integer', 'min:0', 'max:999999999'],
             'is_active' => ['required', 'boolean'],
         ], [
-            'fee_type.in' => 'Jenis biaya tidak valid.',
+            'fee_type.required' => 'Jenis biaya wajib diisi.',
+            'fee_type.max' => 'Jenis biaya maksimal 100 karakter.',
             'education_level.in' => 'Jenjang pendidikan tidak valid.',
             'grade_level.in' => 'Tingkat kelas tidak valid.',
             'amount.min' => 'Biaya tidak boleh negatif.',
         ]);
 
-        if ($validated['fee_type'] === 'custom') {
-            $request->validate([
-                'custom_fee_type' => ['required', 'string', 'max:40'],
+        $feeTypeLabel = trim($validated['fee_type']);
+        $feeTypeSlug = Str::slug($feeTypeLabel);
+
+        if ($feeTypeSlug === '') {
+            throw ValidationException::withMessages([
+                'fee_type' => 'Jenis biaya harus berisi huruf atau angka.',
             ]);
-
-            $customType = \Illuminate\Support\Str::slug($validated['custom_fee_type']);
-
-            $reservedTypes = array_merge(
-                array_keys(RegistrationFee::typeLabels()),
-                array_map(
-                    fn (string $label): string => \Illuminate\Support\Str::slug($label),
-                    array_values(RegistrationFee::typeLabels())
-                )
-            );
-
-            if ($customType === '' || in_array($customType, $reservedTypes, true)) {
-                throw ValidationException::withMessages([
-                    'custom_fee_type' => 'Gunakan nama jenis biaya khusus yang belum tersedia pada daftar.',
-                ]);
-            }
-
-            $validated['fee_type'] = $customType;
         }
 
-        unset($validated['custom_fee_type']);
+        $knownTypes = [];
+        foreach (RegistrationFee::typeLabels() as $key => $label) {
+            $knownTypes[Str::slug($key)] = $key;
+            $knownTypes[Str::slug($label)] = $key;
+        }
+        $knownTypes['biaya-pendaftaran'] = 'registration';
+        $knownTypes['pendaftaran'] = 'registration';
 
-        if ($validated['fee_type'] === 'registration') {
+        $feeType = $knownTypes[$feeTypeSlug] ?? $feeTypeSlug;
+        $isRegistration = $feeType === 'registration';
+
+        if ($isRegistration) {
+            $feeTypeLabel = 'Pendaftaran';
+        }
+
+        if ($isRegistration) {
             $request->validate([
                 'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
                 'grade_level' => ['required', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
@@ -183,6 +161,8 @@ class RegistrationFeeController extends Controller
             }
         }
 
+        $validated['fee_type'] = $feeType;
+        $validated['fee_type_label'] = $feeTypeLabel;
         $validated['education_level'] = $validated['education_level'] ?: null;
         $validated['grade_level'] = filled($validated['grade_level']) ? (int) $validated['grade_level'] : null;
         $validated['amount'] = (int) $validated['amount'];
