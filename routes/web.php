@@ -289,6 +289,12 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             Route::put('/{exam}', [ExamController::class, 'update'])
                 ->name('exams.update');
 
+            Route::get('/{exam}/soal/data', [ExamController::class, 'questionsData'])
+                ->name('exams.questions.data');
+
+            Route::get('/{exam}/soal/tersedia/data', [ExamController::class, 'availableQuestionsData'])
+                ->name('exams.questions.available.data');
+
             Route::get('/{exam}/soal', [ExamController::class, 'questions'])
                 ->name('exams.questions');
 
