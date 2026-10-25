@@ -41,7 +41,7 @@ test('admin can update an existing registration fee', function () {
         ->firstOrFail();
 
     $this->put(route('registration-fees.update', $fee), [
-        'fee_type' => 'registration',
+        'fee_type' => 'Pendaftaran',
         'education_level' => 'SMA',
         'grade_level' => 11,
         'amount' => 425000,
@@ -51,6 +51,8 @@ test('admin can update an existing registration fee', function () {
 
     $this->assertDatabaseHas('registration_fees', [
         'id' => $fee->id,
+        'fee_type' => 'registration',
+        'fee_type_label' => 'Pendaftaran',
         'education_level' => 'SMA',
         'grade_level' => 11,
         'amount' => 425000,
@@ -65,7 +67,7 @@ test('admin cannot assign a grade outside its education level', function () {
 
     $this->from(route('registration-fees.edit', $fee))
         ->put(route('registration-fees.update', $fee), [
-            'fee_type' => 'registration',
+            'fee_type' => 'Pendaftaran',
             'education_level' => 'SMP',
             'grade_level' => 12,
             'amount' => 300000,
@@ -75,10 +77,9 @@ test('admin cannot assign a grade outside its education level', function () {
         ->assertSessionHasErrors('grade_level');
 });
 
-
 test('admin can create a general fee without targeting a class', function () {
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'books',
+        'fee_type' => 'Buku dan Modul',
         'name' => 'Modul Pembelajaran',
         'description' => 'Biaya modul untuk siswa',
         'billing_period' => 'semester',
@@ -91,6 +92,7 @@ test('admin can create a general fee without targeting a class', function () {
 
     $this->assertDatabaseHas('registration_fees', [
         'fee_type' => 'books',
+        'fee_type_label' => 'Buku dan Modul',
         'name' => 'Modul Pembelajaran',
         'billing_period' => 'semester',
         'education_level' => null,
@@ -100,12 +102,9 @@ test('admin can create a general fee without targeting a class', function () {
     ]);
 });
 
-
-
-test('admin can create a custom fee category', function () {
+test('admin can create a fee with any free-text type', function () {
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'custom',
-        'custom_fee_type' => 'Laboratorium Komputer',
+        'fee_type' => 'Laboratorium Komputer',
         'name' => 'Praktikum Komputer',
         'description' => 'Biaya praktikum khusus',
         'billing_period' => 'once',
@@ -118,6 +117,7 @@ test('admin can create a custom fee category', function () {
 
     $this->assertDatabaseHas('registration_fees', [
         'fee_type' => 'laboratorium-komputer',
+        'fee_type_label' => 'Laboratorium Komputer',
         'name' => 'Praktikum Komputer',
         'education_level' => 'SMP',
         'grade_level' => null,
@@ -130,25 +130,10 @@ test('admin can create a custom fee category', function () {
         ->assertSee('Laboratorium Komputer');
 });
 
-test('admin cannot use a reserved type as a custom fee category', function () {
-    $this->from(route('registration-fees.create'))
-        ->post(route('registration-fees.store'), [
-            'fee_type' => 'custom',
-            'custom_fee_type' => 'Pendaftaran',
-            'name' => 'Biaya Pendaftaran Khusus',
-            'education_level' => 'SMP',
-            'grade_level' => 7,
-            'amount' => 100000,
-            'is_active' => 1,
-        ])
-        ->assertRedirect(route('registration-fees.create'))
-        ->assertSessionHasErrors('custom_fee_type');
-});
-
-
-test('admin can reuse an existing custom fee category', function () {
+test('admin can reuse a free-text fee type', function () {
     RegistrationFee::create([
         'fee_type' => 'laboratorium-komputer',
+        'fee_type_label' => 'Laboratorium Komputer',
         'name' => 'Praktikum Komputer',
         'billing_period' => 'once',
         'education_level' => 'SMP',
@@ -159,10 +144,11 @@ test('admin can reuse an existing custom fee category', function () {
 
     $this->get(route('registration-fees.create'))
         ->assertOk()
-        ->assertSee('Laboratorium Komputer');
+        ->assertSee('Jenis Biaya')
+        ->assertSee('type="text"', false);
 
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'laboratorium-komputer',
+        'fee_type' => 'Laboratorium Komputer',
         'name' => 'Pemeliharaan Laboratorium',
         'billing_period' => 'yearly',
         'education_level' => '',
@@ -174,6 +160,7 @@ test('admin can reuse an existing custom fee category', function () {
 
     $this->assertDatabaseHas('registration_fees', [
         'fee_type' => 'laboratorium-komputer',
+        'fee_type_label' => 'Laboratorium Komputer',
         'name' => 'Pemeliharaan Laboratorium',
         'amount' => 25000,
         'education_level' => null,
