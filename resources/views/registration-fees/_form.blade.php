@@ -75,7 +75,7 @@
                     <h5 class="mb-3">Diskon / Promo</h5>
                     <div class="row g-4">
                         <div class="col-md-6">
-                            <label for="discount_enabled" class="form-label">Diskon? <span class="text-danger">*</span></label>
+                            <label for="discount_enabled" class="form-label">Diskon / Promo? <span class="text-danger">*</span></label>
                             <select id="discount_enabled" name="discount_enabled" class="form-select">
                                 <option value="0" @selected((string) old('discount_enabled', isset($registrationFee) && $registrationFee->discount_enabled ? '1' : '0') === '0')>Tidak</option>
                                 <option value="1" @selected((string) old('discount_enabled', isset($registrationFee) && $registrationFee->discount_enabled ? '1' : '0') === '1')>Ya</option>
