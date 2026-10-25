@@ -18,6 +18,11 @@ class RolePermissionSeeder extends Seeder
             'class.update',
             'class.delete',
 
+            'registration-fee.view',
+            'registration-fee.create',
+            'registration-fee.update',
+            'registration-fee.delete',
+
             'subject.view',
             'subject.create',
             'subject.update',
