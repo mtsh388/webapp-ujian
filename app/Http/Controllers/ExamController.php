@@ -35,6 +35,95 @@ class ExamController extends Controller
         ]);
     }
 
+    public function questionsData(Request $request, Exam $exam): JsonResponse
+    {
+        $query = \App\Models\ExamQuestion::query()->where('exam_id', $exam->id);
+        $recordsTotal = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('question', 'like', '%' . $search . '%')
+                    ->orWhere('type', 'like', '%' . $search . '%');
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $orderColumns = [1 => 'type', 2 => 'question', 3 => 'score', 4 => 'sort_order'];
+        $orderColumn = $orderColumns[(int) $request->input('order.0.column', 4)] ?? 'sort_order';
+        $direction = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+
+        $data = $query->orderBy($orderColumn, $direction)->orderBy('id')
+            ->skip($start)->take($length)->get()
+            ->values()->map(fn ($question, $index) => [
+                'no' => $start + $index + 1,
+                'id' => $question->id,
+                'type' => $question->type,
+                'question' => strip_tags(\Illuminate\Support\Str::limit($question->question, 120)),
+                'score' => $question->score,
+                'can_update' => auth()->user()->can('exam.update'),
+            ]);
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
+    }
+
+    public function availableQuestionsData(Request $request, Exam $exam): JsonResponse
+    {
+        $attachedIds = \App\Models\ExamQuestion::query()
+            ->where('exam_id', $exam->id)
+            ->whereNotNull('question_bank_id')
+            ->select('question_bank_id');
+
+        $query = \App\Models\QuestionBank::query()
+            ->where('subject_id', $exam->subject_id)
+            ->where('is_active', true)
+            ->whereNotIn('id', $attachedIds);
+
+        $recordsTotal = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('code', 'like', '%' . $search . '%')
+                    ->orWhere('type', 'like', '%' . $search . '%')
+                    ->orWhere('question', 'like', '%' . $search . '%');
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $orderColumns = [1 => 'code', 2 => 'type', 3 => 'question'];
+        $orderColumn = $orderColumns[(int) $request->input('order.0.column', 1)] ?? 'code';
+        $direction = strtolower((string) $request->input('order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+
+        $data = $query->orderBy($orderColumn, $direction)->orderBy('id')
+            ->skip($start)->take($length)->get()
+            ->values()->map(fn ($question, $index) => [
+                'no' => $start + $index + 1,
+                'id' => $question->id,
+                'code' => $question->code,
+                'type' => $question->type,
+                'question' => strip_tags(\Illuminate\Support\Str::limit($question->question, 150)),
+            ]);
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
+    }
+
     public function storeQuestions(Request $request, $id)
     {
         $validated = $request->validate([
