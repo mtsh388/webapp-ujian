@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\ParentModel;
+use App\Models\RegistrationPayment;
+use App\Models\Student;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
@@ -10,9 +13,13 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -23,32 +30,212 @@ class AuthController extends Controller
 
     public function registerForm(): View
     {
-        return view('auth.register');
+        $classes = \App\Models\ClassRoom::query()
+            ->where('is_active', true)
+            ->whereIn('education_level', ['SD', 'SMP', 'SMA'])
+            ->whereNotNull('grade_level')
+            ->orderByRaw("CASE education_level WHEN 'SD' THEN 1 WHEN 'SMP' THEN 2 WHEN 'SMA' THEN 3 ELSE 4 END")
+            ->orderBy('grade_level')
+            ->get();
+
+        return view('auth.register', compact('classes'));
     }
 
     public function register(Request $request): RedirectResponse
     {
+        if (array_key_exists('promo_code', $request->all()) || array_key_exists('installments', $request->all())) {
+            return back()
+                ->withInput($request->except(['password', 'password_confirmation', 'payment_proof']))
+                ->withErrors([
+                    'registration_type' => 'Registrasi tidak menerima kode promo atau pembayaran cicilan.',
+                ]);
+        }
+
+        $type = $request->input('registration_type', 'trial');
+
         $validated = $request->validate([
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'registration_type' => ['required', Rule::in(['trial', 'paid'])],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
+            'full_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
+            'school_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
+            'education_level' => [Rule::requiredIf($type === 'paid'), 'nullable', Rule::in(['SD', 'SMP', 'SMA'])],
+            'class_id' => [
+                Rule::requiredIf($type === 'paid'),
+                'nullable',
+                'integer',
+                Rule::exists('classes', 'id')->where(fn ($query) => $query
+                    ->where('education_level', $request->input('education_level'))
+                    ->where('is_active', true)
+                    ->whereNull('deleted_at')),
+            ],
+            'gender' => ['nullable', Rule::in(['Laki-laki', 'Perempuan'])],
+            'birth_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'parent_full_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
+            'parent_email' => [Rule::requiredIf($type === 'paid'), 'nullable', 'email', 'max:255', 'different:email', 'unique:users,email'],
+            'parent_phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
+            'parent_address' => ['nullable', 'string', 'max:255'],
+            'payment_proof' => [Rule::requiredIf($type === 'paid'), 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        ], [
+            'email.unique' => 'Email sudah terdaftar. Silakan login atau gunakan email lain.',
+            'parent_email.unique' => 'Email orang tua sudah digunakan oleh akun lain.',
+            'class_id.exists' => 'Kelas tidak sesuai dengan jenjang yang dipilih atau sudah tidak aktif.',
+            'payment_proof.required' => 'Bukti pembayaran wajib diunggah untuk registrasi Berbayar.',
+            'payment_proof.mimes' => 'Bukti pembayaran harus berupa JPG, PNG, atau PDF.',
+            'payment_proof.max' => 'Ukuran bukti pembayaran maksimal 5 MB.',
         ]);
+
+        $user = null;
+        $proofPath = null;
+
+        if ($type === 'paid') {
+            $classRoom = \App\Models\ClassRoom::query()
+                ->whereKey($validated['class_id'])
+                ->where('is_active', true)
+                ->where('education_level', $validated['education_level'])
+                ->whereNull('deleted_at')
+                ->firstOrFail();
+
+            $amount = match ($classRoom->education_level) {
+                'SD' => 200000,
+                'SMP' => 300000,
+                'SMA' => match ((int) $classRoom->grade_level) {
+                    10, 11 => 400000,
+                    12 => 500000,
+                    default => null,
+                },
+                default => null,
+            };
+
+            if ($amount === null) {
+                return back()
+                    ->withInput($request->except(['password', 'payment_proof']))
+                    ->withErrors(['class_id' => 'Tarif untuk kelas yang dipilih belum ditetapkan.']);
+            }
+
+            $proofPath = $request->file('payment_proof')->store('registration-proofs', 'local');
+
+            try {
+                $user = DB::transaction(function () use ($validated, $classRoom, $amount, $proofPath): User {
+                    $studentUser = User::create([
+                        'name' => trim($validated['full_name']),
+                        'email' => $validated['email'],
+                        'password' => $validated['password'],
+                        'is_active' => true,
+                    ]);
+
+                    $studentUser->forceFill([
+                        'must_change_password' => false,
+                        'password_changed_at' => now(),
+                    ])->save();
+
+                    $studentUser->assignRole($this->studentRole());
+
+                    $student = Student::create([
+                        'user_id' => $studentUser->id,
+                        'class_id' => $classRoom->id,
+                        'student_number' => 'REG-' . str_pad((string) $studentUser->id, 8, '0', STR_PAD_LEFT),
+                        'full_name' => trim($validated['full_name']),
+                        'school_name' => trim($validated['school_name']),
+                        'education_level' => $classRoom->education_level,
+                        'gender' => $validated['gender'] ?? null,
+                        'birth_date' => $validated['birth_date'] ?? null,
+                        'phone' => trim($validated['phone']),
+                        'parent_phone' => trim($validated['parent_phone']),
+                        'address' => $validated['address'] ?? null,
+                        'is_active' => true,
+                    ]);
+
+                    $parentUser = User::create([
+                        'name' => trim($validated['parent_full_name']),
+                        'email' => $validated['parent_email'],
+                        'password' => Str::random(48),
+                        'is_active' => true,
+                    ]);
+
+                    $parentUser->forceFill([
+                        'must_change_password' => true,
+                    ])->save();
+
+                    $parentUser->assignRole(Role::firstOrCreate([
+                        'name' => 'Orang Tua',
+                        'guard_name' => 'web',
+                    ]));
+
+                    $parent = ParentModel::create([
+                        'user_id' => $parentUser->id,
+                        'full_name' => trim($validated['parent_full_name']),
+                        'phone' => trim($validated['parent_phone']),
+                        'address' => $validated['parent_address'] ?? null,
+                        'is_active' => true,
+                    ]);
+
+                    $student->parents()->attach($parent->id, [
+                        'relationship' => 'Orang Tua/Wali',
+                        'is_primary' => true,
+                    ]);
+
+                    RegistrationPayment::create([
+                        'user_id' => $studentUser->id,
+                        'student_id' => $student->id,
+                        'amount' => $amount,
+                        'status' => 'pending_verification',
+                        'proof_path' => $proofPath,
+                        'payment_type' => 'registration',
+                        'promo_code' => null,
+                        'installment_status' => 'not_allowed',
+                    ]);
+
+                    return $studentUser;
+                });
+            } catch (Throwable $exception) {
+                Storage::disk('local')->delete($proofPath);
+                throw $exception;
+            }
+
+            return redirect()
+                ->route('login')
+                ->with('status', 'Selamat, Anda sudah bergabung. Silakan datang ke QSEE untuk melakukan proses selanjutnya.');
+        }
 
         $user = User::create([
-            'name' => $validated['email'],
+            'name' => 'Siswa',
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'is_active' => true,
         ]);
-        $user->forceFill(['must_change_password' => false])->save();
 
-        $studentRole = Role::firstOrCreate([
-            'name' => 'Siswa',
-            'guard_name' => 'web',
-        ]);
-        $user->assignRole($studentRole);
+        $user->forceFill([
+            'must_change_password' => false,
+            'password_changed_at' => now(),
+        ])->save();
+
+        $user->assignRole($this->studentRole());
 
         return redirect()
             ->route('login')
-            ->with('status', 'Registrasi berhasil. Silakan login untuk melengkapi data siswa.');
+            ->with('status', 'Registrasi Trial berhasil. Silakan login untuk melengkapi data siswa.');
+    }
+
+    private function studentRole(): Role
+    {
+        $role = Role::firstOrCreate([
+            'name' => 'Siswa',
+            'guard_name' => 'web',
+        ]);
+
+        $permissions = \Spatie\Permission\Models\Permission::query()
+            ->where('guard_name', 'web')
+            ->whereIn('name', ['dashboard.view', 'exam.view', 'exam.take', 'result.view_own'])
+            ->get();
+
+        if ($permissions->isNotEmpty()) {
+            $role->givePermissionTo($permissions);
+        }
+
+        return $role;
     }
 
     public function login(LoginRequest $request): RedirectResponse
@@ -106,28 +293,18 @@ class AuthController extends Controller
     public function sendForgotPassword(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => [
-                'required',
-                'email',
-            ],
+            'email' => ['required', 'email'],
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $status = Password::sendResetLink($request->only('email'));
 
         if ($status === Password::RESET_LINK_SENT) {
-            return back()->with(
-                'status',
-                'Link reset password telah dikirim ke email Anda.'
-            );
+            return back()->with('status', 'Link reset password telah dikirim ke email Anda.');
         }
 
         return back()
             ->withInput($request->only('email'))
-            ->withErrors([
-                'email' => __($status),
-            ]);
+            ->withErrors(['email' => __($status)]);
     }
 
     public function resetPassword(Request $request): View
@@ -141,27 +318,13 @@ class AuthController extends Controller
     public function reset(Request $request): RedirectResponse
     {
         $request->validate([
-            'token' => [
-                'required',
-            ],
-            'email' => [
-                'required',
-                'email',
-            ],
-            'password' => [
-                'required',
-                'confirmed',
-                'min:8',
-            ],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', 'min:8'],
         ]);
 
         $status = Password::reset(
-            $request->only(
-                'email',
-                'password',
-                'password_confirmation',
-                'token'
-            ),
+            $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
                     'password' => $password,
@@ -177,24 +340,17 @@ class AuthController extends Controller
         if ($status === Password::PASSWORD_RESET) {
             return redirect()
                 ->route('login')
-                ->with(
-                    'status',
-                    'Password berhasil direset. Silakan login dengan password baru.'
-                );
+                ->with('status', 'Password berhasil direset. Silakan login dengan password baru.');
         }
 
         return back()
             ->withInput($request->only('email'))
-            ->withErrors([
-                'email' => __($status),
-            ]);
+            ->withErrors(['email' => __($status)]);
     }
 
     public function profile(): View
     {
-        return view('auth.profile', [
-            'user' => request()->user(),
-        ]);
+        return view('auth.profile', ['user' => request()->user()]);
     }
 
     public function logout(Request $request): RedirectResponse
