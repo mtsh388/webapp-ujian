@@ -107,7 +107,15 @@ class RegistrationFeeController extends Controller
 
             $customType = \Illuminate\Support\Str::slug($validated['custom_fee_type']);
 
-            if ($customType === '' || $customType === 'registration' || in_array($customType, array_keys(RegistrationFee::typeLabels()), true)) {
+            $reservedTypes = array_merge(
+                array_keys(RegistrationFee::typeLabels()),
+                array_map(
+                    fn (string $label): string => \Illuminate\Support\Str::slug($label),
+                    array_values(RegistrationFee::typeLabels())
+                )
+            );
+
+            if ($customType === '' || in_array($customType, $reservedTypes, true)) {
                 throw ValidationException::withMessages([
                     'custom_fee_type' => 'Gunakan nama jenis biaya khusus yang belum tersedia pada daftar.',
                 ]);
