@@ -298,6 +298,9 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             Route::delete('/{exam}/soal/{questionId}', [ExamController::class, 'destroyQuestion'])
                 ->name('exams.questions.destroy');
 
+            Route::get('/{exam}/peserta/data', [ExamController::class, 'participantsData'])
+                ->name('exams.participants.data');
+
             Route::get('/{exam}/peserta', [ExamController::class, 'participants'])
                 ->name('exams.participants');
 
