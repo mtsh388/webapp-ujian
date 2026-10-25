@@ -44,7 +44,7 @@ class AuthController extends Controller
             ->orderBy('grade_level')
             ->get();
 
-        $fees = RegistrationFee::active()->get()->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
+        $fees = RegistrationFee::active()->registration()->get()->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
 
         return view('auth.register', compact('classes', 'fees'));
     }
@@ -107,6 +107,7 @@ class AuthController extends Controller
                 ->firstOrFail();
 
             $registrationFee = RegistrationFee::query()
+                ->registration()
                 ->active()
                 ->where('education_level', $classRoom->education_level)
                 ->where('grade_level', $classRoom->grade_level)
