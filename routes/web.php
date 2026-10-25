@@ -301,6 +301,9 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             Route::post('/{exam}/soal', [ExamController::class, 'storeQuestions'])
                 ->name('exams.questions.store');
 
+            Route::delete('/{exam}/soal/bulk-destroy', [ExamController::class, 'bulkDestroyQuestions'])
+                ->name('exams.questions.bulk-destroy');
+
             Route::delete('/{exam}/soal/{questionId}', [ExamController::class, 'destroyQuestion'])
                 ->name('exams.questions.destroy');
 
