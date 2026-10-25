@@ -158,14 +158,74 @@ class ExamController extends Controller
 
     public function participants(Exam $exam)
     {
-        $data = $this->examService->getExamParticipants(
-            $exam->id
-        );
+        $data = $this->examService->getExamParticipants($exam->id);
 
         return view('exams.participants', [
             'exam' => $data['exam'],
-            'participants' => $data['participants'],
             'availableStudents' => $data['availableStudents'],
+        ]);
+    }
+
+    public function participantsData(Request $request, Exam $exam): JsonResponse
+    {
+        $query = ExamParticipant::query()
+            ->where('exam_id', $exam->id)
+            ->with(['student.classRoom', 'student.user']);
+
+        $recordsTotal = (clone $query)->count();
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->whereHas('student', function ($studentQuery) use ($search) {
+                $studentQuery->where(function ($builder) use ($search) {
+                    $builder->where('full_name', 'like', '%' . $search . '%')
+                        ->orWhere('student_number', 'like', '%' . $search . '%')
+                        ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', '%' . $search . '%'))
+                        ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', '%' . $search . '%'));
+                });
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $orderColumns = [
+            1 => 'assigned_at',
+            5 => 'is_active',
+        ];
+        $orderColumn = $orderColumns[(int) $request->input('order.0.column', 4)] ?? 'assigned_at';
+        $direction = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+
+        $data = $query->orderBy($orderColumn, $direction)
+            ->orderByDesc('id')
+            ->skip($start)
+            ->take($length)
+            ->get()
+            ->values()
+            ->map(function ($participant, $index) use ($start, $exam) {
+                $student = $participant->student;
+
+                return [
+                    'no' => $start + $index + 1,
+                    'id' => $participant->id,
+                    'student_name' => $student?->full_name ?? '-',
+                    'email' => $student?->user?->email ?? '-',
+                    'student_number' => $student?->student_number ?? '-',
+                    'class_name' => $student?->classRoom?->name ?? '-',
+                    'assigned_at' => $participant->assigned_at?->format('Y-m-d H:i:s'),
+                    'is_active' => (bool) $participant->is_active,
+                    'can_update' => auth()->user()->can('exam.update'),
+                    'status_url' => route('exams.participants.status', [$exam, $participant]),
+                    'delete_url' => route('exams.participants.destroy', [$exam, $participant]),
+                ];
+            });
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
         ]);
     }
 
