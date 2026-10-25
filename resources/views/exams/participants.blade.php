@@ -162,7 +162,7 @@
                                 </small>
 
                                 <span class="fw-semibold">
-                                    {{ $participants->count() }} siswa
+                                    {{ $participantTotal }} siswa
                                 </span>
                             </div>
                         </div>
@@ -182,7 +182,7 @@
                                 </small>
 
                                 <span class="fw-semibold">
-                                    {{ $participants->where('is_active', true)->count() }} siswa
+                                    {{ $activeParticipantTotal }} siswa
                                 </span>
                             </div>
                         </div>
@@ -202,7 +202,7 @@
                                 </small>
 
                                 <span class="fw-semibold">
-                                    {{ $participants->where('is_active', false)->count() }} siswa
+                                    {{ $inactiveParticipantTotal }} siswa
                                 </span>
                             </div>
                         </div>
