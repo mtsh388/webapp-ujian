@@ -35,8 +35,7 @@ test('admin can view the registration fee master data', function () {
 
     $this->getJson(route('registration-fees.data'))
         ->assertOk()
-        ->assertJsonPath('data.0.education_level', 'SMA')
-        ->assertJsonFragment(['amount' => 500000]);
+        ->assertJsonFragment(['education_level' => 'SMA', 'grade_level' => 12, 'amount' => 500000]);
 });
 
 test('admin can update an existing registration fee', function () {
