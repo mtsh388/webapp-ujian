@@ -2,6 +2,7 @@
 
 use App\Models\ClassRoom;
 use App\Models\RegistrationPayment;
+use App\Models\RegistrationFee;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -26,12 +27,11 @@ test('registration page is available to guests', function () {
         ->assertSee('Berbayar')
         ->assertSee('id="education_level"', false)
         ->assertSee('id="class_id"', false)
-        ->assertSee('id="registrationFeeAmount"', false)
+        ->assertSee('id="registration_fee_display"', false)
+        ->assertSee('readonly', false)
+        ->assertSee('Master Data Biaya QSEE')
         ->assertSee('function updateFee()', false)
-        ->assertSee('Rp200.000')
-        ->assertSee('Rp300.000')
-        ->assertSee('Rp400.000')
-        ->assertSee('Rp500.000');
+        ->assertSee('data-fee=', false);
 });
 
 test('a visitor can register a trial student account', function () {
@@ -85,6 +85,10 @@ test('paid registration stores student parent and pending registration payment a
         'is_active' => true,
     ]);
 
+    RegistrationFee::where('education_level', 'SMA')
+        ->where('grade_level', 12)
+        ->update(['amount' => 500000, 'is_active' => true]);
+
     $this->post('/register', [
         'registration_type' => 'paid',
         'email' => 'siswa.paid@example.com',
@@ -100,6 +104,7 @@ test('paid registration stores student parent and pending registration payment a
         'parent_email' => 'orangtua@example.com',
         'parent_address' => 'Jakarta',
         'amount' => 1,
+        'registration_fee_display' => 'Rp1',
         'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
     ])
         ->assertRedirect(route('login'))
@@ -186,6 +191,10 @@ test('paid registration applies the configured tariff for SD SMP and SMA grades 
             'grade_level' => $tariff['grade'],
             'is_active' => true,
         ]);
+
+        RegistrationFee::where('education_level', $tariff['level'])
+            ->where('grade_level', $tariff['grade'])
+            ->update(['amount' => $tariff['amount'], 'is_active' => true]);
 
         $email = 'siswa.tarif' . $index . '@example.com';
 
