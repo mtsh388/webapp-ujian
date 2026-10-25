@@ -66,7 +66,7 @@ class RegistrationFeeController extends Controller
     private function validatedData(Request $request, ?RegistrationFee $registrationFee = null): array
     {
         $validated = $request->validate([
-            'fee_type' => ['required', Rule::in(array_keys(RegistrationFee::typeLabels()))],
+            'fee_type' => ['required', Rule::in([...array_keys(RegistrationFee::typeLabels()), 'custom'])],\n            'custom_fee_type' => ['nullable', 'string', 'max:40'],
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'billing_period' => ['nullable', Rule::in(['once', 'monthly', 'semester', 'yearly'])],
@@ -80,6 +80,24 @@ class RegistrationFeeController extends Controller
             'grade_level.in' => 'Tingkat kelas tidak valid.',
             'amount.min' => 'Biaya tidak boleh negatif.',
         ]);
+
+        if ($validated['fee_type'] === 'custom') {
+            $request->validate([
+                'custom_fee_type' => ['required', 'string', 'max:40'],
+            ]);
+
+            $customType = Str::slug($validated['custom_fee_type']);
+
+            if ($customType === '' || $customType === 'registration' || in_array($customType, array_keys(RegistrationFee::typeLabels()), true)) {
+                throw ValidationException::withMessages([
+                    'custom_fee_type' => 'Gunakan nama jenis biaya khusus yang belum tersedia pada daftar.',
+                ]);
+            }
+
+            $validated['fee_type'] = $customType;
+        }
+
+        unset($validated['custom_fee_type']);
 
         if ($validated['fee_type'] === 'registration') {
             $request->validate([
