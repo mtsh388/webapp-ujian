@@ -24,7 +24,7 @@
             @endcan
         </div>
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table id="feesTable" class="table table-hover w-100">
                 <thead>
                 <tr>
                     <th>Jenis Biaya</th>
@@ -39,63 +39,7 @@
                     <th>Aksi</th>
                 </tr>
                 </thead>
-                <tbody>
-                @forelse($fees as $fee)
-                    <tr>
-                        <td>{{ $fee->fee_type_label ?: ($typeLabels[$fee->fee_type] ?? \Illuminate\Support\Str::headline($fee->fee_type)) }}</td>
-                        <td>
-                            <div class="fw-semibold">{{ $fee->name ?: 'Biaya Pendaftaran' }}</div>
-                            @if($fee->description)
-                                <small class="text-muted">{{ $fee->description }}</small>
-                            @endif
-                        </td>
-                        <td>{{ $fee->education_level ?: 'Semua' }}</td>
-                        <td>{{ $fee->grade_level ? 'Kelas '.$fee->grade_level : 'Semua' }}</td>
-                        <td>{{ ['once' => 'Sekali', 'monthly' => 'Bulanan', 'semester' => 'Per Semester', 'yearly' => 'Tahunan'][$fee->billing_period] ?? '—' }}</td>
-                        <td>Rp{{ number_format($fee->amount, 0, ',', '.') }}</td>
-                        <td>
-                            @if($fee->isRegistrationFee())
-                                <span class="badge bg-label-secondary">Tidak berlaku</span>
-                            @elseif($fee->discount_enabled)
-                                <div class="fw-semibold">{{ $fee->promo_code }}</div>
-                                <small class="text-muted">
-                                    {{ $fee->discount_type === 'percentage' ? $fee->discount_value.'%' : 'Rp'.number_format($fee->discount_value, 0, ',', '.') }}
-                                    <br>{{ $fee->promo_starts_at?->format('d/m/Y H:i') }} – {{ $fee->promo_ends_at?->format('d/m/Y H:i') }}
-                                </small>
-                            @else
-                                <span class="badge bg-label-secondary">Tidak</span>
-                            @endif
-                        </td>
-                        <td>{{ $fee->isRegistrationFee() ? 'Tidak bisa dicicil' : $fee->max_installments.' kali' }}</td>
-                        <td>
-                            @if($fee->is_active)
-                                <span class="badge bg-label-success">Aktif</span>
-                            @else
-                                <span class="badge bg-label-secondary">Tidak Aktif</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                @can('registration-fee.update')
-                                    <a href="{{ route('registration-fees.edit', $fee) }}" class="btn btn-sm btn-label-primary">Edit</a>
-                                @endcan
-                                @can('registration-fee.delete')
-                                    <form method="POST" action="{{ route('registration-fees.destroy', $fee) }}" class="delete-fee-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-label-danger">Hapus</button>
-                                    </form>
-                                @endcan
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="10" class="text-center text-muted py-4">Belum ada data biaya.</td>
-                    </tr>
-                @endforelse
-                </tbody>
-            </table>
+                <tbody></tbody>           </table>
         </div>
     </div>
 </div>
@@ -104,20 +48,74 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.delete-fee-form').forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-            event.preventDefault();
-            Swal.fire({
-                title: 'Hapus data biaya?',
-                text: 'Data biaya ini akan dihapus dari master.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, hapus',
-                cancelButtonText: 'Batal',
-                reverseButtons: true
-            }).then(function (result) {
-                if (result.isConfirmed) form.submit();
-            });
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[char]);
+
+    const money = value => 'Rp' + Number(value || 0).toLocaleString('id-ID');
+    const canEdit = @json(auth()->user()?->can('registration-fee.update') ?? false);
+    const canDelete = @json(auth()->user()?->can('registration-fee.delete') ?? false);
+    const baseUrl = @json(url('master-data/biaya'));
+    const csrf = @json(csrf_token());
+
+    new DataTable('#feesTable', {
+        processing: true,
+        serverSide: true,
+        ajax: @json(route('registration-fees.data')),
+        pageLength: 10,
+        order: [[0, 'asc']],
+        columns: [
+            { data: 'fee_type_label', render: (value, type, row) => escapeHtml(value || row.fee_type) },
+            { data: 'name', render: (value, type, row) => '<div class="fw-semibold">' + escapeHtml(value || 'Biaya Pendaftaran') + '</div>' + (row.description ? '<small class="text-muted">' + escapeHtml(row.description) + '</small>' : '') },
+            { data: 'education_level', render: value => escapeHtml(value || 'Semua') },
+            { data: 'grade_level', render: value => value ? 'Kelas ' + escapeHtml(value) : 'Semua' },
+            { data: 'billing_period', render: value => ({ once: 'Sekali', monthly: 'Bulanan', semester: 'Per Semester', yearly: 'Tahunan' })[value] || '—' },
+            { data: 'amount', render: value => escapeHtml(money(value)) },
+            { data: 'promo_code', orderable: false, render: (value, type, row) => {
+                if (row.fee_type === 'registration') return '<span class="badge bg-label-secondary">Tidak berlaku</span>';
+                if (!row.discount_enabled) return '<span class="badge bg-label-secondary">Tidak</span>';
+                const discount = row.discount_type === 'percentage' ? escapeHtml(row.discount_value) + '%' : escapeHtml(money(row.discount_value));
+                return '<div class="fw-semibold">' + escapeHtml(value || '-') + '</div><small class="text-muted">' + discount + '<br>' + escapeHtml(row.promo_starts_at || '-') + ' – ' + escapeHtml(row.promo_ends_at || '-') + '</small>';
+            }},
+            { data: 'max_installments', render: (value, type, row) => row.fee_type === 'registration' ? 'Tidak bisa dicicil' : escapeHtml(value || 1) + ' kali' },
+            { data: 'is_active', render: value => value ? '<span class="badge bg-label-success">Aktif</span>' : '<span class="badge bg-label-secondary">Tidak Aktif</span>' },
+            { data: 'id', orderable: false, searchable: false, render: id => {
+                let html = '<div class="d-flex gap-2">';
+                if (canEdit) html += '<a href="' + baseUrl + '/' + Number(id) + '/edit" class="btn btn-sm btn-label-primary">Edit</a>';
+                if (canDelete) html += '<form method="POST" action="' + baseUrl + '/' + Number(id) + '" class="delete-fee-form"><input type="hidden" name="_token" value="' + csrf + '"><input type="hidden" name="_method" value="DELETE"><button type="submit" class="btn btn-sm btn-label-danger">Hapus</button></form>';
+                return html + '</div>';
+            }}
+        ],
+        language: {
+            processing: 'Memuat data...',
+            search: 'Cari:',
+            lengthMenu: 'Tampilkan _MENU_ data',
+            info: 'Menampilkan _START_–_END_ dari _TOTAL_ data',
+            infoEmpty: 'Tidak ada data',
+            zeroRecords: 'Data tidak ditemukan',
+            emptyTable: 'Belum ada data biaya.',
+            paginate: { first: 'Pertama', last: 'Terakhir', next: 'Berikutnya', previous: 'Sebelumnya' }
+        }
+    });
+
+    document.addEventListener('submit', function (event) {
+        const form = event.target.closest('.delete-fee-form');
+        if (!form) return;
+        event.preventDefault();
+        Swal.fire({
+            title: 'Hapus data biaya?',
+            text: 'Data biaya ini akan dihapus dari master.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then(function (result) {
+            if (result.isConfirmed) form.submit();
         });
     });
 });
