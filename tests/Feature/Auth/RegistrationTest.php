@@ -21,6 +21,14 @@ beforeEach(function () {
 });
 
 test('registration page is available to guests', function () {
+    ClassRoom::create([
+        'name' => 'Kelas 7 SMP Registrasi',
+        'code' => 'SMP-7-REG-PAGE',
+        'education_level' => 'SMP',
+        'grade_level' => 7,
+        'is_active' => true,
+    ]);
+
     $this->get('/register')
         ->assertOk()
         ->assertSee('Trial')
