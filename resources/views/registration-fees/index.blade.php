@@ -15,7 +15,7 @@
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <h4 class="card-title mb-1">Master Data Biaya</h4>
-                <p class="text-muted mb-0">Kelola tarif pendaftaran dan biaya lain. Tarif pendaftaran digunakan pada formulir registrasi Berbayar.</p>
+                <p class="text-muted mb-0">Kelola tarif, diskon/promo, dan cicilan. Biaya Pendaftaran selalu dibayar penuh tanpa promo.</p>
             </div>
             @can('registration-fee.create')
                 <a href="{{ route('registration-fees.create') }}" class="btn btn-primary">
@@ -33,6 +33,8 @@
                     <th>Kelas</th>
                     <th>Periode</th>
                     <th>Nominal</th>
+                    <th>Diskon / Promo</th>
+                    <th>Maks. Cicilan</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -51,6 +53,20 @@
                         <td>{{ $fee->grade_level ? 'Kelas '.$fee->grade_level : 'Semua' }}</td>
                         <td>{{ ['once' => 'Sekali', 'monthly' => 'Bulanan', 'semester' => 'Per Semester', 'yearly' => 'Tahunan'][$fee->billing_period] ?? '—' }}</td>
                         <td>Rp{{ number_format($fee->amount, 0, ',', '.') }}</td>
+                        <td>
+                            @if($fee->isRegistrationFee())
+                                <span class="badge bg-label-secondary">Tidak berlaku</span>
+                            @elseif($fee->discount_enabled)
+                                <div class="fw-semibold">{{ $fee->promo_code }}</div>
+                                <small class="text-muted">
+                                    {{ $fee->discount_type === 'percentage' ? $fee->discount_value.'%' : 'Rp'.number_format($fee->discount_value, 0, ',', '.') }}
+                                    <br>{{ $fee->promo_starts_at?->format('d/m/Y H:i') }} – {{ $fee->promo_ends_at?->format('d/m/Y H:i') }}
+                                </small>
+                            @else
+                                <span class="badge bg-label-secondary">Tidak</span>
+                            @endif
+                        </td>
+                        <td>{{ $fee->isRegistrationFee() ? 'Tidak bisa dicicil' : $fee->max_installments.' kali' }}</td>
                         <td>
                             @if($fee->is_active)
                                 <span class="badge bg-label-success">Aktif</span>
@@ -75,7 +91,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Belum ada data biaya.</td>
+                        <td colspan="10" class="text-center text-muted py-4">Belum ada data biaya.</td>
                     </tr>
                 @endforelse
                 </tbody>
