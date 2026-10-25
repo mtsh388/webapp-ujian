@@ -91,6 +91,7 @@ test('paid registration stores student parent and pending registration payment a
         'parent_full_name' => 'Nama Orang Tua',
         'parent_email' => 'orangtua@example.com',
         'parent_address' => 'Jakarta',
+        'amount' => 1,
         'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
     ])
         ->assertRedirect(route('login'))
@@ -157,4 +158,47 @@ test('paid registration rejects a client-supplied installment field', function (
     $this->assertDatabaseMissing('users', [
         'email' => 'cicilan@example.com',
     ]);
+});
+
+test('paid registration applies the configured tariff for SD SMP and SMA grades 10 and 11', function () {
+    Storage::fake('local');
+
+    $tariffs = [
+        ['level' => 'SD', 'grade' => 6, 'amount' => 200000],
+        ['level' => 'SMP', 'grade' => 9, 'amount' => 300000],
+        ['level' => 'SMA', 'grade' => 10, 'amount' => 400000],
+        ['level' => 'SMA', 'grade' => 11, 'amount' => 400000],
+    ];
+
+    foreach ($tariffs as $index => $tariff) {
+        $class = ClassRoom::create([
+            'name' => 'Kelas ' . $tariff['grade'] . ' ' . $tariff['level'],
+            'code' => $tariff['level'] . '-' . $tariff['grade'] . '-TARIF',
+            'education_level' => $tariff['level'],
+            'grade_level' => $tariff['grade'],
+            'is_active' => true,
+        ]);
+
+        $email = 'siswa.tarif' . $index . '@example.com';
+
+        $this->post('/register', [
+            'registration_type' => 'paid',
+            'email' => $email,
+            'password' => 'password123',
+            'full_name' => 'Siswa Tarif ' . $index,
+            'school_name' => 'Sekolah Contoh',
+            'education_level' => $tariff['level'],
+            'class_id' => $class->id,
+            'phone' => '081234567890',
+            'parent_phone' => '081234567891',
+            'parent_full_name' => 'Orang Tua Tarif ' . $index,
+            'parent_email' => 'orangtua.tarif' . $index . '@example.com',
+            'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
+        ])->assertRedirect(route('login'));
+
+        $student = Student::whereHas('user', fn ($query) => $query->where('email', $email))->firstOrFail();
+
+        expect(RegistrationPayment::where('student_id', $student->id)->value('amount'))
+            ->toBe($tariff['amount']);
+    }
 });
