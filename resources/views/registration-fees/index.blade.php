@@ -40,7 +40,7 @@
                 <tbody>
                 @forelse($fees as $fee)
                     <tr>
-                        <td>{{ $typeLabels[$fee->fee_type] ?? \Illuminate\Support\Str::headline($fee->fee_type) }}</td>
+                        <td>{{ $fee->fee_type_label ?: ($typeLabels[$fee->fee_type] ?? \Illuminate\Support\Str::headline($fee->fee_type)) }}</td>
                         <td>
                             <div class="fw-semibold">{{ $fee->name ?: 'Biaya Pendaftaran' }}</div>
                             @if($fee->description)
