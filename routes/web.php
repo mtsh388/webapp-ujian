@@ -176,7 +176,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
 
     });
 
-    Route::prefix('master-data/biaya-pendaftaran')
+    Route::prefix('master-data/biaya')
         ->middleware('permission:registration-fee.view')
         ->group(function () {
             Route::get('/', [RegistrationFeeController::class, 'index'])->name('registration-fees.index');
