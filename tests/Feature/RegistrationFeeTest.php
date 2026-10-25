@@ -31,6 +31,9 @@ test('admin can view the registration fee master data', function () {
     $this->get(route('registration-fees.index'))
         ->assertOk()
         ->assertSee('Master Data Biaya')
+        ->assertSee('Nama Biaya')
+        ->assertDontSee('Jenis Biaya')
+        ->assertDontSee("data: 'name'", false)
         ->assertSee('serverSide: true');
 
     $this->getJson(route('registration-fees.data'))
