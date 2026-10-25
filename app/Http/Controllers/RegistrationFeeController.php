@@ -66,7 +66,8 @@ class RegistrationFeeController extends Controller
     private function validatedData(Request $request, ?RegistrationFee $registrationFee = null): array
     {
         $validated = $request->validate([
-            'fee_type' => ['required', Rule::in([...array_keys(RegistrationFee::typeLabels()), 'custom'])],\n            'custom_fee_type' => ['nullable', 'string', 'max:40'],
+            'fee_type' => ['required', Rule::in([...array_keys(RegistrationFee::typeLabels()), 'custom'])],
+            'custom_fee_type' => ['nullable', 'string', 'max:40'],
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'billing_period' => ['nullable', Rule::in(['once', 'monthly', 'semester', 'yearly'])],
