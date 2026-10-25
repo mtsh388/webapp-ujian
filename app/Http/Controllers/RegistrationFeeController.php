@@ -72,12 +72,22 @@ class RegistrationFeeController extends Controller
             'grade_level' => ['nullable', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
             'amount' => ['required', 'integer', 'min:0', 'max:999999999'],
             'is_active' => ['required', 'boolean'],
+            'discount_enabled' => ['nullable', 'boolean'],
+            'promo_code' => ['nullable', 'string', 'max:100'],
+            'promo_starts_at' => ['nullable', 'date'],
+            'promo_ends_at' => ['nullable', 'date', 'after:promo_starts_at'],
+            'discount_type' => ['nullable', Rule::in(['fixed', 'percentage'])],
+            'discount_value' => ['nullable', 'integer', 'min:1', 'max:999999999'],
+            'max_installments' => ['nullable', 'integer', 'min:1', 'max:5'],
         ], [
             'fee_type.required' => 'Jenis biaya wajib diisi.',
             'fee_type.max' => 'Jenis biaya maksimal 100 karakter.',
             'education_level.in' => 'Jenjang pendidikan tidak valid.',
             'grade_level.in' => 'Tingkat kelas tidak valid.',
             'amount.min' => 'Biaya tidak boleh negatif.',
+            'promo_ends_at.after' => 'Waktu berakhir promo harus setelah waktu mulai.',
+            'discount_value.min' => 'Nilai diskon harus lebih besar dari nol.',
+            'max_installments.max' => 'Cicilan maksimal 5 kali.',
         ]);
 
         $feeTypeLabel = trim($validated['fee_type']);
@@ -139,6 +149,13 @@ class RegistrationFeeController extends Controller
 
             $validated['name'] = 'Biaya Pendaftaran';
             $validated['billing_period'] = 'once';
+            $validated['discount_enabled'] = false;
+            $validated['promo_code'] = null;
+            $validated['promo_starts_at'] = null;
+            $validated['promo_ends_at'] = null;
+            $validated['discount_type'] = null;
+            $validated['discount_value'] = null;
+            $validated['max_installments'] = 1;
         } else {
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
@@ -160,6 +177,34 @@ class RegistrationFeeController extends Controller
                 throw ValidationException::withMessages([
                     'education_level' => 'Pilih jenjang pendidikan jika kelas ditentukan.',
                 ]);
+            }
+
+            $discountEnabled = (bool) ($validated['discount_enabled'] ?? false);
+            $validated['discount_enabled'] = $discountEnabled;
+            $validated['max_installments'] = (int) ($validated['max_installments'] ?? 1);
+
+            if ($discountEnabled) {
+                $request->validate([
+                    'promo_code' => ['required', 'string', 'max:100'],
+                    'promo_starts_at' => ['required', 'date'],
+                    'promo_ends_at' => ['required', 'date', 'after:promo_starts_at'],
+                    'discount_type' => ['required', Rule::in(['fixed', 'percentage'])],
+                    'discount_value' => ['required', 'integer', 'min:1', 'max:999999999'],
+                ]);
+
+                if ($validated['discount_type'] === 'percentage' && (int) $validated['discount_value'] > 100) {
+                    throw ValidationException::withMessages([
+                        'discount_value' => 'Diskon persentase maksimal 100%.',
+                    ]);
+                }
+
+                $validated['promo_code'] = trim($validated['promo_code']);
+            } else {
+                $validated['promo_code'] = null;
+                $validated['promo_starts_at'] = null;
+                $validated['promo_ends_at'] = null;
+                $validated['discount_type'] = null;
+                $validated['discount_value'] = null;
             }
         }
 
