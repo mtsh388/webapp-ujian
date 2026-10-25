@@ -26,12 +26,12 @@ class ExamController extends Controller
 
     public function questions($id)
     {
-        $data = $this->examService->getExamWithQuestions($id);
+        $exam = Exam::query()->with('subject')->findOrFail($id);
 
         return view('exams.questions', [
-            'exam' => $data['exam'],
-            'questions' => $data['questions'],
-            'availableQuestions' => $data['availableQuestions'],
+            'exam' => $exam,
+            'questions' => collect(),
+            'availableQuestions' => collect(),
         ]);
     }
 
@@ -259,11 +259,11 @@ class ExamController extends Controller
 
     public function participants(Exam $exam)
     {
-        $data = $this->examService->getExamParticipants($exam->id);
+        $exam->load('subject');
 
         return view('exams.participants', [
-            'exam' => $data['exam'],
-            'availableStudents' => $data['availableStudents'],
+            'exam' => $exam,
+            'availableStudents' => $this->examService->getAvailableStudentsForExam($exam->id),
         ]);
     }
 
