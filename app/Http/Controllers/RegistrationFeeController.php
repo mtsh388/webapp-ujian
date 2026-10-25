@@ -30,7 +30,6 @@ class RegistrationFeeController extends Controller
             $query->where(function ($builder) use ($search) {
                 $builder->where('fee_type_label', 'like', "%{$search}%")
                     ->orWhere('fee_type', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%")
                     ->orWhere('education_level', 'like', "%{$search}%")
                     ->orWhere('grade_level', 'like', "%{$search}%")
@@ -41,14 +40,13 @@ class RegistrationFeeController extends Controller
         $recordsFiltered = (clone $query)->count();
         $columns = [
             0 => 'fee_type_label',
-            1 => 'name',
-            2 => 'education_level',
-            3 => 'grade_level',
-            4 => 'billing_period',
-            5 => 'amount',
-            6 => 'promo_code',
-            7 => 'max_installments',
-            8 => 'is_active',
+            1 => 'education_level',
+            2 => 'grade_level',
+            3 => 'billing_period',
+            4 => 'amount',
+            5 => 'promo_code',
+            6 => 'max_installments',
+            7 => 'is_active',
         ];
         $orderIndex = (int) $request->input('order.0.column', 0);
         $orderColumn = $columns[$orderIndex] ?? 'fee_type_label';
@@ -109,7 +107,6 @@ class RegistrationFeeController extends Controller
     {
         $validated = $request->validate([
             'fee_type' => ['required', 'string', 'max:100'],
-            'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'billing_period' => ['nullable', Rule::in(['once', 'monthly', 'semester', 'yearly'])],
             'education_level' => ['nullable', Rule::in(['SD', 'SMP', 'SMA'])],
@@ -154,9 +151,14 @@ class RegistrationFeeController extends Controller
         $knownTypes['pendaftaran'] = 'registration';
 
         $feeType = $knownTypes[$feeTypeSlug] ?? $feeTypeSlug;
+
+        if (str_starts_with($feeTypeSlug, 'pendaftaran-') || str_starts_with($feeTypeSlug, 'biaya-pendaftaran-')) {
+            $feeType = 'registration';
+        }
+
         $isRegistration = $feeType === 'registration';
 
-        if (isset($knownLabels[$feeType])) {
+        if (isset($knownLabels[$feeType]) && in_array($feeTypeSlug, [Str::slug($feeType), Str::slug($knownLabels[$feeType])], true)) {
             $feeTypeLabel = $knownLabels[$feeType];
         }
 
@@ -191,7 +193,6 @@ class RegistrationFeeController extends Controller
                 ]);
             }
 
-            $validated['name'] = 'Biaya Pendaftaran';
             $validated['billing_period'] = 'once';
             $validated['discount_enabled'] = false;
             $validated['promo_code'] = null;
@@ -201,10 +202,6 @@ class RegistrationFeeController extends Controller
             $validated['discount_value'] = null;
             $validated['max_installments'] = 1;
         } else {
-            $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-            ]);
-
             if (filled($validated['education_level']) && filled($validated['grade_level'])) {
                 $allowedGrades = match ($validated['education_level']) {
                     'SD' => [4, 5, 6],
@@ -254,6 +251,7 @@ class RegistrationFeeController extends Controller
 
         $validated['fee_type'] = $feeType;
         $validated['fee_type_label'] = $feeTypeLabel;
+        $validated['name'] = $feeTypeLabel;
         $validated['education_level'] = $validated['education_level'] ?: null;
         $validated['grade_level'] = filled($validated['grade_level']) ? (int) $validated['grade_level'] : null;
         $validated['amount'] = (int) $validated['amount'];

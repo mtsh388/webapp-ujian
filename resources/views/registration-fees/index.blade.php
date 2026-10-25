@@ -27,7 +27,6 @@
             <table id="feesTable" class="table table-hover w-100">
                 <thead>
                 <tr>
-                    <th>Jenis Biaya</th>
                     <th>Nama Biaya</th>
                     <th>Jenjang</th>
                     <th>Kelas</th>
@@ -69,8 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
         pageLength: 10,
         order: [[0, 'asc']],
         columns: [
-            { data: 'fee_type_label', render: (value, type, row) => escapeHtml(value || row.fee_type) },
-            { data: 'name', render: (value, type, row) => '<div class="fw-semibold">' + escapeHtml(value || 'Biaya Pendaftaran') + '</div>' + (row.description ? '<small class="text-muted">' + escapeHtml(row.description) + '</small>' : '') },
+            { data: 'fee_type_label', render: (value, type, row) => '<div class="fw-semibold">' + escapeHtml(value || row.fee_type || 'Biaya') + '</div>' + (row.description ? '<small class="text-muted">' + escapeHtml(row.description) + '</small>' : '') },
             { data: 'education_level', render: value => escapeHtml(value || 'Semua') },
             { data: 'grade_level', render: value => value ? 'Kelas ' + escapeHtml(value) : 'Semua' },
             { data: 'billing_period', render: value => ({ once: 'Sekali', monthly: 'Bulanan', semester: 'Per Semester', yearly: 'Tahunan' })[value] || '—' },

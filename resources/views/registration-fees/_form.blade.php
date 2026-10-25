@@ -16,20 +16,15 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h4 class="card-title mb-1">{{ $formTitle }}</h4>
-            <p class="text-muted mb-0">Atur jenis biaya, tarif, promo, dan ketentuan cicilan.</p>
+            <p class="text-muted mb-0">Atur nama biaya, tarif, promo, dan ketentuan cicilan.</p>
         </div>
         <div class="card-body">
             <div class="row g-4">
                 <div class="col-md-6">
-                    <label for="fee_type" class="form-label">Jenis Biaya <span class="text-danger">*</span></label>
+                    <label for="fee_type" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
                     <input type="text" id="fee_type" name="fee_type" maxlength="100" value="{{ old('fee_type', $registrationFee->fee_type_label ?? 'Pendaftaran') }}" class="form-control" placeholder="Contoh: SPP Bulanan, Study Tour, Laboratorium" required>
-                    <div class="form-text">Bebas diisi sesuai kebutuhan. Jenis Pendaftaran tidak dapat menggunakan promo atau cicilan.</div>
+                    <div class="form-text">Bebas diisi sesuai kebutuhan. Biaya pendaftaran tidak dapat menggunakan promo atau cicilan.</div>
                     @error('fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                </div>
-                <div class="col-md-6" id="fee_name_group">
-                    <label for="name" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
-                    <input type="text" id="name" name="name" maxlength="255" value="{{ old('name', $registrationFee->name ?? '') }}" class="form-control">
-                    @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6" id="education_level_group">
                     <label for="education_level" class="form-label">Jenjang Pendidikan <span class="text-danger" id="level_required_mark">*</span></label>
@@ -140,7 +135,7 @@
                 </div>
             </div>
             <div class="alert alert-info mt-4 mb-0" id="fee_help">
-                Biaya Pendaftaran wajib ditentukan berdasarkan jenjang dan kelas, tidak memakai promo dan tidak dapat dicicil. Biaya lain dapat berlaku untuk semua siswa atau sasaran jenjang/kelas tertentu.
+                Nama biaya pendaftaran wajib ditentukan berdasarkan jenjang dan kelas, tidak memakai promo dan tidak dapat dicicil. Biaya lain dapat berlaku untuk semua siswa atau sasaran jenjang/kelas tertentu.
             </div>
         </div>
         <div class="card-footer border-top d-flex justify-content-end gap-2">
@@ -152,8 +147,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const type = document.getElementById('fee_type');
-    const name = document.getElementById('name');
-    const nameGroup = document.getElementById('fee_name_group');
     const level = document.getElementById('education_level');
     const grade = document.getElementById('grade_level');
     const billing = document.getElementById('billing_period');
@@ -168,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function isRegistrationType() {
         const normalized = type.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        return ['registration', 'pendaftaran', 'biaya-pendaftaran'].includes(normalized);
+        return ['registration', 'pendaftaran', 'biaya-pendaftaran'].includes(normalized) || normalized.startsWith('pendaftaran-') || normalized.startsWith('biaya-pendaftaran-');
     }
 
     function filterGrades() {
@@ -197,8 +190,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function toggleFields() {
         const registration = isRegistrationType();
-        nameGroup.hidden = registration;
-        name.required = !registration;
         level.required = registration;
         grade.required = registration;
         document.getElementById('level_required_mark').hidden = !registration;
@@ -208,13 +199,11 @@ document.addEventListener('DOMContentLoaded', function () {
         discountEnabled.disabled = registration;
         maxInstallments.disabled = registration;
         if (registration) {
-            name.value = 'Biaya Pendaftaran';
             billing.value = 'once';
             billing.disabled = true;
             discountEnabled.value = '0';
             maxInstallments.value = '1';
         } else {
-            if (name.value === 'Biaya Pendaftaran') name.value = '';
             billing.disabled = false;
         }
         togglePromoFields();
