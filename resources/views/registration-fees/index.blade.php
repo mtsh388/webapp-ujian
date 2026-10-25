@@ -1,6 +1,6 @@
 @extends('template.app')
 
-@section('title', 'Master Data Biaya Pendaftaran')
+@section('title', 'Master Data Biaya')
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -14,8 +14,8 @@
     <div class="card">
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-                <h4 class="card-title mb-1">Master Data Biaya Pendaftaran</h4>
-                <p class="text-muted mb-0">Tarif di sini digunakan sebagai sumber biaya pada registrasi Berbayar.</p>
+                <h4 class="card-title mb-1">Master Data Biaya</h4>
+                <p class="text-muted mb-0">Kelola tarif pendaftaran dan biaya lain. Tarif pendaftaran digunakan pada formulir registrasi Berbayar.</p>
             </div>
             @can('registration-fee.create')
                 <a href="{{ route('registration-fees.create') }}" class="btn btn-primary">
@@ -27,9 +27,12 @@
             <table class="table table-hover">
                 <thead>
                 <tr>
+                    <th>Jenis Biaya</th>
+                    <th>Nama Biaya</th>
                     <th>Jenjang</th>
                     <th>Kelas</th>
-                    <th>Biaya Pendaftaran</th>
+                    <th>Periode</th>
+                    <th>Nominal</th>
                     <th>Status</th>
                     <th>Aksi</th>
                 </tr>
@@ -37,8 +40,16 @@
                 <tbody>
                 @forelse($fees as $fee)
                     <tr>
-                        <td>{{ $fee->education_level }}</td>
-                        <td>Kelas {{ $fee->grade_level }}</td>
+                        <td>{{ $typeLabels[$fee->fee_type] ?? 'Lainnya' }}</td>
+                        <td>
+                            <div class="fw-semibold">{{ $fee->name ?: 'Biaya Pendaftaran' }}</div>
+                            @if($fee->description)
+                                <small class="text-muted">{{ $fee->description }}</small>
+                            @endif
+                        </td>
+                        <td>{{ $fee->education_level ?: 'Semua' }}</td>
+                        <td>{{ $fee->grade_level ? 'Kelas '.$fee->grade_level : 'Semua' }}</td>
+                        <td>{{ ['once' => 'Sekali', 'monthly' => 'Bulanan', 'semester' => 'Per Semester', 'yearly' => 'Tahunan'][$fee->billing_period] ?? '—' }}</td>
                         <td>Rp{{ number_format($fee->amount, 0, ',', '.') }}</td>
                         <td>
                             @if($fee->is_active)
@@ -64,7 +75,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Belum ada data biaya pendaftaran.</td>
+                        <td colspan="8" class="text-center text-muted py-4">Belum ada data biaya.</td>
                     </tr>
                 @endforelse
                 </tbody>
@@ -81,8 +92,8 @@ document.addEventListener('DOMContentLoaded', function () {
         form.addEventListener('submit', function (event) {
             event.preventDefault();
             Swal.fire({
-                title: 'Hapus biaya pendaftaran?',
-                text: 'Data tarif ini akan dihapus dari master.',
+                title: 'Hapus data biaya?',
+                text: 'Data biaya ini akan dihapus dari master.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Ya, hapus',
