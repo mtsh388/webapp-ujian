@@ -82,8 +82,7 @@ test('admin cannot assign a grade outside its education level', function () {
 
 test('admin can create a general fee without targeting a class', function () {
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'Buku dan Modul',
-        'name' => 'Modul Pembelajaran',
+        'fee_type' => 'Modul Pembelajaran',
         'description' => 'Biaya modul untuk siswa',
         'billing_period' => 'semester',
         'education_level' => '',
@@ -94,8 +93,8 @@ test('admin can create a general fee without targeting a class', function () {
         ->assertSessionHas('success');
 
     $this->assertDatabaseHas('registration_fees', [
-        'fee_type' => 'books',
-        'fee_type_label' => 'Buku dan Modul',
+        'fee_type' => 'modul-pembelajaran',
+        'fee_type_label' => 'Modul Pembelajaran',
         'name' => 'Modul Pembelajaran',
         'billing_period' => 'semester',
         'education_level' => null,
@@ -108,7 +107,6 @@ test('admin can create a general fee without targeting a class', function () {
 test('admin can create a fee with any free-text type', function () {
     $this->post(route('registration-fees.store'), [
         'fee_type' => 'Laboratorium Komputer',
-        'name' => 'Praktikum Komputer',
         'description' => 'Biaya praktikum khusus',
         'billing_period' => 'once',
         'education_level' => 'SMP',
@@ -121,7 +119,7 @@ test('admin can create a fee with any free-text type', function () {
     $this->assertDatabaseHas('registration_fees', [
         'fee_type' => 'laboratorium-komputer',
         'fee_type_label' => 'Laboratorium Komputer',
-        'name' => 'Praktikum Komputer',
+        'name' => 'Laboratorium Komputer',
         'education_level' => 'SMP',
         'grade_level' => null,
         'amount' => 75000,
@@ -137,7 +135,7 @@ test('admin can reuse a free-text fee type', function () {
     RegistrationFee::create([
         'fee_type' => 'laboratorium-komputer',
         'fee_type_label' => 'Laboratorium Komputer',
-        'name' => 'Praktikum Komputer',
+        'name' => 'Laboratorium Komputer',
         'billing_period' => 'once',
         'education_level' => 'SMP',
         'grade_level' => 7,
@@ -147,12 +145,12 @@ test('admin can reuse a free-text fee type', function () {
 
     $this->get(route('registration-fees.create'))
         ->assertOk()
-        ->assertSee('Jenis Biaya')
-        ->assertSee('type="text"', false);
+        ->assertSee('Nama Biaya')
+        ->assertDontSee('name="name"', false)
+        ->assertSee('name="fee_type"', false);
 
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'Laboratorium Komputer',
-        'name' => 'Pemeliharaan Laboratorium',
+        'fee_type' => 'Pemeliharaan Laboratorium',
         'billing_period' => 'yearly',
         'education_level' => '',
         'grade_level' => '',
@@ -162,8 +160,8 @@ test('admin can reuse a free-text fee type', function () {
         ->assertSessionHas('success');
 
     $this->assertDatabaseHas('registration_fees', [
-        'fee_type' => 'laboratorium-komputer',
-        'fee_type_label' => 'Laboratorium Komputer',
+        'fee_type' => 'pemeliharaan-laboratorium',
+        'fee_type_label' => 'Pemeliharaan Laboratorium',
         'name' => 'Pemeliharaan Laboratorium',
         'amount' => 25000,
         'education_level' => null,
@@ -177,8 +175,7 @@ test('admin can configure promo discounts and up to five installments for a gene
     $endsAt = now()->addDays(7)->format('Y-m-d H:i:s');
 
     $this->post(route('registration-fees.store'), [
-        'fee_type' => 'Kegiatan',
-        'name' => 'Study Tour',
+        'fee_type' => 'Study Tour',
         'billing_period' => 'once',
         'education_level' => '',
         'grade_level' => '',
@@ -195,7 +192,7 @@ test('admin can configure promo discounts and up to five installments for a gene
         ->assertSessionHas('success');
 
     $this->assertDatabaseHas('registration_fees', [
-        'fee_type_label' => 'Kegiatan',
+        'fee_type_label' => 'Study Tour',
         'name' => 'Study Tour',
         'discount_enabled' => true,
         'promo_code' => 'HEMAT20',
