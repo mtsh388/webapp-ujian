@@ -23,7 +23,15 @@ test('registration page is available to guests', function () {
     $this->get('/register')
         ->assertOk()
         ->assertSee('Trial')
-        ->assertSee('Berbayar');
+        ->assertSee('Berbayar')
+        ->assertSee('id="education_level"', false)
+        ->assertSee('id="class_id"', false)
+        ->assertSee('id="registrationFeeAmount"', false)
+        ->assertSee('function updateFee()', false)
+        ->assertSee('Rp200.000')
+        ->assertSee('Rp300.000')
+        ->assertSee('Rp400.000')
+        ->assertSee('Rp500.000');
 });
 
 test('a visitor can register a trial student account', function () {
