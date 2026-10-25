@@ -156,7 +156,7 @@ class ExamController extends Controller
 
     public function bulkDestroyQuestions(Exam $exam): JsonResponse
     {
-        $deleted = \\App\\Models\\ExamQuestion::query()
+        $deleted = \App\Models\ExamQuestion::query()
             ->where('exam_id', $exam->id)
             ->delete();
 
