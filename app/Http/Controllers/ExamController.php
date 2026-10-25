@@ -261,9 +261,14 @@ class ExamController extends Controller
     {
         $exam->load('subject');
 
+        $participantsQuery = ExamParticipant::query()->where('exam_id', $exam->id);
+
         return view('exams.participants', [
             'exam' => $exam,
             'availableStudents' => $this->examService->getAvailableStudentsForExam($exam->id),
+            'participantTotal' => (clone $participantsQuery)->count(),
+            'activeParticipantTotal' => (clone $participantsQuery)->where('is_active', true)->count(),
+            'inactiveParticipantTotal' => (clone $participantsQuery)->where('is_active', false)->count(),
         ]);
     }
 
