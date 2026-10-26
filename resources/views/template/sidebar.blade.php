@@ -41,6 +41,7 @@
         @if(
             auth()->user()->can('class.view') ||
             auth()->user()->can('registration-fee.view') ||
+            auth()->user()->can('promo-code.view') ||
             auth()->user()->can('subject.view') ||
             auth()->user()->can('student.view') ||
             auth()->user()->can('parent.view')
@@ -53,6 +54,7 @@
                 {{
                     request()->routeIs('classes.*') ||
                     request()->routeIs('registration-fees.*') ||
+                    request()->routeIs('promo-codes.*') ||
                     request()->routeIs('subjects.*') ||
                     request()->routeIs('students.*') ||
                     request()->routeIs('parents.*')
@@ -79,6 +81,14 @@
                         <li class="menu-item {{ request()->routeIs('registration-fees.*') ? 'active' : '' }}">
                             <a href="{{ route('registration-fees.index') }}" class="menu-link">
                                 <div>Biaya</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('promo-code.view')
+                        <li class="menu-item {{ request()->routeIs('promo-codes.*') ? 'active' : '' }}">
+                            <a href="{{ route('promo-codes.index') }}" class="menu-link">
+                                <div>Kode Promo</div>
                             </a>
                         </li>
                     @endcan
