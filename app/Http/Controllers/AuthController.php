@@ -52,6 +52,14 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
+        if (array_key_exists('promo_code', $request->all())) {
+            return back()
+                ->withInput($request->except(['password', 'password_confirmation', 'payment_proof']))
+                ->withErrors([
+                    'registration_type' => 'Kode promo tidak digunakan dalam registrasi QSEE.',
+                ]);
+        }
+
         if (array_key_exists('installments', $request->all())) {
             return back()
                 ->withInput($request->except(['password', 'password_confirmation', 'payment_proof']))
