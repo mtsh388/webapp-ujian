@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RegistrationPayment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,6 +19,13 @@ class RegistrationPaymentController extends Controller
                 ->latest()
                 ->paginate(20),
         ]);
+    }
+
+    public function proof(RegistrationPayment $registrationPayment)
+    {
+        abort_unless(filled($registrationPayment->proof_path) && Storage::disk('local')->exists($registrationPayment->proof_path), 404);
+
+        return Storage::disk('local')->response($registrationPayment->proof_path);
     }
 
     public function approve(RegistrationPayment $registrationPayment): RedirectResponse
