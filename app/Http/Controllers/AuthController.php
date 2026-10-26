@@ -6,6 +6,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\ParentModel;
 use App\Models\RegistrationPayment;
 use App\Models\RegistrationFee;
+use App\Models\PromoCode;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
@@ -45,17 +46,18 @@ class AuthController extends Controller
             ->get();
 
         $fees = RegistrationFee::active()->registration()->get()->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
+        $promoCodes = PromoCode::query()->where('is_active', true)->get();
 
-        return view('auth.register', compact('classes', 'fees'));
+        return view('auth.register', compact('classes', 'fees', 'promoCodes'));
     }
 
     public function register(Request $request): RedirectResponse
     {
-        if (array_key_exists('promo_code', $request->all()) || array_key_exists('installments', $request->all())) {
+        if (array_key_exists('installments', $request->all())) {
             return back()
                 ->withInput($request->except(['password', 'password_confirmation', 'payment_proof']))
                 ->withErrors([
-                    'registration_type' => 'Registrasi tidak menerima kode promo atau pembayaran cicilan.',
+                    'registration_type' => 'Registrasi tidak menerima pembayaran cicilan.',
                 ]);
         }
 
@@ -65,6 +67,7 @@ class AuthController extends Controller
             'registration_type' => ['required', Rule::in(['trial', 'paid'])],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
+            'promo_code' => ['nullable', 'string', 'max:100'],
             'full_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
             'school_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
             'education_level' => [Rule::requiredIf($type === 'paid'), 'nullable', Rule::in(['SD', 'SMP', 'SMA'])],
@@ -119,12 +122,34 @@ class AuthController extends Controller
                     ->withErrors(['class_id' => 'Biaya pendaftaran untuk jenjang dan kelas ini belum tersedia atau tidak aktif.']);
             }
 
+            $promoCode = null;
+            if (filled($validated['promo_code'] ?? null)) {
+                if (! $registrationFee->discount_enabled) {
+                    return back()
+                        ->withInput($request->except(['password', 'payment_proof']))
+                        ->withErrors(['promo_code' => 'Kode promo tidak dapat digunakan untuk biaya pendaftaran ini.']);
+                }
+
+                $promoCode = PromoCode::query()
+                    ->whereRaw('LOWER(code) = ?', [mb_strtolower(trim($validated['promo_code']))])
+                    ->first();
+
+                if (! $promoCode || ! $promoCode->isValidAt()) {
+                    return back()
+                        ->withInput($request->except(['password', 'payment_proof']))
+                        ->withErrors(['promo_code' => 'Kode promo tidak valid, belum berlaku, sudah berakhir, atau tidak aktif.']);
+                }
+            }
+
             $amount = $registrationFee->amount;
+            if ($promoCode) {
+                $amount -= $promoCode->discountFor($amount);
+            }
 
             $proofPath = $request->file('payment_proof')->store('registration-proofs', 'local');
 
             try {
-                $user = DB::transaction(function () use ($validated, $classRoom, $amount, $proofPath): User {
+                $user = DB::transaction(function () use ($validated, $classRoom, $amount, $proofPath, $promoCode): User {
                     $studentUser = User::create([
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
@@ -192,7 +217,7 @@ class AuthController extends Controller
                         'status' => 'pending_verification',
                         'proof_path' => $proofPath,
                         'payment_type' => 'registration',
-                        'promo_code' => null,
+                        'promo_code' => $promoCode?->code,
                         'installment_status' => 'not_allowed',
                     ]);
 
