@@ -71,35 +71,28 @@
             </div>
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header"><h5 class="mb-0">Daftar Kode Promo</h5></div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead><tr><th>Kode</th><th>Diskon</th><th>Mulai</th><th>Berakhir</th><th>Status</th><th>Aksi</th></tr></thead>
-                            <tbody>
-                            @forelse ($promoCodes as $item)
+                    <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <div>
+                            <h5 class="mb-1">Daftar Kode Promo</h5>
+                            <p class="text-muted mb-0">Pencarian, pengurutan, dan pagination diproses di server.</p>
+                        </div>
+                        <div id="promoCodesExportButtons"></div>
+                    </div>
+                    <div class="card-datatable table-responsive">
+                        <table id="promoCodesTable" class="table table-bordered table-hover align-middle">
+                            <thead>
                                 <tr>
-                                    <td><div class="fw-semibold">{{ $item->code }}</div><small class="text-muted">{{ $item->name }}</small></td>
-                                    <td>{{ $item->discount_type === 'percentage' ? $item->discount_value . '%' : 'Rp ' . number_format($item->discount_value, 0, ',', '.') }}</td>
-                                    <td>{{ $item->starts_at->format('d-m-Y H:i') }}</td>
-                                    <td>{{ $item->ends_at->format('d-m-Y H:i') }}</td>
-                                    <td><span class="badge {{ $item->is_active ? 'bg-label-success' : 'bg-label-secondary' }}">{{ $item->is_active ? 'Aktif' : 'Tidak Aktif' }}</span></td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <a href="{{ route('promo-codes.edit', $item) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <form method="POST" action="{{ route('promo-codes.destroy', $item) }}" class="js-delete-promo">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                    <th>No</th>
+                                    <th>Kode Promo</th>
+                                    <th>Diskon</th>
+                                    <th>Mulai</th>
+                                    <th>Berakhir</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
-                            @empty
-                                <tr><td colspan="6" class="text-center text-muted py-4">Belum ada kode promo.</td></tr>
-                            @endforelse
-                            </tbody>
+                            </thead>
                         </table>
                     </div>
-                    <div class="card-body">{{ $promoCodes->links() }}</div>
                 </div>
             </div>
         </div>
@@ -109,22 +102,211 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.js-delete-promo').forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!window.Swal) return;
-                    event.preventDefault();
-                    Swal.fire({
-                        title: 'Hapus kode promo?',
-                        text: 'Kode promo yang dihapus tidak dapat digunakan lagi.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Ya, hapus',
-                        cancelButtonText: 'Batal',
-                        customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-outline-secondary' },
-                        buttonsStyling: false
-                    }).then(function (result) {
-                        if (result.isConfirmed) form.submit();
+            const tableElement = document.querySelector('#promoCodesTable');
+
+            if (!tableElement || typeof DataTable === 'undefined') {
+                return;
+            }
+
+            const escapeHtml = function (value) {
+                return String(value ?? '').replace(/[&<>"']/g, function (character) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#039;'
+                    }[character];
+                });
+            };
+
+            const table = new DataTable(tableElement, {
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 75, 100], [10, 25, 50, 75, 100]],
+                order: [[3, 'desc']],
+                ajax: {
+                    url: '{{ route('promo-codes.data') }}',
+                    type: 'GET'
+                },
+                dom:
+                    '<"row mx-2"' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"l>' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>' +
+                    '>' +
+                    't' +
+                    '<"row mx-2 mt-3 mb-4"' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"i>' +
+                    '<"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"p>' +
+                    '>',
+                columns: [
+                    {
+                        data: null,
+                        searchable: false,
+                        orderable: false,
+                        render: function (data, type, row, meta) {
+                            return meta.settings._iDisplayStart + meta.row + 1;
+                        }
+                    },
+                    {
+                        data: 'code',
+                        name: 'code',
+                        render: function (data, type, row) {
+                            return '<div class="fw-semibold">' + escapeHtml(data) + '</div>' +
+                                (row.name ? '<small class="text-muted">' + escapeHtml(row.name) + '</small>' : '');
+                        }
+                    },
+                    {
+                        data: 'discount_value',
+                        name: 'discount_type',
+                        render: function (value, type, row) {
+                            return row.discount_type === 'percentage'
+                                ? escapeHtml(value) + '%'
+                                : 'Rp ' + Number(value).toLocaleString('id-ID');
+                        }
+                    },
+                    { data: 'starts_at', name: 'starts_at' },
+                    { data: 'ends_at', name: 'ends_at' },
+                    {
+                        data: 'is_active',
+                        name: 'is_active',
+                        searchable: false,
+                        render: function (active) {
+                            return active
+                                ? '<span class="badge bg-label-success">Aktif</span>'
+                                : '<span class="badge bg-label-secondary">Tidak Aktif</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        searchable: false,
+                        orderable: false,
+                        render: function (id) {
+                            let actions = '<div class="d-flex align-items-center gap-1">';
+                            @can('promo-code.update')
+                                actions += '<a href="/master-data/kode-promo/' + id + '/edit" class="btn btn-sm btn-icon text-primary rounded-pill" title="Edit"><i class="bx bx-edit"></i></a>';
+                            @endcan
+                            @can('promo-code.delete')
+                                actions += '<button type="button" class="btn btn-sm btn-icon text-danger rounded-pill js-delete-promo" data-id="' + id + '" title="Hapus"><i class="bx bx-trash"></i></button>';
+                            @endcan
+                            actions += '</div>';
+                            return actions;
+                        }
+                    }
+                ],
+                language: {
+                    processing: 'Memuat data...',
+                    search: '',
+                    searchPlaceholder: 'Cari kode promo...',
+                    lengthMenu: '_MENU_',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                    infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+                    zeroRecords: 'Data tidak ditemukan',
+                    emptyTable: 'Belum ada kode promo',
+                    paginate: {
+                        first: 'Pertama',
+                        last: 'Terakhir',
+                        next: '›',
+                        previous: '‹'
+                    }
+                },
+                layout: {
+                    topStart: null,
+                    topEnd: null,
+                    bottomStart: null,
+                    bottomEnd: null
+                },
+                drawCallback: function () {
+                    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (element) {
+                        if (window.bootstrap) new bootstrap.Tooltip(element);
                     });
+                }
+            });
+
+            document.addEventListener('click', function (event) {
+                const button = event.target.closest('.js-delete-promo');
+
+                if (!button) {
+                    return;
+                }
+
+                const id = button.dataset.id;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+                Swal.fire({
+                    title: 'Hapus kode promo?',
+                    text: 'Kode promo yang dihapus tidak dapat digunakan lagi.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-2',
+                        cancelButton: 'btn btn-outline-secondary'
+                    },
+                    buttonsStyling: false
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+
+                    if (!csrfToken) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: 'CSRF token tidak ditemukan.'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        allowOutsideClick: false,
+                        showConfirmButton: false,
+                        didOpen: function () {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    fetch('/master-data/kode-promo/' + id, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                        }
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (data) {
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'Gagal menghapus kode promo.');
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function (response) {
+                            if (!response.status) {
+                                throw new Error(response.message || 'Gagal menghapus kode promo.');
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+
+                            table.ajax.reload(null, false);
+                        })
+                        .catch(function (error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: error.message || 'Terjadi kesalahan saat menghapus kode promo.'
+                            });
+                        });
                 });
             });
         });
