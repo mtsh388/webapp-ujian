@@ -133,10 +133,14 @@ test('paid registration stores student parent and pending registration payment a
         ->and($payment->payment_type)->toBe('registration')
         ->and($payment->promo_code)->toBeNull()
         ->and($payment->installment_status)->toBe('not_allowed')
+        ->and($student->is_active)->toBeFalse()
         ->and($user->is_active)->toBeFalse()
         ->and($user->hasRole('Siswa'))->toBeTrue();
 
     $parentUser = User::where('email', 'orangtua@example.com')->firstOrFail();
+
+    expect($parentUser->is_active)->toBeFalse()
+        ->and($parentUser->parentProfile->is_active)->toBeFalse();
     $this->assertDatabaseHas('parents', [
         'user_id' => $parentUser->id,
         'full_name' => 'Nama Orang Tua',
