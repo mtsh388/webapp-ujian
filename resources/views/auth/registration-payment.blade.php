@@ -20,6 +20,12 @@
                     </div>
                     <h4 class="mb-1">Pembayaran Registrasi</h4>
                     <p class="text-muted mb-4">Data siswa dan orang tua sudah disimpan. Unggah bukti pembayaran untuk mengirim pendaftaran ke Keuangan.</p>
+                    @if ($payment->status === 'rejected')
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading mb-1">Pembayaran ditolak</h6>
+                            <p class="mb-0">{{ $payment->rejection_reason ?: 'Bukti pembayaran perlu diperbaiki.' }} Silakan unggah ulang bukti pembayaran yang benar.</p>
+                        </div>
+                    @endif
                     @if ($errors->any())
                         <div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
                     @endif
