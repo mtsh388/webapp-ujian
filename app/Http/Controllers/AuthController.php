@@ -123,7 +123,7 @@ class AuthController extends Controller
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
                         'password' => $validated['password'],
-                        'is_active' => false,
+                        'is_active' => true,
                     ]);
 
                     $studentUser->forceFill([
@@ -152,7 +152,7 @@ class AuthController extends Controller
                         'name' => trim($validated['parent_full_name']),
                         'email' => $validated['parent_email'],
                         'password' => Str::before($validated['parent_email'], '@'),
-                        'is_active' => false,
+                        'is_active' => true,
                     ]);
 
                     $parentUser->forceFill([

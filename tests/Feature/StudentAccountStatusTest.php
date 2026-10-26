@@ -24,6 +24,36 @@ test('inactive student accounts cannot authenticate', function () {
     $this->assertGuest();
 });
 
+
+test('active student accounts can authenticate while the student profile is inactive', function () {
+    $role = Role::firstOrCreate([
+        'name' => 'Siswa',
+        'guard_name' => 'web',
+    ]);
+
+    $user = User::factory()->create([
+        'is_active' => true,
+        'must_change_password' => false,
+    ]);
+    $user->assignRole($role);
+
+    Student::create([
+        'user_id' => $user->id,
+        'student_number' => 'QSEE-LOGIN-INACTIVE-001',
+        'full_name' => 'Siswa Belum Aktif',
+        'is_active' => false,
+    ]);
+
+    $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('students.profile.edit'));
+
+    $this->assertAuthenticatedAs($user);
+    expect($user->fresh()->is_active)->toBeTrue();
+    expect($user->student->fresh()->is_active)->toBeFalse();
+});
+
 test('deactivating a student account also deactivates the student without auto-reactivating the student later', function () {
     $viewPermission = Permission::firstOrCreate([
         'name' => 'student.view',
