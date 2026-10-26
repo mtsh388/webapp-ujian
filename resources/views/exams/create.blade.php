@@ -34,20 +34,30 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const selector = document.getElementById('has_duration');
+            const selector = document.getElementById('schedule_mode');
             const examTypeSelector = document.getElementById('exam_type');
             const passingScore = document.getElementById('passing_score');
             const passingScoreLabel = document.querySelector('label[for="passing_score"]');
             const fields = document.querySelectorAll('.duration-settings');
+            const scheduleFields = document.querySelectorAll('.schedule-settings');
 
             function toggleDurationFields() {
-                const enabled = selector.value === '1';
+                const durationEnabled = selector.value !== 'no_duration';
+                const scheduleEnabled = selector.value === 'scheduled';
 
                 fields.forEach(function (field) {
-                    field.classList.toggle('d-none', !enabled);
+                    field.classList.toggle('d-none', !durationEnabled);
                     field.querySelectorAll('input').forEach(function (input) {
-                        input.required = enabled;
-                        input.disabled = !enabled;
+                        input.required = durationEnabled;
+                        input.disabled = !durationEnabled;
+                    });
+                });
+
+                scheduleFields.forEach(function (field) {
+                    field.classList.toggle('d-none', !scheduleEnabled);
+                    field.querySelectorAll('input').forEach(function (input) {
+                        input.required = scheduleEnabled;
+                        input.disabled = !scheduleEnabled;
                     });
                 });
             }
@@ -238,12 +248,13 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="has_duration" class="form-label">Pengaturan Durasi <span class="text-danger">*</span></label>
-                            <select class="form-select @error('has_duration') is-invalid @enderror" id="has_duration" name="has_duration" required>
-                                <option value="1" {{ old('has_duration', '1') === '1' ? 'selected' : '' }}>Menggunakan durasi dan jadwal</option>
-                                <option value="0" {{ old('has_duration') === '0' ? 'selected' : '' }}>Tanpa durasi dan jadwal</option>
+                            <label for="schedule_mode" class="form-label">Pengaturan Durasi dan Jadwal <span class="text-danger">*</span></label>
+                            <select class="form-select @error('schedule_mode') is-invalid @enderror" id="schedule_mode" name="schedule_mode" required>
+                                <option value="scheduled" {{ old('schedule_mode', 'scheduled') === 'scheduled' ? 'selected' : '' }}>Menggunakan durasi dan jadwal</option>
+                                <option value="duration_without_schedule" {{ old('schedule_mode') === 'duration_without_schedule' ? 'selected' : '' }}>Menggunakan durasi tanpa jadwal</option>
+                                <option value="no_duration" {{ old('schedule_mode') === 'no_duration' ? 'selected' : '' }}>Tanpa durasi dan jadwal</option>
                             </select>
-                            @error('has_duration')
+                            @error('schedule_mode')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -285,7 +296,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3 duration-settings">
+                        <div class="col-md-6 mb-3 schedule-settings">
                             <label for="start_at" class="form-label">Waktu Mulai <span
                                     class="text-danger">*</span></label>
                             <input type="datetime-local"
