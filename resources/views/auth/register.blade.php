@@ -142,7 +142,7 @@
                             </div>
 
                             <hr class="my-5">
-                            <h5 class="mb-3">Biaya dan Bukti Pembayaran</h5>
+                            <h5 class="mb-3">Biaya Registrasi</h5>
                             <div class="mb-4">
                                 <label for="registration_fee_display" class="form-label">Biaya Pendaftaran (Rp)</label>
                                 <input type="text" id="registration_fee_display" class="form-control fw-semibold" value="" placeholder="Pilih jenjang dan kelas terlebih dahulu" readonly aria-live="polite">
@@ -155,12 +155,7 @@
                                 <div id="promoCodeDescription" class="form-text">Opsional. Kode promo akan divalidasi berdasarkan status dan tanggal/waktu berlaku.</div>
                                 @error('promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                             </div>
-                            <div class="mb-4">
-                                <label for="payment_proof" class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
-                                <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf">
-                                <div class="form-text">Format JPG, PNG, atau PDF. Maksimal 5 MB.</div>
-                            </div>
-                        </div>
+                                                    </div>
 
                         <div class="mt-5">
                             <button class="btn btn-primary d-grid w-100" type="submit" id="submitRegistration">Daftar Trial</button>
@@ -186,7 +181,7 @@
         const submitButton = document.getElementById('submitRegistration');
         const typeButtons = document.querySelectorAll('[data-registration-type]');
         const paidControls = paidFields.querySelectorAll('input, select, textarea');
-        const requiredFields = ['full_name', 'school_name', 'education_level', 'class_id', 'phone', 'parent_phone', 'parent_full_name', 'parent_email', 'payment_proof'];
+        const requiredFields = ['full_name', 'school_name', 'education_level', 'class_id', 'phone', 'parent_phone', 'parent_full_name', 'parent_email'];
         const levelSelect = document.getElementById('education_level');
         const classSelect = document.getElementById('class_id');
         const promoInput = document.getElementById('promo_code');
@@ -208,7 +203,7 @@
                 field.required = type === 'paid' && requiredFields.includes(field.name);
             });
             typeButtons.forEach((button) => button.classList.toggle('active', button.dataset.registrationType === type));
-            submitButton.textContent = type === 'paid' ? 'Daftar Berbayar' : 'Daftar Trial';
+            submitButton.textContent = type === 'paid' ? 'Lanjut ke Pembayaran Registrasi' : 'Daftar Trial';
         }
 
         const feeInput = document.getElementById('registration_fee_display');
