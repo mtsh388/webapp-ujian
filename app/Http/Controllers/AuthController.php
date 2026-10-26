@@ -208,7 +208,7 @@ class AuthController extends Controller
 
             return redirect()->to(\Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'register.payment.show',
-                now()->addDay(),
+                now()->addDays(30),
                 ['registrationPayment' => $registrationPayment->id]
             ));
         }
