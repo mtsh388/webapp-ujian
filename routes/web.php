@@ -7,6 +7,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\QuestionBankController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\ExamAttemptApprovalController;
 use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
@@ -294,6 +295,14 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('permission:exam.violation.view')
         ->name('proctoring.index');
 
+    Route::prefix('persetujuan-percobaan-kedua')
+        ->middleware('permission:exam.attempt-approval.view')
+        ->group(function () {
+            Route::get('/', [ExamAttemptApprovalController::class, 'index'])->name('exam-attempt-approvals.index');
+            Route::post('/{approval}/setujui', [ExamAttemptApprovalController::class, 'approve'])->middleware('permission:exam.attempt-approval.approve')->name('exam-attempt-approvals.approve');
+            Route::post('/{approval}/tolak', [ExamAttemptApprovalController::class, 'reject'])->middleware('permission:exam.attempt-approval.approve')->name('exam-attempt-approvals.reject');
+        });
+
     Route::prefix('ujian')->group(function () {
 
         // 1. RUTE STATIS (Harus paling atas)
@@ -373,6 +382,9 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         });
 
         Route::middleware('permission:exam.take')->group(function () {
+            Route::post('/{exam}/minta-percobaan-kedua', [ExamController::class, 'requestSecondAttempt'])
+                ->name('exams.second-attempt.request');
+
             Route::post('/{exam}/mulai', [ExamAttemptController::class, 'start'])
                 ->middleware('throttle:10,1')
                 ->name('exams.start');
