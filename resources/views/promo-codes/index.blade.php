@@ -99,6 +99,43 @@
     </div>
 @endsection
 
+
+<style>
+    #promoCodesTable .js-promo-status.form-check-input {
+        display: inline-block;
+        width: 2.5em !important;
+        height: 1.25em !important;
+        margin: 0;
+        flex-shrink: 0;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-color: #d9dee3;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: left center;
+        background-size: contain;
+        border: 1px solid #d9dee3;
+        border-radius: 2em;
+        transition: background-position .15s ease-in-out, background-color .15s ease-in-out;
+    }
+
+    #promoCodesTable .js-promo-status.form-check-input:checked {
+        background-color: #696cff;
+        border-color: #696cff;
+        background-position: right center;
+    }
+
+    #promoCodesTable .js-promo-status.form-check-input:focus {
+        box-shadow: 0 0 0 .15rem rgba(105, 108, 255, .25);
+    }
+
+    #promoCodesTable .js-promo-status.form-check-input:disabled {
+        cursor: not-allowed;
+        opacity: .65;
+    }
+</style>
+
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
