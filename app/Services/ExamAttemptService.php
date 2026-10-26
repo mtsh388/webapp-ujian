@@ -88,6 +88,15 @@ class ExamAttemptService
                 $lockedStudent->id
             );
 
+            if (
+                $lockedExam->max_attempts !== null &&
+                $attemptCount >= $lockedExam->max_attempts
+            ) {
+                throw new RuntimeException(
+                    'Anda sudah mencapai batas maksimal percobaan ujian.'
+                );
+            }
+
             if ($lockedExam->schedule_mode === 'duration_without_schedule' && $attemptCount === 1) {
                 $approved = ExamAttemptApproval::query()
                     ->where('exam_id', $lockedExam->id)
@@ -98,15 +107,6 @@ class ExamAttemptService
                 if (! $approved) {
                     throw new RuntimeException('Percobaan kedua untuk ujian berdurasi tanpa jadwal harus disetujui Admin terlebih dahulu.');
                 }
-            }
-
-            if (
-                $lockedExam->max_attempts !== null &&
-                $attemptCount >= $lockedExam->max_attempts
-            ) {
-                throw new RuntimeException(
-                    'Anda sudah mencapai batas maksimal percobaan ujian.'
-                );
             }
 
             $totalQuestions = $lockedExam->questions()->count();
