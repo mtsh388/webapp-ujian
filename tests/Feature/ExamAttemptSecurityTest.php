@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExamController;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\ExamParticipant;
@@ -133,6 +134,21 @@ test('questions cannot be changed after an attempt exists', function () {
 
     expect(fn () => $this->examService->removeQuestionFromExam($exam->id, $question->id))
         ->toThrow(RuntimeException::class, 'tidak dapat diubah');
+
+    $this->assertDatabaseHas('exam_questions', ['id' => $question->id]);
+});
+
+test('bulk question removal is blocked after an attempt exists', function () {
+    $exam = makeSecurityTestExam();
+    $student = makeSecurityTestStudent();
+    assignSecurityTestParticipant($exam, $student);
+    $question = makeSecurityTestQuestion($exam);
+    $this->attemptService->start($exam, $student);
+
+    $response = (new ExamController($this->examService))->bulkDestroyQuestions($exam);
+
+    expect($response->getStatusCode())->toBe(409);
+    expect($response->getData(true)['status'])->toBeFalse();
 
     $this->assertDatabaseHas('exam_questions', ['id' => $question->id]);
 });
