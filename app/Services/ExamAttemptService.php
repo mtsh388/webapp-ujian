@@ -10,6 +10,8 @@ use App\Models\ExamQuestion;
 use App\Models\Student;
 use App\Repositories\ExamAttemptRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 use RuntimeException;
 
 class ExamAttemptService
@@ -563,7 +565,7 @@ class ExamAttemptService
         bool        $expired = false
     ): ExamAttempt
     {
-        return DB::transaction(function () use (
+        $submittedAttempt = DB::transaction(function () use (
             $attempt,
             $expired
         ) {
@@ -623,5 +625,49 @@ class ExamAttemptService
 
             return $lockedAttempt->fresh();
         }, 3);
+
+        $this->sendResultToParents($submittedAttempt);
+
+        return $submittedAttempt;
+    }
+
+    private function sendResultToParents(ExamAttempt $attempt): void
+    {
+        if ($attempt->parent_result_sent_at) {
+            return;
+        }
+
+        $attempt->loadMissing(['exam', 'student.parents.user']);
+
+        $emails = $attempt->student?->parents
+            ?->pluck('user.email')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all() ?? [];
+
+        if ($emails === []) {
+            return;
+        }
+
+        $studentName = $attempt->student?->full_name ?: 'Siswa';
+        $examTitle = $attempt->exam?->title ?: 'Ujian';
+        $score = number_format((float) $attempt->score, 2, ',', '.');
+        $resultStatus = $attempt->passed === null
+            ? 'Nilai kelulusan belum ditentukan.'
+            : ($attempt->passed ? 'Status: Lulus.' : 'Status: Belum lulus.');
+
+        try {
+            Mail::raw(
+                "Yth. Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE",
+                function ($message) use ($emails, $studentName, $examTitle) {
+                    $message->to($emails)->subject("QSEE - Hasil Ujian {$studentName}: {$examTitle}");
+                }
+            );
+
+            $attempt->forceFill(['parent_result_sent_at' => now()])->save();
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }
