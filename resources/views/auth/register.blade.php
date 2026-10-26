@@ -74,7 +74,7 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <label for="full_name" class="form-label">Nama Lengkap Siswa <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ old('full_name') }}" maxlength="255" autocomplete="off" autocapitalize="words">
+                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ old('full_name') }}" maxlength="255" autocomplete="off" autocapitalize="words" placeholder="Masukkan nama lengkap siswa" readonly onfocus="this.removeAttribute('readonly')">
                                 </div>
                                 <div class="col-md-6">
                                     <label for="school_name" class="form-label">Nama Sekolah <span class="text-danger">*</span></label>
