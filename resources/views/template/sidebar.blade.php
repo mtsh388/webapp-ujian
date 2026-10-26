@@ -17,6 +17,18 @@
 
     <ul class="menu-inner py-1">
 
+        @if(auth()->user()->hasAnyRole(['Siswa', 'Orang Tua']))
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Keuangan</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('my-registration-payments.*') ? 'active' : '' }}">
+                <a href="{{ route('my-registration-payments.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-wallet"></i>
+                    <div>Pembayaran Registrasi</div>
+                </a>
+            </li>
+        @endif
+
         @if(auth()->user()->hasRole('Siswa'))
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Data Siswa</span>
