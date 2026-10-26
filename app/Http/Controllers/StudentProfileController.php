@@ -43,6 +43,7 @@ class StudentProfileController extends Controller
 
         if (!$student->exists) {
             $student->student_number = 'REG-' . str_pad((string) $user->id, 8, '0', STR_PAD_LEFT);
+            $student->registration_type = 'trial';
             $student->is_active = true;
         }
 
