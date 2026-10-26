@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PromoCode;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,8 +14,69 @@ class PromoCodeController extends Controller
     public function index(): View
     {
         return view('promo-codes.index', [
-            'promoCodes' => PromoCode::query()->latest()->paginate(15),
             'promoCode' => new PromoCode(),
+        ]);
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $query = PromoCode::query();
+        $recordsTotal = (clone $query)->count();
+
+        $search = trim((string) $request->input('search.value', ''));
+
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('discount_type', 'like', "%{$search}%")
+                    ->orWhere('discount_value', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+
+        $orderColumns = [
+            1 => 'code',
+            2 => 'discount_type',
+            3 => 'starts_at',
+            4 => 'ends_at',
+            5 => 'is_active',
+        ];
+
+        $orderIndex = (int) $request->input('order.0.column', 3);
+        $orderDirection = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc'
+            ? 'asc'
+            : 'desc';
+
+        if (isset($orderColumns[$orderIndex])) {
+            $query->orderBy($orderColumns[$orderIndex], $orderDirection);
+        } else {
+            $query->latest('id');
+        }
+
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length < 1 ? 10 : min($length, 100);
+
+        $data = $query->skip($start)->take($length)->get()->map(function (PromoCode $promoCode) {
+            return [
+                'id' => $promoCode->id,
+                'code' => $promoCode->code,
+                'name' => $promoCode->name,
+                'discount_type' => $promoCode->discount_type,
+                'discount_value' => $promoCode->discount_value,
+                'starts_at' => $promoCode->starts_at?->format('d-m-Y H:i'),
+                'ends_at' => $promoCode->ends_at?->format('d-m-Y H:i'),
+                'is_active' => (bool) $promoCode->is_active,
+            ];
+        });
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 0),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
         ]);
     }
 
@@ -28,7 +90,6 @@ class PromoCodeController extends Controller
     public function edit(PromoCode $promoCode): View
     {
         return view('promo-codes.index', [
-            'promoCodes' => PromoCode::query()->latest()->paginate(15),
             'promoCode' => $promoCode,
         ]);
     }
@@ -40,9 +101,16 @@ class PromoCodeController extends Controller
         return redirect()->route('promo-codes.index')->with('success', 'Kode promo berhasil diperbarui.');
     }
 
-    public function destroy(PromoCode $promoCode): RedirectResponse
+    public function destroy(PromoCode $promoCode): JsonResponse|RedirectResponse
     {
         $promoCode->delete();
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Kode promo berhasil dihapus.',
+            ]);
+        }
 
         return redirect()->route('promo-codes.index')->with('success', 'Kode promo berhasil dihapus.');
     }
