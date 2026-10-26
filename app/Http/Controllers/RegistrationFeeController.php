@@ -186,7 +186,7 @@ class RegistrationFeeController extends Controller
             }
 
             $validated['billing_period'] = 'once';
-            $validated['discount_enabled'] = (bool) ($validated['discount_enabled'] ?? false);
+            $validated['discount_enabled'] = false;
             $validated['promo_code'] = null;
             $validated['promo_starts_at'] = null;
             $validated['promo_ends_at'] = null;
