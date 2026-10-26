@@ -28,6 +28,9 @@ class RolePermissionSeeder extends Seeder
             'promo-code.update',
             'promo-code.delete',
 
+            'registration-payment.view',
+            'registration-payment.approve',
+
             'subject.view',
             'subject.create',
             'subject.update',
@@ -85,6 +88,11 @@ class RolePermissionSeeder extends Seeder
             'guard_name' => 'web',
         ]);
 
+        $keuangan = Role::firstOrCreate([
+            'name' => 'Keuangan',
+            'guard_name' => 'web',
+        ]);
+
         $orangTua = Role::firstOrCreate([
             'name' => 'Orang Tua',
             'guard_name' => 'web',
@@ -124,6 +132,12 @@ class RolePermissionSeeder extends Seeder
             'exam.view',
             'exam.take',
             'result.view_own',
+        ]);
+
+        $keuangan->syncPermissions([
+            'dashboard.view',
+            'registration-payment.view',
+            'registration-payment.approve',
         ]);
 
         $orangTua->syncPermissions([
