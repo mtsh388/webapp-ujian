@@ -156,6 +156,13 @@ class ExamController extends Controller
 
     public function bulkDestroyQuestions(Exam $exam): JsonResponse
     {
+        if (ExamAttempt::query()->where('exam_id', $exam->id)->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Soal tidak dapat diubah setelah percobaan ujian dibuat.',
+            ], 409);
+        }
+
         $deleted = \App\Models\ExamQuestion::query()
             ->where('exam_id', $exam->id)
             ->delete();
