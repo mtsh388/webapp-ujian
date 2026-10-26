@@ -23,7 +23,7 @@
                 <div class="col-md-6">
                     <label for="fee_type" class="form-label">Nama Biaya <span class="text-danger">*</span></label>
                     <input type="text" id="fee_type" name="fee_type" maxlength="100" value="{{ old('fee_type', $registrationFee->fee_type_label ?? 'Pendaftaran') }}" class="form-control" placeholder="Contoh: SPP Bulanan, Study Tour, Laboratorium" required>
-                    <div class="form-text">Bebas diisi sesuai kebutuhan. Biaya pendaftaran tidak dapat menggunakan promo atau cicilan.</div>
+                    <div class="form-text">Bebas diisi sesuai kebutuhan. Kode promo dapat digunakan untuk biaya pendaftaran jika diaktifkan. Pendaftaran tetap tidak dapat dicicil.</div>
                     @error('fee_type')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6" id="education_level_group">
@@ -103,7 +103,7 @@
                 </div>
             </div>
             <div class="alert alert-info mt-4 mb-0" id="fee_help">
-                Nama biaya pendaftaran wajib ditentukan berdasarkan jenjang dan kelas, tidak memakai promo dan tidak dapat dicicil. Biaya lain dapat berlaku untuk semua siswa atau sasaran jenjang/kelas tertentu.
+                Biaya pendaftaran wajib ditentukan berdasarkan jenjang dan kelas. Kode promo berlaku jika opsi Diskon / Promo diaktifkan; cicilan tidak diperbolehkan. Biaya lain dapat berlaku untuk semua siswa atau sasaran jenjang/kelas tertentu.
             </div>
         </div>
         <div class="card-footer border-top d-flex justify-content-end gap-2">
@@ -150,14 +150,13 @@ document.addEventListener('DOMContentLoaded', function () {
         grade.required = registration;
         document.getElementById('level_required_mark').hidden = !registration;
         document.getElementById('grade_required_mark').hidden = !registration;
-        discountSettings.hidden = registration;
+        discountSettings.hidden = false;
         installmentGroup.hidden = registration;
-        discountEnabled.disabled = registration;
+        discountEnabled.disabled = false;
         maxInstallments.disabled = registration;
         if (registration) {
             billing.value = 'once';
             billing.disabled = true;
-            discountEnabled.value = '0';
             maxInstallments.value = '1';
         } else {
             billing.disabled = false;
