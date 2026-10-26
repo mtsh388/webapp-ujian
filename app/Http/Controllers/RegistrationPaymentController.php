@@ -103,7 +103,7 @@ class RegistrationPaymentController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('status', 'Selamat, Anda sudah bergabung. Silakan datang ke QSEE untuk melakukan proses selanjutnya. Akun dapat digunakan setelah pembayaran disetujui Keuangan.');
+            ->with('status', 'Bukti pembayaran berhasil dikirim dan sedang menunggu verifikasi. Akun Siswa dan Orang Tua dapat digunakan setelah pembayaran disetujui.');
     }
 
     public function proof(RegistrationPayment $registrationPayment)
