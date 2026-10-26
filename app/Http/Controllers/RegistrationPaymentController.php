@@ -148,6 +148,27 @@ class RegistrationPaymentController extends Controller
             }
         }, 3);
 
+        try {
+            $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
+            $emails = collect([$payment?->user?->email])
+                ->merge($payment?->student?->parents?->pluck('user.email') ?? collect())
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($emails !== []) {
+                Mail::raw(
+                    'Pembayaran registrasi QSEE telah disetujui. Akun Siswa dan Orang Tua telah diaktifkan. Silakan login untuk melanjutkan proses belajar.',
+                    function ($message) use ($emails) {
+                        $message->to($emails)->subject('QSEE - Pembayaran Registrasi Disetujui');
+                    }
+                );
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
         return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun Siswa dan Orang Tua serta status siswa telah diaktifkan.');
     }
 
@@ -174,6 +195,33 @@ class RegistrationPaymentController extends Controller
                 'verified_at' => now(),
             ]);
         }, 3);
+
+        try {
+            $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
+            $emails = collect([$payment?->user?->email])
+                ->merge($payment?->student?->parents?->pluck('user.email') ?? collect())
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $paymentUrl = \\Illuminate\\Support\\Facades\\URL::temporarySignedRoute(
+                'register.payment.show',
+                now()->addDays(30),
+                ['registrationPayment' => $registrationPayment->id]
+            );
+
+            if ($emails !== []) {
+                Mail::raw(
+                    "Pembayaran registrasi QSEE ditolak. Alasan: {$validated['rejection_reason']}\n\nSilakan buka tautan berikut untuk memperbaiki dan mengunggah ulang bukti pembayaran:\n{$paymentUrl}",
+                    function ($message) use ($emails) {
+                        $message->to($emails)->subject('QSEE - Pembayaran Registrasi Perlu Diperbaiki');
+                    }
+                );
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return redirect()->route('registration-payments.index')->with('success', 'Pembayaran ditolak. Alasan penolakan disimpan dan pengguna dapat mengunggah ulang bukti melalui tautan pembayaran yang masih berlaku.');
     }
