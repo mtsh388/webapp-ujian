@@ -186,14 +186,7 @@
         const classSelect = document.getElementById('class_id');
         const promoInput = document.getElementById('promo_code');
         const promoDescription = document.getElementById('promoCodeDescription');
-        const promoCodes = @json($promoCodes->map(fn ($promo) => [
-            'code' => $promo->code,
-            'discount_type' => $promo->discount_type,
-            'discount_value' => $promo->discount_value,
-            'starts_at' => $promo->starts_at->toIso8601String(),
-            'ends_at' => $promo->ends_at->toIso8601String(),
-            'is_active' => $promo->is_active,
-        ])->values());
+        const promoCodes = @json($promoCodes);
 
         function setType(type) {
             typeInput.value = type;
