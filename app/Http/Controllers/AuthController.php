@@ -145,13 +145,13 @@ class AuthController extends Controller
                         'phone' => trim($validated['phone']),
                         'parent_phone' => trim($validated['parent_phone']),
                         'address' => $validated['address'] ?? null,
-                        'is_active' => true,
+                        'is_active' => false,
                     ]);
 
                     $parentUser = User::create([
                         'name' => trim($validated['parent_full_name']),
                         'email' => $validated['parent_email'],
-                        'password' => Str::random(48),
+                        'password' => Str::before($validated['parent_email'], '@'),
                         'is_active' => false,
                     ]);
 
