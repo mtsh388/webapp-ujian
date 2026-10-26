@@ -121,6 +121,18 @@
             </li>
         @endif
 
+        @can('registration-payment.view')
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Keuangan</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('registration-payments.*') ? 'active' : '' }}">
+                <a href="{{ route('registration-payments.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-wallet"></i>
+                    <div>Verifikasi Pembayaran</div>
+                </a>
+            </li>
+        @endcan
+
         @if(
             auth()->user()->can('question.view') ||
             auth()->user()->can('question.create') ||
