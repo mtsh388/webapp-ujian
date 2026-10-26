@@ -270,6 +270,7 @@ class ResultController extends Controller
         $attempts = DB::table('exam_attempts as ea')
             ->join('students as s', 's.id', '=', 'ea.student_id')
             ->leftJoin('classes as cr', 'cr.id', '=', 's.class_id')
+            ->leftJoin('users as su', 'su.id', '=', 's.user_id')
             ->where('ea.exam_id', $exam->id)
             ->whereIn('ea.status', ['submitted', 'expired'])
             ->whereNotNull('ea.submitted_at')
@@ -282,7 +283,7 @@ class ResultController extends Controller
                 'ea.status',
                 'ea.passed',
                 'ea.submitted_at',
-                's.full_name as student_name',
+                DB::raw("CASE WHEN NULLIF(TRIM(s.full_name), '') IS NULL OR s.full_name = s.student_number THEN COALESCE(NULLIF(TRIM(su.name), ''), s.full_name, s.student_number) ELSE s.full_name END as student_name"),
                 's.student_number',
                 'cr.name as class_name',
             ])
