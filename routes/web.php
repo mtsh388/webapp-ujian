@@ -20,6 +20,14 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+Route::get('/registrasi/pembayaran/{registrationPayment}', [RegistrationPaymentController::class, 'showPayment'])
+    ->middleware('signed')
+    ->name('register.payment.show');
+
+Route::post('/registrasi/pembayaran/{registrationPayment}', [RegistrationPaymentController::class, 'submitProof'])
+    ->middleware('signed')
+    ->name('register.payment.store');
+
 Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
