@@ -220,12 +220,10 @@
                                     : '<span class="badge bg-label-secondary">Tidak Aktif</span>';
                             }
 
-                            return '<div class="d-flex flex-column align-items-center gap-1">' +
-                                '<div class="form-check form-switch mb-0">' +
+                            return '<div class="d-flex flex-column align-items-center justify-content-center gap-1">' +
                                 '<input type="checkbox" class="form-check-input js-promo-status" role="switch" data-id="' + row.id + '" ' +
                                 (active ? 'checked ' : '') +
                                 'aria-label="Ubah status kode promo ' + escapeHtml(row.code) + '">' +
-                                '</div>' +
                                 '<span class="small ' + (active ? 'text-success' : 'text-muted') + '">' +
                                 (active ? 'Aktif' : 'Tidak Aktif') + '</span>' +
                                 '</div>';
