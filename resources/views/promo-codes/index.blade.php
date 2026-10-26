@@ -108,6 +108,9 @@
                 return;
             }
 
+            const canUpdatePromoStatus = @json(auth()->user()->can('promo-code.update'));
+            const promoStatusUrl = @json(route('promo-codes.status', ['promoCode' => '__ID__']));
+
             const escapeHtml = function (value) {
                 return String(value ?? '').replace(/[&<>"']/g, function (character) {
                     return {
@@ -173,10 +176,22 @@
                         data: 'is_active',
                         name: 'is_active',
                         searchable: false,
-                        render: function (active) {
-                            return active
-                                ? '<span class="badge bg-label-success">Aktif</span>'
-                                : '<span class="badge bg-label-secondary">Tidak Aktif</span>';
+                        render: function (active, type, row) {
+                            if (!canUpdatePromoStatus) {
+                                return active
+                                    ? '<span class="badge bg-label-success">Aktif</span>'
+                                    : '<span class="badge bg-label-secondary">Tidak Aktif</span>';
+                            }
+
+                            return '<div class="d-flex align-items-center gap-2">' +
+                                '<div class="form-check form-switch mb-0">' +
+                                '<input type="checkbox" class="form-check-input js-promo-status" role="switch" data-id="' + row.id + '" ' +
+                                (active ? 'checked ' : '') +
+                                'aria-label="Ubah status kode promo ' + escapeHtml(row.code) + '">' +
+                                '</div>' +
+                                '<span class="small ' + (active ? 'text-success' : 'text-muted') + '">' +
+                                (active ? 'Aktif' : 'Tidak Aktif') + '</span>' +
+                                '</div>';
                         }
                     },
                     {
@@ -223,6 +238,102 @@
                         if (window.bootstrap) new bootstrap.Tooltip(element);
                     });
                 }
+            });
+
+            document.addEventListener('change', function (event) {
+                const toggle = event.target.closest('.js-promo-status');
+
+                if (!toggle) {
+                    return;
+                }
+
+                const previousValue = !toggle.checked;
+                const requestedValue = toggle.checked;
+                const id = toggle.dataset.id;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+                const revertToggle = function () {
+                    toggle.checked = previousValue;
+                };
+
+                if (!csrfToken) {
+                    revertToggle();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'CSRF token tidak ditemukan.'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: requestedValue ? 'Aktifkan kode promo?' : 'Nonaktifkan kode promo?',
+                    text: requestedValue
+                        ? 'Kode promo akan dapat digunakan selama masa berlakunya.'
+                        : 'Kode promo tidak dapat digunakan selama statusnya nonaktif.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: requestedValue ? 'Ya, aktifkan' : 'Ya, nonaktifkan',
+                    cancelButtonText: 'Batal',
+                    customClass: {
+                        confirmButton: 'btn btn-primary me-2',
+                        cancelButton: 'btn btn-outline-secondary'
+                    },
+                    buttonsStyling: false
+                }).then(function (result) {
+                    if (!result.isConfirmed) {
+                        revertToggle();
+                        return;
+                    }
+
+                    toggle.disabled = true;
+
+                    fetch(promoStatusUrl.replace('__ID__', encodeURIComponent(id)), {
+                        method: 'PATCH',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            is_active: requestedValue ? 1 : 0
+                        })
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (data) {
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'Gagal mengubah status kode promo.');
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function (response) {
+                            if (!response.status) {
+                                throw new Error(response.message || 'Gagal mengubah status kode promo.');
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message,
+                                timer: 1300,
+                                showConfirmButton: false
+                            });
+
+                            table.ajax.reload(null, false);
+                        })
+                        .catch(function (error) {
+                            revertToggle();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: error.message || 'Terjadi kesalahan saat mengubah status kode promo.'
+                            });
+                        })
+                        .finally(function () {
+                            toggle.disabled = false;
+                        });
+                });
             });
 
             document.addEventListener('click', function (event) {

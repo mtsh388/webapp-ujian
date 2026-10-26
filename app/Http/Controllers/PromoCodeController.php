@@ -101,6 +101,25 @@ class PromoCodeController extends Controller
         return redirect()->route('promo-codes.index')->with('success', 'Kode promo berhasil diperbarui.');
     }
 
+    public function updateStatus(Request $request, PromoCode $promoCode): JsonResponse
+    {
+        $validated = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $promoCode->update([
+            'is_active' => $validated['is_active'],
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => $promoCode->is_active
+                ? 'Kode promo berhasil diaktifkan.'
+                : 'Kode promo berhasil dinonaktifkan.',
+            'is_active' => (bool) $promoCode->is_active,
+        ]);
+    }
+
     public function destroy(PromoCode $promoCode): JsonResponse|RedirectResponse
     {
         $promoCode->delete();

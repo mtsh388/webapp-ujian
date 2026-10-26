@@ -201,6 +201,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->group(function () {
             Route::get('/', [PromoCodeController::class, 'index'])->name('promo-codes.index');
             Route::get('/data', [PromoCodeController::class, 'data'])->name('promo-codes.data');
+            Route::patch('/{promoCode}/status', [PromoCodeController::class, 'updateStatus'])->middleware('permission:promo-code.update')->name('promo-codes.status');
             Route::post('/', [PromoCodeController::class, 'store'])->middleware('permission:promo-code.create')->name('promo-codes.store');
             Route::get('/{promoCode}/edit', [PromoCodeController::class, 'edit'])->middleware('permission:promo-code.update')->name('promo-codes.edit');
             Route::put('/{promoCode}', [PromoCodeController::class, 'update'])->middleware('permission:promo-code.update')->name('promo-codes.update');
