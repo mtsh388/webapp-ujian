@@ -11,6 +11,7 @@ use App\Http\Controllers\ExamAttemptController;
 use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\RegistrationFeeController;
+use App\Http\Controllers\PromoCodeController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -175,6 +176,16 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             });
 
     });
+
+    Route::prefix('master-data/kode-promo')
+        ->middleware('permission:promo-code.view')
+        ->group(function () {
+            Route::get('/', [PromoCodeController::class, 'index'])->name('promo-codes.index');
+            Route::post('/', [PromoCodeController::class, 'store'])->middleware('permission:promo-code.create')->name('promo-codes.store');
+            Route::get('/{promoCode}/edit', [PromoCodeController::class, 'edit'])->middleware('permission:promo-code.update')->name('promo-codes.edit');
+            Route::put('/{promoCode}', [PromoCodeController::class, 'update'])->middleware('permission:promo-code.update')->name('promo-codes.update');
+            Route::delete('/{promoCode}', [PromoCodeController::class, 'destroy'])->middleware('permission:promo-code.delete')->name('promo-codes.destroy');
+        });
 
     Route::prefix('master-data/biaya')
         ->middleware('permission:registration-fee.view')
