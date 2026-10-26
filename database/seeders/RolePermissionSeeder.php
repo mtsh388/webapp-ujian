@@ -60,6 +60,8 @@ class RolePermissionSeeder extends Seeder
 
             'exam.take',
             'exam.violation.view',
+            'exam.attempt-approval.view',
+            'exam.attempt-approval.approve',
 
             'result.view',
             'result.view_own',
