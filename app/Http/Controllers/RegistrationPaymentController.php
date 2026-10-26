@@ -205,7 +205,7 @@ class RegistrationPaymentController extends Controller
                 ->values()
                 ->all();
 
-            $paymentUrl = \\Illuminate\\Support\\Facades\\URL::temporarySignedRoute(
+            $paymentUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'register.payment.show',
                 now()->addDays(30),
                 ['registrationPayment' => $registrationPayment->id]
