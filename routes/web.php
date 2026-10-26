@@ -14,6 +14,7 @@ use App\Http\Controllers\ResultController;
 use App\Http\Controllers\RegistrationFeeController;
 use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\RegistrationPaymentController;
+use App\Http\Controllers\MyRegistrationPaymentController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +30,10 @@ Route::post('/registrasi/pembayaran/{registrationPayment}', [RegistrationPayment
     ->middleware('signed')
     ->name('register.payment.store');
 
-Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {\n    Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])\n        ->middleware('role:Siswa|Orang Tua')\n        ->name('my-registration-payments.index');
+Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
+    Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])
+        ->middleware('role:Siswa|Orang Tua')
+        ->name('my-registration-payments.index');
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
