@@ -143,6 +143,7 @@ class AuthController extends Controller
 
                     $student = Student::create([
                         'user_id' => $studentUser->id,
+                        'registration_type' => 'paid',
                         'class_id' => $classRoom->id,
                         'student_number' => 'REG-' . str_pad((string) $studentUser->id, 8, '0', STR_PAD_LEFT),
                         'full_name' => trim($validated['full_name']),
