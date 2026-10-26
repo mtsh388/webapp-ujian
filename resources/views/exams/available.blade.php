@@ -115,6 +115,10 @@
                                 ? \Carbon\Carbon::parse($exam->end_at)
                                 : null;
                             $activeAttempt = $activeAttempts->get($exam->id);
+                            $attemptCount = (int) ($attemptCounts->get($exam->id, 0));
+                            $attemptApproval = $attemptApprovals->get($exam->id);
+                            $requiresSecondApproval = $exam->schedule_mode === 'duration_without_schedule' && $attemptCount === 1;
+                            $secondAttemptAllowed = ! $requiresSecondApproval || $attemptApproval?->status === 'approved';
                         @endphp
 
                         <div class="col-12 col-md-6 col-xl-4">
@@ -202,7 +206,7 @@
                                             </div>
                                         @endif
 
-                                        @if ($exam->has_duration)
+                                        @if ($exam->schedule_mode === 'scheduled')
                                             <div class="d-flex align-items-center gap-3">
                                                 <div class="avatar avatar-sm flex-shrink-0">
                                                     <span class="avatar-initial rounded bg-label-warning">
@@ -225,25 +229,38 @@
                                                     <span class="fw-semibold">{{ $end?->format('d M Y, H:i') ?? '-' }}</span>
                                                 </div>
                                             </div>
+                                        @elseif ($exam->schedule_mode === 'duration_without_schedule')
+                                            <div class="small text-info"><i class="bx bx-time me-1"></i>Durasi aktif, tanpa jadwal tetap.</div>
                                         @endif
                                     </div>
 
                                     <div class="mt-auto">
-                                        @if ($exam->has_duration && (!$start || !$end))
+                                        @if ($exam->schedule_mode === 'scheduled' && (!$start || !$end))
                                             <button type="button" class="btn btn-secondary w-100" disabled>
                                                 <i class="bx bx-info-circle me-1"></i>
                                                 Jadwal Belum Tersedia
                                             </button>
-                                        @elseif ($exam->has_duration && $now->lt($start))
+                                        @elseif ($exam->schedule_mode === 'scheduled' && $now->lt($start))
                                             <button type="button" class="btn btn-secondary w-100" disabled>
                                                 <i class="bx bx-lock-alt me-1"></i>
                                                 Belum Dimulai
                                             </button>
-                                        @elseif ($exam->has_duration && $now->greaterThanOrEqualTo($end))
+                                        @elseif ($exam->schedule_mode === 'scheduled' && $now->greaterThanOrEqualTo($end))
                                             <button type="button" class="btn btn-danger w-100" disabled>
                                                 <i class="bx bx-x-circle me-1"></i>
                                                 Waktu Habis
                                             </button>
+                                        @elseif ($requiresSecondApproval && $attemptApproval?->status !== 'approved')
+                                            @if ($attemptApproval?->status === 'pending')
+                                                <button type="button" class="btn btn-warning w-100" disabled>Menunggu Persetujuan Admin</button>
+                                            @else
+                                                <form action="{{ route('exams.second-attempt.request', ['exam' => $exam->id]) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-primary w-100">
+                                                        <i class="bx bx-send me-1"></i>Minta Persetujuan Percobaan Kedua
+                                                    </button>
+                                                </form>
+                                            @endif
                                         @else
                                             <form action="{{ route('exams.start', ['exam' => $exam->id]) }}" method="POST">
                                                 @csrf
