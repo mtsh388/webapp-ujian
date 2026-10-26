@@ -127,7 +127,6 @@ class RegistrationPaymentController extends Controller
             $payment->user()->update(['is_active' => true]);
 
             if ($payment->student) {
-                $payment->student->update(['is_active' => true]);
                 $payment->student->parents()->with('user')->get()->each(function ($parent) {
                     if ($parent->user) {
                         $parent->user->forceFill(['is_active' => true])->save();
@@ -136,7 +135,7 @@ class RegistrationPaymentController extends Controller
             }
         }, 3);
 
-        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun siswa dan orang tua diaktifkan.');
+        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun login siswa dan orang tua diaktifkan; status siswa tetap Tidak Aktif hingga diaktifkan terpisah.');
     }
 
     public function reject(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
