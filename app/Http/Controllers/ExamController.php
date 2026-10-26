@@ -291,6 +291,10 @@ class ExamController extends Controller
             return redirect()->route('exams.available')->with('error', 'Persetujuan percobaan kedua hanya berlaku untuk ujian berdurasi tanpa jadwal.');
         }
 
+        if ((int) $exam->max_attempts < 2) {
+            return redirect()->route('exams.available')->with('error', 'Batas percobaan ujian ini belum mengizinkan percobaan kedua. Hubungi Admin.');
+        }
+
         $attemptCount = ExamAttempt::query()
             ->where('exam_id', $exam->id)
             ->where('student_id', $student->id)
