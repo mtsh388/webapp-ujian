@@ -89,18 +89,13 @@ class AuthController extends Controller
             'parent_email' => [Rule::requiredIf($type === 'paid'), 'nullable', 'email', 'max:255', 'different:email', 'unique:users,email'],
             'parent_phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
             'parent_address' => ['nullable', 'string', 'max:255'],
-            'payment_proof' => [Rule::requiredIf($type === 'paid'), 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ], [
             'email.unique' => 'Email sudah terdaftar. Silakan login atau gunakan email lain.',
             'parent_email.unique' => 'Email orang tua sudah digunakan oleh akun lain.',
             'class_id.exists' => 'Kelas tidak sesuai dengan jenjang yang dipilih atau sudah tidak aktif.',
-            'payment_proof.required' => 'Bukti pembayaran wajib diunggah untuk registrasi Berbayar.',
-            'payment_proof.mimes' => 'Bukti pembayaran harus berupa JPG, PNG, atau PDF.',
-            'payment_proof.max' => 'Ukuran bukti pembayaran maksimal 5 MB.',
         ]);
 
         $user = null;
-        $proofPath = null;
 
         if ($type === 'paid') {
             $classRoom = \App\Models\ClassRoom::query()
@@ -147,10 +142,8 @@ class AuthController extends Controller
                 $amount -= $promoCode->discountFor($amount);
             }
 
-            $proofPath = $request->file('payment_proof')->store('registration-proofs', 'local');
-
             try {
-                $user = DB::transaction(function () use ($validated, $classRoom, $amount, $proofPath, $promoCode): User {
+                $registrationResult = DB::transaction(function () use ($validated, $classRoom, $amount, $promoCode): array {
                     $studentUser = User::create([
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
@@ -211,49 +204,30 @@ class AuthController extends Controller
 
                     $this->examService->assignStudentToAutoExams($student->fresh('classRoom'));
 
-                    RegistrationPayment::create([
+                    $payment = RegistrationPayment::create([
                         'user_id' => $studentUser->id,
                         'student_id' => $student->id,
                         'amount' => $amount,
-                        'status' => 'pending_verification',
-                        'proof_path' => $proofPath,
+                        'status' => 'awaiting_payment',
+                        'proof_path' => null,
                         'payment_type' => 'registration',
                         'promo_code' => $promoCode?->code,
                         'installment_status' => 'not_allowed',
                     ]);
 
-                    return $studentUser;
+                    return ['user' => $studentUser, 'payment' => $payment];
                 });
             } catch (Throwable $exception) {
-                Storage::disk('local')->delete($proofPath);
                 throw $exception;
             }
 
-            try {
-                $financeEmails = User::query()
-                    ->role('Keuangan')
-                    ->where('is_active', true)
-                    ->pluck('email')
-                    ->filter()
-                    ->unique()
-                    ->values()
-                    ->all();
+            $registrationPayment = $registrationResult['payment'];
 
-                if ($financeEmails !== []) {
-                    Mail::raw(
-                        "Ada pembayaran registrasi baru yang menunggu verifikasi. Silakan buka menu Keuangan > Verifikasi Pembayaran di QSEE.",
-                        function ($message) use ($financeEmails) {
-                            $message->to($financeEmails)->subject('QSEE - Pembayaran Registrasi Menunggu Verifikasi');
-                        }
-                    );
-                }
-            } catch (Throwable $exception) {
-                report($exception);
-            }
-
-            return redirect()
-                ->route('login')
-                ->with('status', 'Data registrasi berhasil disimpan. Pembayaran menunggu verifikasi Keuangan sebelum akun dapat digunakan.');
+            return redirect()->to(\Illuminate\Support\Facades\URL::temporarySignedRoute(
+                'register.payment.show',
+                now()->addDay(),
+                ['registrationPayment' => $registrationPayment->id]
+            ));
         }
 
         $user = User::create([
