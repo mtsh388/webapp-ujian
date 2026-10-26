@@ -94,7 +94,7 @@
                                     <select class="form-select" id="class_id" name="class_id">
                                         <option value="">Pilih Kelas</option>
                                         @foreach ($classes as $class)
-                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-grade="{{ $class->grade_level }}" data-fee="{{ $fees->get($class->education_level . '-' . $class->grade_level)?->amount ?? '' }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
+                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-grade="{{ $class->grade_level }}" data-fee="{{ $fees->get($class->education_level . '-' . $class->grade_level)?->amount ?? '' }}" data-discount-enabled="{{ (int) ($fees->get($class->education_level . '-' . $class->grade_level)?->discount_enabled ?? false) }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -147,7 +147,13 @@
                                 <label for="registration_fee_display" class="form-label">Biaya Pendaftaran (Rp)</label>
                                 <input type="text" id="registration_fee_display" class="form-control fw-semibold" value="" placeholder="Pilih jenjang dan kelas terlebih dahulu" readonly aria-live="polite">
                                 <div id="registrationFeeDescription" class="form-text">Nominal diambil dari Master Data Biaya QSEE dan tidak dapat diubah pada formulir ini.</div>
-                                <div class="form-text">Pendaftaran tidak menerima kode promo dan tidak dapat dicicil.</div>
+                                <div class="form-text">Kode promo hanya berlaku jika diskon diaktifkan pada Jenis Biaya. Pendaftaran tidak dapat dicicil.</div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="promo_code" class="form-label">Kode Promo</label>
+                                <input type="text" class="form-control" id="promo_code" name="promo_code" value="{{ old('promo_code') }}" maxlength="100" autocomplete="off">
+                                <div id="promoCodeDescription" class="form-text">Opsional. Kode promo akan divalidasi berdasarkan status dan tanggal/waktu berlaku.</div>
+                                @error('promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                             </div>
                             <div class="mb-4">
                                 <label for="payment_proof" class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
@@ -183,6 +189,16 @@
         const requiredFields = ['full_name', 'school_name', 'education_level', 'class_id', 'phone', 'parent_phone', 'parent_full_name', 'parent_email', 'payment_proof'];
         const levelSelect = document.getElementById('education_level');
         const classSelect = document.getElementById('class_id');
+        const promoInput = document.getElementById('promo_code');
+        const promoDescription = document.getElementById('promoCodeDescription');
+        const promoCodes = @json($promoCodes->map(fn ($promo) => [
+            'code' => $promo->code,
+            'discount_type' => $promo->discount_type,
+            'discount_value' => $promo->discount_value,
+            'starts_at' => $promo->starts_at->toIso8601String(),
+            'ends_at' => $promo->ends_at->toIso8601String(),
+            'is_active' => $promo->is_active,
+        ])->values());
 
         function setType(type) {
             typeInput.value = type;
@@ -220,7 +236,26 @@
                 return;
             }
 
-            feeInput.value = rupiah.format(Number(amount));
+            let finalAmount = Number(amount);
+            const code = promoInput.value.trim().toLocaleLowerCase('id-ID');
+            const currentPromo = promoCodes.find((promo) => promo.code.toLocaleLowerCase('id-ID') === code && promo.is_active);
+            const now = Date.now();
+
+            if (code && Number(selected.dataset.discountEnabled) !== 1) {
+                promoDescription.textContent = 'Kode promo tidak dapat digunakan karena diskon dinonaktifkan pada Jenis Biaya.';
+            } else if (code && currentPromo && Date.parse(currentPromo.starts_at) <= now && Date.parse(currentPromo.ends_at) >= now && Number(selected.dataset.discountEnabled) === 1) {
+                const discount = currentPromo.discount_type === 'percentage'
+                    ? Math.floor(finalAmount * Math.min(Number(currentPromo.discount_value), 100) / 100)
+                    : Number(currentPromo.discount_value);
+                finalAmount = Math.max(0, finalAmount - Math.min(finalAmount, discount));
+                promoDescription.textContent = 'Kode promo terdeteksi. Potongan: ' + rupiah.format(Math.min(Number(amount), discount)) + '. Server akan memvalidasi ulang saat pendaftaran.';
+            } else if (code) {
+                promoDescription.textContent = 'Kode promo tidak aktif atau belum/sudah di luar tanggal dan waktu berlaku.';
+            } else {
+                promoDescription.textContent = 'Opsional. Kode promo akan divalidasi berdasarkan status dan tanggal/waktu berlaku.';
+            }
+
+            feeInput.value = rupiah.format(finalAmount);
             feeInput.placeholder = '';
             feeDescription.textContent = 'Tarif aktif dari Master Data Biaya untuk ' + selected.textContent.trim() + '. Nominal akhir diperiksa kembali oleh server.';
         }
@@ -250,6 +285,7 @@
         typeButtons.forEach((button) => button.addEventListener('click', () => setType(button.dataset.registrationType)));
         levelSelect.addEventListener('change', filterClasses);
         classSelect.addEventListener('change', updateFee);
+        promoInput.addEventListener('input', updateFee);
         setType(typeInput.value);
         filterClasses();
     })();
