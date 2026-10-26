@@ -31,6 +31,7 @@ class StoreExamRequest extends FormRequest
                 'exists:subjects,id',
             ],
             'exam_type' => ['required', 'in:trial,ujian'],
+            'schedule_mode' => ['sometimes', 'required', 'in:scheduled,duration_without_schedule,no_duration'],
             'has_duration' => ['required', 'boolean'],
             'title' => [
                 'required',
@@ -42,8 +43,8 @@ class StoreExamRequest extends FormRequest
                 'string',
             ],
             'duration_minutes' => ['nullable', 'required_if:has_duration,1', 'integer', 'min:1'],
-            'start_at' => ['nullable', 'required_if:has_duration,1', 'date'],
-            'end_at' => ['nullable', 'required_if:has_duration,1', 'date', 'after:start_at'],
+            'start_at' => ['nullable', 'required_if:schedule_mode,scheduled', 'date'],
+            'end_at' => ['nullable', 'required_if:schedule_mode,scheduled', 'date', 'after:start_at'],
             'passing_score' => [
                 'nullable',
                 'required_if:exam_type,ujian',
@@ -74,14 +75,21 @@ class StoreExamRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $hasDuration = $this->boolean('has_duration');
+        $scheduleMode = $this->input('schedule_mode');
+        if (! in_array($scheduleMode, ['scheduled', 'duration_without_schedule', 'no_duration'], true)) {
+            $scheduleMode = $this->boolean('has_duration') ? 'scheduled' : 'no_duration';
+        }
+
+        $hasDuration = $scheduleMode !== 'no_duration';
+        $hasSchedule = $scheduleMode === 'scheduled';
 
         $this->merge([
+            'schedule_mode' => $scheduleMode,
             'has_duration' => $hasDuration,
             'duration_minutes' => $hasDuration ? $this->input('duration_minutes') : null,
             'max_attempts' => $hasDuration ? $this->input('max_attempts') : null,
-            'start_at' => $hasDuration ? $this->input('start_at') : null,
-            'end_at' => $hasDuration ? $this->input('end_at') : null,
+            'start_at' => $hasSchedule ? $this->input('start_at') : null,
+            'end_at' => $hasSchedule ? $this->input('end_at') : null,
             'shuffle_questions' => $this->boolean('shuffle_questions'),
             'shuffle_options' => $this->boolean('shuffle_options'),
             'show_result_immediately' => $this->boolean('show_result_immediately'),
