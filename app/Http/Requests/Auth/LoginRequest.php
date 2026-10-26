@@ -47,7 +47,7 @@ class LoginRequest extends FormRequest
             ->where('email', $this->input('email'))
             ->first();
 
-        if ($user && (! $user->is_active || ($user->hasRole('Siswa') && ! $user->student?->is_active))) {
+        if ($user && (! $user->is_active || ($user->hasRole('Siswa') && $user->student && ! $user->student->is_active))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
