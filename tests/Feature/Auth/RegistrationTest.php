@@ -133,7 +133,7 @@ test('paid registration stores student parent and pending registration payment a
         ->and($payment->payment_type)->toBe('registration')
         ->and($payment->promo_code)->toBeNull()
         ->and($payment->installment_status)->toBe('not_allowed')
-        ->and($user->is_active)->toBeTrue()
+        ->and($user->is_active)->toBeFalse()
         ->and($user->hasRole('Siswa'))->toBeTrue();
 
     $parentUser = User::where('email', 'orangtua@example.com')->firstOrFail();
