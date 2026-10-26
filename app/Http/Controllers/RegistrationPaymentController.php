@@ -6,6 +6,8 @@ use App\Models\RegistrationPayment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -19,6 +21,81 @@ class RegistrationPaymentController extends Controller
                 ->latest()
                 ->paginate(20),
         ]);
+    }
+
+    public function showPayment(RegistrationPayment $registrationPayment): View|RedirectResponse
+    {
+        if ($registrationPayment->status !== 'awaiting_payment') {
+            return redirect()->route('login')->with('status', 'Pembayaran registrasi sudah dikirim atau diproses.');
+        }
+
+        $registrationPayment->load(['user', 'student.classRoom']);
+
+        return view('auth.registration-payment', ['payment' => $registrationPayment]);
+    }
+
+    public function submitProof(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
+    {
+        if ($registrationPayment->status !== 'awaiting_payment') {
+            return redirect()->route('login')->with('status', 'Pembayaran registrasi sudah dikirim atau diproses.');
+        }
+
+        $validated = $request->validate([
+            'payment_proof' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+        ], [
+            'payment_proof.required' => 'Bukti pembayaran wajib diunggah.',
+            'payment_proof.mimes' => 'Bukti pembayaran harus berupa JPG, PNG, atau PDF.',
+            'payment_proof.max' => 'Ukuran bukti pembayaran maksimal 5 MB.',
+        ]);
+
+        $proofPath = $validated['payment_proof']->store('registration-proofs', 'local');
+
+        try {
+            DB::transaction(function () use ($registrationPayment, $proofPath) {
+                $payment = RegistrationPayment::query()
+                    ->whereKey($registrationPayment->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if ($payment->status !== 'awaiting_payment') {
+                    throw new \RuntimeException('Pembayaran registrasi sudah dikirim atau diproses.');
+                }
+
+                $payment->update([
+                    'proof_path' => $proofPath,
+                    'status' => 'pending_verification',
+                ]);
+            }, 3);
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($proofPath);
+            throw $exception;
+        }
+
+        try {
+            $financeEmails = \App\Models\User::query()
+                ->role('Keuangan')
+                ->where('is_active', true)
+                ->pluck('email')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($financeEmails !== []) {
+                Mail::raw(
+                    'Ada pembayaran registrasi baru yang menunggu verifikasi. Silakan buka menu Keuangan > Verifikasi Pembayaran di QSEE.',
+                    function ($message) use ($financeEmails) {
+                        $message->to($financeEmails)->subject('QSEE - Pembayaran Registrasi Menunggu Verifikasi');
+                    }
+                );
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        return redirect()
+            ->route('login')
+            ->with('status', 'Selamat, Anda sudah bergabung. Silakan datang ke QSEE untuk melakukan proses selanjutnya. Akun dapat digunakan setelah pembayaran disetujui Keuangan.');
     }
 
     public function proof(RegistrationPayment $registrationPayment)
