@@ -6,6 +6,7 @@ use App\Http\Requests\StoreExamRequest;
 use App\Models\Exam;
 use App\Models\ExamParticipant;
 use App\Models\ExamAttempt;
+use App\Models\ExamAttemptApproval;
 use App\Models\Student;
 use App\Services\ExamService;
 use Illuminate\Http\JsonResponse;
@@ -261,7 +262,69 @@ class ExamController extends Controller
                 ->keyBy('exam_id')
             : collect();
 
-        return view('exams.available', compact('exams', 'activeAttempts'));
+        $attemptCounts = $student
+            ? ExamAttempt::query()
+                ->where('student_id', $student->id)
+                ->selectRaw('exam_id, COUNT(*) as total')
+                ->groupBy('exam_id')
+                ->pluck('total', 'exam_id')
+            : collect();
+
+        $attemptApprovals = $student
+            ? ExamAttemptApproval::query()
+                ->where('student_id', $student->id)
+                ->get()
+                ->keyBy('exam_id')
+            : collect();
+
+        return view('exams.available', compact('exams', 'activeAttempts', 'attemptCounts', 'attemptApprovals'));
+    }
+
+    public function requestSecondAttempt(Exam $exam)
+    {
+        abort_unless(auth()->user()->hasRole('Siswa'), 403);
+
+        $student = auth()->user()->student;
+        abort_unless($student && $student->is_active, 403);
+
+        if ($exam->schedule_mode !== 'duration_without_schedule') {
+            return redirect()->route('exams.available')->with('error', 'Persetujuan percobaan kedua hanya berlaku untuk ujian berdurasi tanpa jadwal.');
+        }
+
+        $attemptCount = ExamAttempt::query()
+            ->where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->count();
+
+        if ($attemptCount !== 1) {
+            return redirect()->route('exams.available')->with('error', 'Permintaan hanya dapat diajukan setelah percobaan pertama selesai.');
+        }
+
+        if (ExamAttempt::query()->where('exam_id', $exam->id)->where('student_id', $student->id)->where('status', 'in_progress')->exists()) {
+            return redirect()->route('exams.available')->with('error', 'Selesaikan percobaan yang sedang berlangsung terlebih dahulu.');
+        }
+
+        $approval = ExamAttemptApproval::query()
+            ->where('exam_id', $exam->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if ($approval && $approval->status === 'approved') {
+            return redirect()->route('exams.available')->with('info', 'Percobaan kedua sudah disetujui Admin.');
+        }
+
+        ExamAttemptApproval::updateOrCreate(
+            ['exam_id' => $exam->id, 'student_id' => $student->id],
+            [
+                'status' => 'pending',
+                'requested_at' => now(),
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_note' => null,
+            ]
+        );
+
+        return redirect()->route('exams.available')->with('success', 'Permintaan percobaan kedua dikirim kepada Admin.');
     }
 
     public function participants(Exam $exam)
