@@ -524,8 +524,7 @@ class ResultController extends Controller
 
         $query = DB::table('exam_attempts as ea')
             ->join('students as s', 's.id', '=', 'ea.student_id')
-            ->join('student_parent as sp', 'sp.student_id', '=', 's.id')
-            ->join('exams as e', 'e.id', '=', 'ea.exam_id')
+
             ->where('sp.parent_id', $parent->id)
             ->whereIn('ea.status', ['submitted', 'expired'])
             ->whereNotNull('ea.submitted_at')
@@ -539,16 +538,15 @@ class ResultController extends Controller
 
         if ($search !== '') {
             $query->where(function ($builder) use ($search) {
-                $builder->where('s.full_name', 'like', '%' . $search . '%')
+                $builder->whereRaw("CASE WHEN NULLIF(TRIM(s.full_name), '') IS NULL OR s.full_name = s.student_number THEN COALESCE(NULLIF(TRIM(su.name), ''), s.full_name, s.student_number) ELSE s.full_name END LIKE ?", ['%' . $search . '%'])
                     ->orWhere('s.student_number', 'like', '%' . $search . '%')
-                    ->orWhere('e.title', 'like', '%' . $search . '%')
-;
+                    ->orWhere('e.title', 'like', '%' . $search . '%');
             });
         }
 
         $recordsFiltered = (clone $query)->count('ea.id');
         $orderColumns = [
-            1 => 's.full_name',
+            1 => 'student_name',
             2 => 'e.title',
             3 => 'ea.started_at',
             4 => 'ea.submitted_at',
@@ -568,7 +566,7 @@ class ResultController extends Controller
                 'ea.submitted_at',
                 'ea.score',
                 'ea.status',
-                's.full_name as student_name',
+                DB::raw("CASE WHEN NULLIF(TRIM(s.full_name), '') IS NULL OR s.full_name = s.student_number THEN COALESCE(NULLIF(TRIM(su.name), ''), s.full_name, s.student_number) ELSE s.full_name END as student_name"),
                 's.student_number',
                 'e.title as exam_title',
             ])
