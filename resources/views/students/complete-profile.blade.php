@@ -52,7 +52,7 @@
 
                             <div class="mb-3">
                                 <label for="full_name" class="form-label">Nama Lengkap</label>
-                                <input id="full_name" name="full_name" type="text" class="form-control @error('full_name') is-invalid @enderror" value="{{ old('full_name', $student?->full_name ?? auth()->user()->name) }}" maxlength="255" required>
+                                <input id="full_name" name="full_name" type="text" class="form-control @error('full_name') is-invalid @enderror" value="{{ old('full_name', $student?->full_name) }}" maxlength="255" autocomplete="off" autocapitalize="words" required>
                                 @error('full_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
