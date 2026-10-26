@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Exam;
 use App\Models\ExamAnswer;
 use App\Models\ExamAttempt;
+use App\Models\ExamAttemptApproval;
 use App\Models\ExamQuestion;
 use App\Models\Student;
 use App\Repositories\ExamAttemptRepositoryInterface;
@@ -84,6 +85,18 @@ class ExamAttemptService
                 $lockedExam->id,
                 $lockedStudent->id
             );
+
+            if ($lockedExam->schedule_mode === 'duration_without_schedule' && $attemptCount === 1) {
+                $approved = ExamAttemptApproval::query()
+                    ->where('exam_id', $lockedExam->id)
+                    ->where('student_id', $lockedStudent->id)
+                    ->where('status', 'approved')
+                    ->exists();
+
+                if (! $approved) {
+                    throw new RuntimeException('Percobaan kedua untuk ujian berdurasi tanpa jadwal harus disetujui Admin terlebih dahulu.');
+                }
+            }
 
             if (
                 $lockedExam->max_attempts !== null &&
