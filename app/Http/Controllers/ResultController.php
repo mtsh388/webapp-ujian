@@ -524,7 +524,9 @@ class ResultController extends Controller
 
         $query = DB::table('exam_attempts as ea')
             ->join('students as s', 's.id', '=', 'ea.student_id')
-
+            ->join('student_parent as sp', 'sp.student_id', '=', 's.id')
+            ->leftJoin('users as su', 'su.id', '=', 's.user_id')
+            ->join('exams as e', 'e.id', '=', 'ea.exam_id')
             ->where('sp.parent_id', $parent->id)
             ->whereIn('ea.status', ['submitted', 'expired'])
             ->whereNotNull('ea.submitted_at')
