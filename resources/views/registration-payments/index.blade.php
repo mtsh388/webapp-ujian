@@ -41,7 +41,7 @@
                                 <td class="text-nowrap">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</td>
                                 <td>{{ $payment->promo_code ?: '-' }}</td>
                                 <td>
-                                    <span class="badge {{ $payment->status === 'verified' ? 'bg-label-success' : ($payment->status === 'pending_verification' ? 'bg-label-warning' : 'bg-label-secondary') }}">
+                                    <span class="badge {{ $payment->status === 'verified' ? 'bg-label-success' : ($payment->status === 'pending_verification' ? 'bg-label-warning' : ($payment->status === 'rejected' ? 'bg-label-danger' : 'bg-label-secondary')) }}">
                                         {{ str_replace('_', ' ', ucfirst($payment->status)) }}
                                     </span>
                                     @if ($payment->rejection_reason)
