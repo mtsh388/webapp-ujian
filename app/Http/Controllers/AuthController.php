@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -154,7 +155,7 @@ class AuthController extends Controller
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
                         'password' => $validated['password'],
-                        'is_active' => true,
+                        'is_active' => false,
                     ]);
 
                     $studentUser->forceFill([
@@ -183,7 +184,7 @@ class AuthController extends Controller
                         'name' => trim($validated['parent_full_name']),
                         'email' => $validated['parent_email'],
                         'password' => Str::random(48),
-                        'is_active' => true,
+                        'is_active' => false,
                     ]);
 
                     $parentUser->forceFill([
@@ -228,9 +229,31 @@ class AuthController extends Controller
                 throw $exception;
             }
 
+            try {
+                $financeEmails = User::query()
+                    ->role('Keuangan')
+                    ->where('is_active', true)
+                    ->pluck('email')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if ($financeEmails !== []) {
+                    Mail::raw(
+                        "Ada pembayaran registrasi baru yang menunggu verifikasi. Silakan buka menu Keuangan > Verifikasi Pembayaran di QSEE.",
+                        function ($message) use ($financeEmails) {
+                            $message->to($financeEmails)->subject('QSEE - Pembayaran Registrasi Menunggu Verifikasi');
+                        }
+                    );
+                }
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+
             return redirect()
                 ->route('login')
-                ->with('status', 'Selamat, Anda sudah bergabung. Silakan datang ke QSEE untuk melakukan proses selanjutnya.');
+                ->with('status', 'Data registrasi berhasil disimpan. Pembayaran menunggu verifikasi Keuangan sebelum akun dapat digunakan.');
         }
 
         $user = User::create([
