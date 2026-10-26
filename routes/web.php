@@ -12,6 +12,7 @@ use App\Http\Controllers\ExamViolationController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\RegistrationFeeController;
 use App\Http\Controllers\PromoCodeController;
+use App\Http\Controllers\RegistrationPaymentController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -176,6 +177,15 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             });
 
     });
+
+    Route::prefix('keuangan/pembayaran-registrasi')
+        ->middleware('permission:registration-payment.view')
+        ->group(function () {
+            Route::get('/', [RegistrationPaymentController::class, 'index'])->name('registration-payments.index');
+            Route::get('/{registrationPayment}/bukti', [RegistrationPaymentController::class, 'proof'])->name('registration-payments.proof');
+            Route::post('/{registrationPayment}/setujui', [RegistrationPaymentController::class, 'approve'])->middleware('permission:registration-payment.approve')->name('registration-payments.approve');
+            Route::post('/{registrationPayment}/tolak', [RegistrationPaymentController::class, 'reject'])->middleware('permission:registration-payment.approve')->name('registration-payments.reject');
+        });
 
     Route::prefix('master-data/kode-promo')
         ->middleware('permission:promo-code.view')
