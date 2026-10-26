@@ -1,13 +1,13 @@
 <?php
 
-namespace App\\Http\\Controllers;
+namespace App\Http\Controllers;
 
-use App\\Models\\PromoCode;
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Http\\RedirectResponse;
-use Illuminate\\Http\\Request;
-use Illuminate\\Validation\\Rule;
-use Illuminate\\View\\View;
+use App\Models\PromoCode;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class PromoCodeController extends Controller
 {
@@ -138,7 +138,7 @@ class PromoCodeController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
 
         if ($validated['discount_type'] === 'percentage' && $validated['discount_value'] > 100) {
-            throw \\Illuminate\\Validation\\ValidationException::withMessages([
+            throw \Illuminate\Validation\ValidationException::withMessages([
                 'discount_value' => 'Diskon persentase maksimal 100%.',
             ]);
         }
