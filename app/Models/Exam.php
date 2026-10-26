@@ -15,6 +15,7 @@ class Exam extends Model
         'code',
         'exam_type',
         'has_duration',
+        'schedule_mode',
         'title',
         'description',
         'duration_minutes',
