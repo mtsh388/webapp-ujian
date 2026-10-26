@@ -86,7 +86,7 @@
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{{ route('promo-codes.edit', $item) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                            <form method="POST" action="{{ route('promo-codes.destroy', $item) }}" onsubmit="return confirm('Hapus kode promo ini?')">
+                                            <form method="POST" action="{{ route('promo-codes.destroy', $item) }}" class="js-delete-promo">
                                                 @csrf @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
                                             </form>
@@ -104,4 +104,29 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.js-delete-promo').forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!window.Swal) return;
+                    event.preventDefault();
+                    Swal.fire({
+                        title: 'Hapus kode promo?',
+                        text: 'Kode promo yang dihapus tidak dapat digunakan lagi.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, hapus',
+                        cancelButtonText: 'Batal',
+                        customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-outline-secondary' },
+                        buttonsStyling: false
+                    }).then(function (result) {
+                        if (result.isConfirmed) form.submit();
+                    });
+                });
+            });
+        });
+    </script>
 @endsection
