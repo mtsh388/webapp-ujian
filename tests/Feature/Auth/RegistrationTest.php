@@ -97,7 +97,7 @@ test('paid registration stores student parent and pending registration payment a
         ->where('grade_level', 12)
         ->update(['amount' => 500000, 'is_active' => true]);
 
-    $this->post('/register', [
+    $response = $this->post('/register', [
         'registration_type' => 'paid',
         'email' => 'siswa.paid@example.com',
         'password' => 'password123',
@@ -114,9 +114,10 @@ test('paid registration stores student parent and pending registration payment a
         'amount' => 1,
         'registration_fee_display' => 'Rp1',
         'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
-    ])
-        ->assertRedirect(route('login'))
-        ->assertSessionHas('status', 'Selamat, Anda sudah bergabung. Silakan datang ke QSEE untuk melakukan proses selanjutnya.');
+    ]);
+
+    $response->assertRedirect();
+    expect($response->headers->get('Location'))->toContain('/registrasi/pembayaran/');
 
     $user = User::where('email', 'siswa.paid@example.com')->firstOrFail();
     $student = Student::where('user_id', $user->id)->firstOrFail();
@@ -128,14 +129,12 @@ test('paid registration stores student parent and pending registration payment a
         ->and($student->education_level)->toBe('SMA')
         ->and($student->class_id)->toBe($class->id)
         ->and($payment->amount)->toBe(500000)
-        ->and($payment->status)->toBe('pending_verification')
+        ->and($payment->status)->toBe('awaiting_payment')
         ->and($payment->payment_type)->toBe('registration')
         ->and($payment->promo_code)->toBeNull()
         ->and($payment->installment_status)->toBe('not_allowed')
         ->and($user->is_active)->toBeTrue()
         ->and($user->hasRole('Siswa'))->toBeTrue();
-
-    Storage::disk('local')->assertExists($payment->proof_path);
 
     $parentUser = User::where('email', 'orangtua@example.com')->firstOrFail();
     $this->assertDatabaseHas('parents', [
@@ -206,7 +205,7 @@ test('paid registration applies the configured tariff for SD SMP and SMA grades 
 
         $email = 'siswa.tarif' . $index . '@example.com';
 
-        $this->post('/register', [
+        $response = $this->post('/register', [
             'registration_type' => 'paid',
             'email' => $email,
             'password' => 'password123',
@@ -219,7 +218,10 @@ test('paid registration applies the configured tariff for SD SMP and SMA grades 
             'parent_full_name' => 'Orang Tua Tarif ' . $index,
             'parent_email' => 'orangtua.tarif' . $index . '@example.com',
             'payment_proof' => UploadedFile::fake()->create('bukti.pdf', 100, 'application/pdf'),
-        ])->assertRedirect(route('login'));
+        ]);
+
+        $response->assertRedirect();
+        expect($response->headers->get('Location'))->toContain('/registrasi/pembayaran/');
 
         $student = Student::whereHas('user', fn ($query) => $query->where('email', $email))->firstOrFail();
 
