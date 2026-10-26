@@ -156,13 +156,14 @@
             auth()->user()->can('exam.create') ||
             auth()->user()->can('exam.update') ||
             auth()->user()->can('exam.delete') ||
-            auth()->user()->can('exam.take')
+            auth()->user()->can('exam.take') ||
+            auth()->user()->can('exam.attempt-approval.view')
         )
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Ujian</span>
             </li>
 
-            <li class="menu-item {{ request()->routeIs('exams.*') ? 'active open' : '' }}">
+            <li class="menu-item {{ (request()->routeIs('exams.*') || request()->routeIs('exam-attempt-approvals.*')) ? 'active open' : '' }}">
 
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-edit"></i>
@@ -193,6 +194,14 @@
                         <li class="menu-item {{ request()->routeIs('exams.available') ? 'active' : '' }}">
                             <a href="{{ route('exams.available') }}" class="menu-link">
                                 <div>Ujian Saya</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('exam.attempt-approval.view')
+                        <li class="menu-item {{ request()->routeIs('exam-attempt-approvals.*') ? 'active' : '' }}">
+                            <a href="{{ route('exam-attempt-approvals.index') }}" class="menu-link">
+                                <div>Persetujuan Percobaan Kedua</div>
                             </a>
                         </li>
                     @endcan
