@@ -220,7 +220,7 @@
                                     : '<span class="badge bg-label-secondary">Tidak Aktif</span>';
                             }
 
-                            return '<div class="d-flex align-items-center gap-2">' +
+                            return '<div class="d-flex flex-column align-items-center gap-1">' +
                                 '<div class="form-check form-switch mb-0">' +
                                 '<input type="checkbox" class="form-check-input js-promo-status" role="switch" data-id="' + row.id + '" ' +
                                 (active ? 'checked ' : '') +
