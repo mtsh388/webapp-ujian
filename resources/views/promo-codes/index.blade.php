@@ -46,7 +46,7 @@
                                 <div class="col-md-4 d-flex align-items-end">
                                     <div class="form-check form-switch mb-2">
                                         <input type="hidden" name="is_active" value="0">
-                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $promoCode->exists ? $promoCode->is_active : true)>
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" @checked(old('is_active', $promoCode->exists ? $promoCode->is_active : true))>
                                         <label class="form-check-label" for="is_active">Kode promo aktif</label>
                                     </div>
                                 </div>
