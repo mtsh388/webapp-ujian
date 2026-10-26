@@ -307,7 +307,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3 duration-settings">
+                        <div class="col-md-6 mb-3 schedule-settings">
                             <label for="end_at" class="form-label">Waktu Berakhir <span
                                     class="text-danger">*</span></label>
                             <input type="datetime-local"
