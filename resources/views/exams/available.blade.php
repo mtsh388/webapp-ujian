@@ -117,8 +117,7 @@
                             $activeAttempt = $activeAttempts->get($exam->id);
                             $attemptCount = (int) ($attemptCounts->get($exam->id, 0));
                             $attemptApproval = $attemptApprovals->get($exam->id);
-                            $requiresSecondApproval = $exam->schedule_mode === 'duration_without_schedule' && $attemptCount === 1;
-                            $secondAttemptAllowed = ! $requiresSecondApproval || $attemptApproval?->status === 'approved';
+                            $requiresSecondApproval = $exam->schedule_mode === 'duration_without_schedule' && $attemptCount === 1 && ! $activeAttempt;
                         @endphp
 
                         <div class="col-12 col-md-6 col-xl-4">
@@ -235,7 +234,12 @@
                                     </div>
 
                                     <div class="mt-auto">
-                                        @if ($exam->schedule_mode === 'scheduled' && (!$start || !$end))
+                                        @if (! $activeAttempt && $exam->max_attempts !== null && $attemptCount >= $exam->max_attempts)
+                                            <button type="button" class="btn btn-secondary w-100" disabled>
+                                                <i class="bx bx-lock me-1"></i>
+                                                Batas Percobaan Tercapai
+                                            </button>
+                                        @elseif ($exam->schedule_mode === 'scheduled' && (!$start || !$end))
                                             <button type="button" class="btn btn-secondary w-100" disabled>
                                                 <i class="bx bx-info-circle me-1"></i>
                                                 Jadwal Belum Tersedia
