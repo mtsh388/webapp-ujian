@@ -26,6 +26,7 @@ class ExamAttempt extends Model
         'duration_seconds',
         'status',
         'passed',
+        'parent_result_sent_at',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class ExamAttempt extends Model
             'total_score' => 'decimal:2',
             'score' => 'decimal:2',
             'passed' => 'boolean',
+            'parent_result_sent_at' => 'datetime',
         ];
     }
 
