@@ -25,8 +25,8 @@ class RegistrationPaymentController extends Controller
 
     public function showPayment(RegistrationPayment $registrationPayment): View|RedirectResponse
     {
-        if ($registrationPayment->status !== 'awaiting_payment') {
-            return redirect()->route('login')->with('status', 'Pembayaran registrasi sudah dikirim atau diproses.');
+        if (! in_array($registrationPayment->status, ['awaiting_payment', 'rejected'], true)) {
+            return redirect()->route('login')->with('status', 'Bukti pembayaran sudah dikirim dan sedang diproses.');
         }
 
         $registrationPayment->load(['user', 'student.classRoom']);
@@ -36,8 +36,8 @@ class RegistrationPaymentController extends Controller
 
     public function submitProof(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
     {
-        if ($registrationPayment->status !== 'awaiting_payment') {
-            return redirect()->route('login')->with('status', 'Pembayaran registrasi sudah dikirim atau diproses.');
+        if (! in_array($registrationPayment->status, ['awaiting_payment', 'rejected'], true)) {
+            return redirect()->route('login')->with('status', 'Bukti pembayaran sudah dikirim dan sedang diproses.');
         }
 
         $validated = $request->validate([
@@ -48,6 +48,7 @@ class RegistrationPaymentController extends Controller
             'payment_proof.max' => 'Ukuran bukti pembayaran maksimal 5 MB.',
         ]);
 
+        $previousProofPath = $registrationPayment->proof_path;
         $proofPath = $validated['payment_proof']->store('registration-proofs', 'local');
 
         try {
@@ -57,18 +58,25 @@ class RegistrationPaymentController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ($payment->status !== 'awaiting_payment') {
-                    throw new \RuntimeException('Pembayaran registrasi sudah dikirim atau diproses.');
+                if (! in_array($payment->status, ['awaiting_payment', 'rejected'], true)) {
+                    throw new \RuntimeException('Bukti pembayaran sudah dikirim dan sedang diproses.');
                 }
 
                 $payment->update([
                     'proof_path' => $proofPath,
                     'status' => 'pending_verification',
+                    'rejection_reason' => null,
+                    'verified_by' => null,
+                    'verified_at' => null,
                 ]);
             }, 3);
         } catch (Throwable $exception) {
             Storage::disk('local')->delete($proofPath);
             throw $exception;
+        }
+
+        if ($previousProofPath && $previousProofPath !== $proofPath) {
+            Storage::disk('local')->delete($previousProofPath);
         }
 
         try {
@@ -127,7 +135,12 @@ class RegistrationPaymentController extends Controller
             $payment->user()->update(['is_active' => true]);
 
             if ($payment->student) {
-                $payment->student->parents()->with('user')->get()->each(function ($parent) {
+                $student = $payment->student;
+                $student->update(['is_active' => true]);
+
+                $student->parents()->with('user')->get()->each(function ($parent) {
+                    $parent->forceFill(['is_active' => true])->save();
+
                     if ($parent->user) {
                         $parent->user->forceFill(['is_active' => true])->save();
                     }
@@ -135,7 +148,7 @@ class RegistrationPaymentController extends Controller
             }
         }, 3);
 
-        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun login siswa dan orang tua diaktifkan; status siswa tetap Tidak Aktif hingga diaktifkan terpisah.');
+        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun Siswa dan Orang Tua serta status siswa telah diaktifkan.');
     }
 
     public function reject(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
@@ -144,21 +157,24 @@ class RegistrationPaymentController extends Controller
             'rejection_reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $payment = RegistrationPayment::query()
-            ->whereKey($registrationPayment->id)
-            ->firstOrFail();
+        DB::transaction(function () use ($registrationPayment, $validated) {
+            $payment = RegistrationPayment::query()
+                ->whereKey($registrationPayment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($payment->status !== 'pending_verification') {
-            abort(422, 'Pembayaran ini tidak sedang menunggu verifikasi.');
-        }
+            if ($payment->status !== 'pending_verification') {
+                abort(422, 'Pembayaran ini tidak sedang menunggu verifikasi.');
+            }
 
-        $payment->update([
-            'status' => 'rejected',
-            'rejection_reason' => $validated['rejection_reason'],
-            'verified_by' => auth()->id(),
-            'verified_at' => now(),
-        ]);
+            $payment->update([
+                'status' => 'rejected',
+                'rejection_reason' => $validated['rejection_reason'],
+                'verified_by' => auth()->id(),
+                'verified_at' => now(),
+            ]);
+        }, 3);
 
-        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran ditolak. Siswa dapat menghubungi Keuangan untuk tindak lanjut.');
+        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran ditolak. Alasan penolakan disimpan dan pengguna dapat mengunggah ulang bukti melalui tautan pembayaran yang masih berlaku.');
     }
 }
