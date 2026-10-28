@@ -31,7 +31,7 @@
                     </div>
 
                     <h4 class="mb-1">Daftar sebagai Siswa</h4>
-                    <p class="mb-5">Pilih jenis pendaftaran. Biaya Berbayar mengikuti Master Data Biaya QSEE.</p>
+                    <p class="mb-5">Pilih jenis pendaftaran. Biaya pendaftaran berbayar mengikuti Master Data Biaya QSEE; biaya bimbel diatur terpisah setelah registrasi disetujui.</p>
 
                     @if ($errors->any())
                         <div class="alert alert-danger mb-5">
@@ -141,28 +141,6 @@
                                 </div>
                             </div>
 
-                            <hr class="my-5">
-                            <h5 class="mb-3">Rencana Pembayaran Bimbel</h5>
-                            <div class="row g-4 mb-4">
-                                <div class="col-md-6">
-                                    <label for="duration_years" class="form-label">Periode Belajar <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="duration_years" name="duration_years">
-                                        <option value="1" @selected(old('duration_years', '1') === '1')>1 tahun</option>
-                                        <option value="2" @selected(old('duration_years') === '2')>2 tahun (maksimal)</option>
-                                    </select>
-                                    <div class="form-text">Tagihan bimbel dibuat berdasarkan tarif Master Data Biaya untuk kelas yang dipilih dan kelas berikutnya. Tidak melewati kelas akhir jenjang.</div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="installment_count" class="form-label">Jumlah Pembayaran <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="installment_count" name="installment_count">
-                                        @for ($count = 1; $count <= 5; $count++)
-                                            <option value="{{ $count }}" @selected((string) old('installment_count', '1') === (string) $count)>{{ $count }} kali{{ $count === 1 ? ' (lunas sekaligus)' : ' cicilan' }}</option>
-                                        @endfor
-                                    </select>
-                                    <div class="form-text">Maksimal 5 kali cicilan. Biaya pendaftaran tetap dibayar penuh terpisah.</div>
-                                </div>
-                            </div>
-
                             <h5 class="mb-3">Biaya Registrasi</h5>
                             <div class="mb-4">
                                 <label for="registration_fee_display" class="form-label">Biaya Pendaftaran (Rp)</label>
@@ -170,16 +148,6 @@
                                 <div id="registrationFeeDescription" class="form-text">Nominal diambil dari Master Data Biaya QSEE dan tidak dapat diubah pada formulir ini.</div>
                                 <div class="form-text">Nominal mengikuti biaya pendaftaran yang ditetapkan Admin. Pendaftaran tidak dapat dicicil.</div>
                             </div>
-                            <div class="mb-4">
-                                <label for="tuition_estimate" class="form-label">Estimasi Biaya Bimbel</label>
-                                <input type="text" id="tuition_estimate" class="form-control fw-semibold" value="" placeholder="Pilih kelas dan periode belajar" readonly aria-live="polite">
-                                <div id="tuitionEstimateDescription" class="form-text">Estimasi mengikuti tarif Belajar pada Master Data Biaya untuk setiap kelas dalam periode yang dipilih. Biaya pendaftaran belum termasuk.</div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="tuition_promo_code" class="form-label">Kode Promo Bimbel (Opsional)</label>
-                                <input type="text" id="tuition_promo_code" name="tuition_promo_code" class="form-control" value="{{ old('tuition_promo_code') }}" maxlength="100" autocomplete="off">
-                                <div class="form-text">Promo hanya diterapkan pada tarif Belajar yang mengizinkan Diskon / Promo. Biaya Pendaftaran tetap dibayar penuh.</div>
-                                @error('tuition_promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                             </div>
                         </div>
 
@@ -224,11 +192,6 @@
 
         const feeInput = document.getElementById('registration_fee_display');
         const feeDescription = document.getElementById('registrationFeeDescription');
-        const tuitionInput = document.getElementById('tuition_estimate');
-        const tuitionDescription = document.getElementById('tuitionEstimateDescription');
-        const durationSelect = document.getElementById('duration_years');
-        const installmentSelect = document.getElementById('installment_count');
-        const learningFees = @json($learningFees->map(fn ($fee) => ['amount' => (int) $fee->amount, 'max_installments' => (int) $fee->max_installments])->all());
         const rupiah = new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
@@ -241,7 +204,6 @@
                 feeInput.value = '';
                 feeInput.placeholder = 'Pilih jenjang dan kelas terlebih dahulu';
                 feeDescription.textContent = 'Nominal diambil dari Master Data Biaya QSEE.';
-                updateTuitionEstimate(selected);
                 return;
             }
 
@@ -250,52 +212,12 @@
                 feeInput.value = '';
                 feeInput.placeholder = 'Biaya belum tersedia';
                 feeDescription.textContent = 'Biaya untuk jenjang dan kelas ini belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE.';
-                updateTuitionEstimate(selected);
                 return;
             }
 
             feeInput.value = rupiah.format(Number(amount));
             feeInput.placeholder = '';
             feeDescription.textContent = 'Tarif aktif dari Master Data Biaya untuk ' + selected.textContent.trim() + '. Nominal akhir diperiksa kembali oleh server.';
-            updateTuitionEstimate(selected);
-        }
-
-        function updateTuitionEstimate(selected) {
-            if (!selected || !selected.value || selected.dataset.level !== levelSelect.value) {
-                tuitionInput.value = '';
-                tuitionInput.placeholder = 'Pilih kelas dan periode belajar';
-                tuitionDescription.textContent = 'Estimasi mengikuti Master Data Biaya.';
-                return;
-            }
-
-            const level = selected.dataset.level;
-            const grade = Number(selected.dataset.grade);
-            const duration = Number(durationSelect.value || 1);
-            const maxGrade = level === 'SD' ? 6 : (level === 'SMP' ? 9 : 12);
-            const actualDuration = Math.min(duration, maxGrade - grade + 1);
-            let total = 0;
-            let maxInstallments = 5;
-
-            for (let currentGrade = grade; currentGrade < grade + actualDuration; currentGrade++) {
-                const fee = learningFees[level + '-' + currentGrade];
-                if (!fee) {
-                    tuitionInput.value = '';
-                    tuitionInput.placeholder = 'Tarif Belajar belum lengkap';
-                    tuitionDescription.textContent = 'Master Data Biaya untuk ' + level + ' kelas ' + currentGrade + ' belum tersedia atau tidak aktif. Hubungi Admin QSEE.';
-                    return;
-                }
-
-                total += Number(fee.amount);
-                maxInstallments = Math.min(maxInstallments, Number(fee.max_installments || 1));
-            }
-
-            tuitionInput.value = rupiah.format(total);
-            tuitionInput.placeholder = '';
-            tuitionDescription.textContent = 'Estimasi sebelum diskon/promo untuk ' + actualDuration + ' tahun. Maksimal cicilan untuk tarif terpilih: ' + maxInstallments + ' kali.';
-            Array.from(installmentSelect.options).forEach(option => {
-                option.disabled = Number(option.value) > maxInstallments;
-            });
-            if (Number(installmentSelect.value) > maxInstallments) installmentSelect.value = String(maxInstallments);
         }
 
         function filterClasses() {
@@ -325,8 +247,6 @@
         typeButtons.forEach((button) => button.addEventListener('click', () => setType(button.dataset.registrationType)));
         levelSelect.addEventListener('change', filterClasses);
         classSelect.addEventListener('change', updateFee);
-        durationSelect.addEventListener('change', () => updateTuitionEstimate(classSelect.options[classSelect.selectedIndex]));
-        installmentSelect.addEventListener('change', () => updateTuitionEstimate(classSelect.options[classSelect.selectedIndex]));
         setType(typeInput.value);
         filterClasses();
     })();
