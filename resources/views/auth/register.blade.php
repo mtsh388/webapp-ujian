@@ -235,6 +235,7 @@
                 feeInput.value = '';
                 feeInput.placeholder = 'Pilih jenjang dan kelas terlebih dahulu';
                 feeDescription.textContent = 'Nominal diambil dari Master Data Biaya QSEE.';
+                updateTuitionEstimate(selected);
                 return;
             }
 
