@@ -19,6 +19,7 @@ class StoreClassRoomRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
             'grade_level' => ['required', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
+            'registration_type' => ['required', Rule::in(['trial', 'paid'])],
             'description' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
         ];
