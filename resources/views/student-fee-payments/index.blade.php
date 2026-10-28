@@ -30,7 +30,9 @@
                             <thead><tr><th>Rincian Kelas</th><th class="text-end">Nominal</th></tr></thead>
                             <tbody>
                                 @foreach ($transaction->details ?? [] as $detail)
-                                    <tr><td>{{ $detail['name'] ?? 'Belajar' }} — {{ $detail['education_level'] ?? '' }} Kelas {{ $detail['grade_level'] ?? '' }}</td><td class="text-end">Rp {{ number_format((int) ($detail['amount_due'] ?? 0), 0, ',', '.') }}</td></tr>
+                                    <tr><td>{{ $detail['name'] ?? 'Belajar' }} — {{ $detail['education_level'] ?? '' }} Kelas {{ $detail['grade_level'] ?? '' }}
+                                        @if ((int) ($detail['discount_amount'] ?? 0) > 0)<div class="small text-success">Nominal Rp {{ number_format((int) $detail['amount'], 0, ',', '.') }} · Diskon Rp {{ number_format((int) $detail['discount_amount'], 0, ',', '.') }}</div>@endif
+                                    </td><td class="text-end">Rp {{ number_format((int) ($detail['amount_due'] ?? 0), 0, ',', '.') }}</td></tr>
                                 @endforeach
                             </tbody>
                         </table>
