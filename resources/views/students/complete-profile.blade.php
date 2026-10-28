@@ -128,52 +128,78 @@
 
 @section('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const levelSelect = document.getElementById('education_level');
-            const classSelect = document.getElementById('class_id');
-            const registrationType = @json($student?->registration_type ?? 'trial');
-            const placeholderOption = classSelect.options[0].cloneNode(true);
-            const allClassOptions = Array.from(classSelect.options)
-                .slice(1)
-                .map(function (option) {
-                    return option.cloneNode(true);
-                });
+        (function () {
+            function initializeClassFilter() {
+                const levelSelect = document.getElementById('education_level');
+                const classSelect = document.getElementById('class_id');
 
-            function filterClasses() {
-                const selectedLevel = levelSelect.value;
-                const previousClass = classSelect.value;
-                const availableOptions = allClassOptions.filter(function (option) {
-                    return option.dataset.level === selectedLevel
-                        && option.dataset.registrationType === registrationType;
-                });
-                const select2Active = window.jQuery
-                    && jQuery(classSelect).hasClass('select2-hidden-accessible');
-
-                if (select2Active) {
-                    jQuery(classSelect).select2('destroy');
+                if (!levelSelect || !classSelect || classSelect.dataset.filterInitialized === 'true') {
+                    return;
                 }
 
-                classSelect.replaceChildren(placeholderOption.cloneNode(true));
+                classSelect.dataset.filterInitialized = 'true';
 
-                availableOptions.forEach(function (option) {
-                    classSelect.add(option.cloneNode(true));
-                });
+                const registrationType = @json($student?->registration_type ?? 'trial');
+                const allClasses = @json($classes->map(fn ($classRoom) => [
+                    'id' => (string) $classRoom->id,
+                    'name' => $classRoom->name,
+                    'level' => $classRoom->education_level,
+                    'registrationType' => $classRoom->registration_type,
+                ])->values());
 
-                if (availableOptions.some(function (option) {
-                    return option.value === previousClass;
-                })) {
-                    classSelect.value = previousClass;
-                } else {
-                    classSelect.value = '';
+                function filterClasses() {
+                    const previousClass = classSelect.value;
+                    const selectedLevel = levelSelect.value;
+                    const availableClasses = allClasses.filter(function (classRoom) {
+                        return classRoom.level === selectedLevel
+                            && classRoom.registrationType === registrationType;
+                    });
+                    const select2Active = window.jQuery
+                        && jQuery.fn.select2
+                        && jQuery(classSelect).hasClass('select2-hidden-accessible');
+
+                    if (select2Active) {
+                        jQuery(classSelect).select2('destroy');
+                    }
+
+                    classSelect.replaceChildren();
+
+                    const placeholder = document.createElement('option');
+                    placeholder.value = '';
+                    placeholder.textContent = 'Pilih kelas';
+                    classSelect.add(placeholder);
+
+                    availableClasses.forEach(function (classRoom) {
+                        const option = document.createElement('option');
+                        option.value = classRoom.id;
+                        option.textContent = classRoom.name;
+                        option.dataset.level = classRoom.level;
+                        option.dataset.registrationType = classRoom.registrationType;
+                        classSelect.add(option);
+                    });
+
+                    classSelect.value = availableClasses.some(function (classRoom) {
+                        return classRoom.id === previousClass;
+                    }) ? previousClass : '';
+
+                    if (select2Active && typeof window.qseeInitSelect2 === 'function') {
+                        window.qseeInitSelect2(classSelect);
+                    }
+
+                    if (window.jQuery) {
+                        jQuery(classSelect).trigger('change.select2');
+                    }
                 }
 
-                if (select2Active && typeof window.qseeInitSelect2 === 'function') {
-                    window.qseeInitSelect2(classSelect);
-                }
+                levelSelect.addEventListener('change', filterClasses);
+                filterClasses();
             }
 
-            levelSelect.addEventListener('change', filterClasses);
-            filterClasses();
-        });
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeClassFilter, { once: true });
+            } else {
+                initializeClassFilter();
+            }
+        })();
     </script>
 @endsection
