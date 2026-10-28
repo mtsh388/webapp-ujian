@@ -146,6 +146,12 @@
                     return option.dataset.level === selectedLevel
                         && option.dataset.registrationType === registrationType;
                 });
+                const select2Active = window.jQuery
+                    && jQuery(classSelect).hasClass('select2-hidden-accessible');
+
+                if (select2Active) {
+                    jQuery(classSelect).select2('destroy');
+                }
 
                 classSelect.replaceChildren(placeholderOption.cloneNode(true));
 
@@ -161,8 +167,8 @@
                     classSelect.value = '';
                 }
 
-                if (window.jQuery && jQuery(classSelect).hasClass('select2-hidden-accessible')) {
-                    jQuery(classSelect).trigger('change.select2');
+                if (select2Active && typeof window.qseeInitSelect2 === 'function') {
+                    window.qseeInitSelect2(classSelect);
                 }
             }
 
