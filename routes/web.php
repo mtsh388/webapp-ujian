@@ -15,6 +15,7 @@ use App\Http\Controllers\RegistrationFeeController;
 use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\RegistrationPaymentController;
 use App\Http\Controllers\MyRegistrationPaymentController;
+use App\Http\Controllers\StudentFeePaymentController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,12 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
     Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])
         ->middleware('role:Siswa|Orang Tua')
         ->name('my-registration-payments.index');
+    Route::get('/pembayaran-bimbel', [StudentFeePaymentController::class, 'index'])
+        ->middleware('role:Siswa|Orang Tua')
+        ->name('student-fee-payments.index');
+    Route::post('/pembayaran-bimbel/{studentFeePayment}/bukti', [StudentFeePaymentController::class, 'submitProof'])
+        ->middleware('role:Siswa|Orang Tua')
+        ->name('student-fee-payments.proof.store');
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware('permission:dashboard.view')
         ->name('dashboard');
@@ -198,6 +205,15 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
             Route::get('/{registrationPayment}/bukti', [RegistrationPaymentController::class, 'proof'])->name('registration-payments.proof');
             Route::post('/{registrationPayment}/setujui', [RegistrationPaymentController::class, 'approve'])->middleware('permission:registration-payment.approve')->name('registration-payments.approve');
             Route::post('/{registrationPayment}/tolak', [RegistrationPaymentController::class, 'reject'])->middleware('permission:registration-payment.approve')->name('registration-payments.reject');
+        });
+
+    Route::prefix('keuangan/pembayaran-bimbel')
+        ->middleware('permission:registration-payment.view')
+        ->group(function () {
+            Route::get('/', [StudentFeePaymentController::class, 'adminIndex'])->name('student-fee-payments.admin');
+            Route::get('/{studentFeePayment}/bukti', [StudentFeePaymentController::class, 'proof'])->name('student-fee-payments.proof');
+            Route::post('/{studentFeePayment}/setujui', [StudentFeePaymentController::class, 'approve'])->middleware('permission:registration-payment.approve')->name('student-fee-payments.approve');
+            Route::post('/{studentFeePayment}/tolak', [StudentFeePaymentController::class, 'reject'])->middleware('permission:registration-payment.approve')->name('student-fee-payments.reject');
         });
 
     Route::prefix('master-data/kode-promo')
