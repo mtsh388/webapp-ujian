@@ -95,6 +95,8 @@ class AuthController extends Controller
             'parent_email' => [Rule::requiredIf($type === 'paid'), 'nullable', 'email', 'max:255', 'different:email', 'unique:users,email'],
             'parent_phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
             'parent_address' => ['nullable', 'string', 'max:255'],
+            'duration_years' => [Rule::requiredIf($type === 'paid'), 'nullable', 'integer', Rule::in([1, 2])],
+            'installment_count' => [Rule::requiredIf($type === 'paid'), 'nullable', 'integer', 'min:1', 'max:5'],
         ], [
             'email.unique' => 'Email sudah terdaftar. Silakan login atau gunakan email lain.',
             'parent_email.unique' => 'Email orang tua sudah digunakan oleh akun lain.',
@@ -198,7 +200,9 @@ class AuthController extends Controller
                         'proof_path' => null,
                         'payment_type' => 'registration',
                         'promo_code' => null,
-                        'installment_status' => 'not_allowed',
+                        'installment_status' => (int) $validated['installment_count'] > 1 ? 'installments' : 'full',
+                        'duration_years' => (int) $validated['duration_years'],
+                        'installment_count' => (int) $validated['installment_count'],
                     ]);
 
                     return ['user' => $studentUser, 'payment' => $payment];
