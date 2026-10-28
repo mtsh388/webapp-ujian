@@ -27,6 +27,12 @@
                     <div>Pembayaran Registrasi</div>
                 </a>
             </li>
+            <li class="menu-item {{ request()->routeIs('student-fee-payments.index', 'student-fee-payments.proof.store') ? 'active' : '' }}">
+                <a href="{{ route('student-fee-payments.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-credit-card"></i>
+                    <div>Pembayaran Bimbel</div>
+                </a>
+            </li>
         @endif
 
         @if(auth()->user()->hasRole('Siswa'))
@@ -141,6 +147,12 @@
                 <a href="{{ route('registration-payments.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-wallet"></i>
                     <div>Verifikasi Pembayaran</div>
+                </a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('student-fee-payments.admin', 'student-fee-payments.proof', 'student-fee-payments.approve', 'student-fee-payments.reject') ? 'active' : '' }}">
+                <a href="{{ route('student-fee-payments.admin') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-credit-card"></i>
+                    <div>Verifikasi Pembayaran Bimbel</div>
                 </a>
             </li>
         @endcan
