@@ -132,28 +132,37 @@
             const levelSelect = document.getElementById('education_level');
             const classSelect = document.getElementById('class_id');
             const registrationType = @json($student?->registration_type ?? 'trial');
+            const placeholderOption = classSelect.options[0].cloneNode(true);
+            const allClassOptions = Array.from(classSelect.options)
+                .slice(1)
+                .map(function (option) {
+                    return option.cloneNode(true);
+                });
 
             function filterClasses() {
                 const selectedLevel = levelSelect.value;
-                const selectedClass = classSelect.value;
-                let selectedStillAvailable = false;
-
-                Array.from(classSelect.options).forEach(function (option, index) {
-                    if (index === 0) {
-                        option.hidden = false;
-                        return;
-                    }
-
-                    const visible = option.dataset.level === selectedLevel && option.dataset.registrationType === registrationType;
-                    option.hidden = !visible;
-
-                    if (visible && option.value === selectedClass) {
-                        selectedStillAvailable = true;
-                    }
+                const previousClass = classSelect.value;
+                const availableOptions = allClassOptions.filter(function (option) {
+                    return option.dataset.level === selectedLevel
+                        && option.dataset.registrationType === registrationType;
                 });
 
-                if (!selectedStillAvailable) {
+                classSelect.replaceChildren(placeholderOption.cloneNode(true));
+
+                availableOptions.forEach(function (option) {
+                    classSelect.add(option.cloneNode(true));
+                });
+
+                if (availableOptions.some(function (option) {
+                    return option.value === previousClass;
+                })) {
+                    classSelect.value = previousClass;
+                } else {
                     classSelect.value = '';
+                }
+
+                if (window.jQuery && jQuery(classSelect).hasClass('select2-hidden-accessible')) {
+                    jQuery(classSelect).trigger('change.select2');
                 }
             }
 
