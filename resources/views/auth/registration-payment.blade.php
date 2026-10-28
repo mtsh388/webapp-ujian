@@ -33,11 +33,8 @@
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Nama Siswa</span><strong>{{ $payment->student?->full_name ?? $payment->user?->name }}</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kelas</span><strong>{{ $payment->student?->classRoom?->name ?? '-' }}</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Pendaftaran</span><strong>Tidak digunakan</strong></div>
-                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Bimbel</span><strong>{{ $payment->tuition_promo_code ?: 'Tidak digunakan' }}</strong></div>
-                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Periode Bimbel yang Dipilih</span><strong>{{ $payment->duration_years ?? 1 }} tahun</strong></div>
-                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Rencana Cicilan Bimbel</span><strong>{{ $payment->installment_count ?? 1 }} kali</strong></div>
                         <hr>
-                        <div class="d-flex justify-content-between gap-3"><span class="fw-semibold">Total Pembayaran</span><strong class="fs-4 text-primary">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</strong></div>
+                        <div class="d-flex justify-content-between gap-3"><span class="fw-semibold">Total Biaya Pendaftaran</span><strong class="fs-4 text-primary">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</strong></div>
                     </div>
                     <form method="POST" action="{{ request()->fullUrl() }}" enctype="multipart/form-data">
                         @csrf
@@ -49,7 +46,7 @@
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Kirim Bukti Pembayaran</button>
                     </form>
-                    <p class="text-muted small mt-4 mb-0">Setelah bukti dikirim, Keuangan akan memverifikasi pembayaran. Akun baru dapat digunakan setelah disetujui.</p>
+                    <p class="text-muted small mt-4 mb-0">Setelah bukti dikirim, Keuangan akan memverifikasi pembayaran. Akun Orang Tua dapat digunakan setelah pembayaran pendaftaran disetujui. Biaya bimbel dipilih dan dibayar secara terpisah.</p>
                 </div>
             </div>
         </div>
