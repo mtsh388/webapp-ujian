@@ -127,17 +127,6 @@
 @endsection
 
 @section('scripts')
-    @php
-        $classOptions = $classes->map(function ($classRoom) {
-            return [
-                'id' => (string) $classRoom->id,
-                'name' => $classRoom->name,
-                'level' => $classRoom->education_level,
-                'registrationType' => $classRoom->registration_type,
-            ];
-        })->values();
-    @endphp
-
     <script>
         (function () {
             function initializeClassFilter() {
@@ -150,14 +139,21 @@
 
                 classSelect.dataset.filterInitialized = 'true';
 
-                const allClasses = @js($classOptions);
+                const originalOptions = Array.from(classSelect.options)
+                    .slice(1)
+                    .map(function (option) {
+                        return {
+                            value: option.value,
+                            text: option.textContent.trim(),
+                            level: String(option.dataset.level || '').trim().toUpperCase()
+                        };
+                    });
 
                 function filterClasses() {
                     const previousClass = classSelect.value;
-                    const selectedLevel = levelSelect.value;
-                    const availableClasses = allClasses.filter(function (classRoom) {
-                        return String(classRoom.level).trim().toUpperCase()
-                            === String(selectedLevel).trim().toUpperCase();
+                    const selectedLevel = String(levelSelect.value || '').trim().toUpperCase();
+                    const availableOptions = originalOptions.filter(function (option) {
+                        return option.level === selectedLevel;
                     });
                     const select2Active = window.jQuery
                         && jQuery.fn.select2
@@ -174,17 +170,15 @@
                     placeholder.textContent = 'Pilih kelas';
                     classSelect.add(placeholder);
 
-                    availableClasses.forEach(function (classRoom) {
+                    availableOptions.forEach(function (item) {
                         const option = document.createElement('option');
-                        option.value = classRoom.id;
-                        option.textContent = classRoom.name;
-                        option.dataset.level = classRoom.level;
-                        option.dataset.registrationType = classRoom.registrationType;
+                        option.value = item.value;
+                        option.textContent = item.text;
                         classSelect.add(option);
                     });
 
-                    classSelect.value = availableClasses.some(function (classRoom) {
-                        return classRoom.id === previousClass;
+                    classSelect.value = availableOptions.some(function (item) {
+                        return item.value === previousClass;
                     }) ? previousClass : '';
 
                     if (select2Active && typeof window.qseeInitSelect2 === 'function') {
@@ -192,7 +186,7 @@
                     }
 
                     if (window.jQuery) {
-                        jQuery(classSelect).trigger('change.select2');
+                        jQuery(classSelect).trigger('change');
                     }
                 }
 
