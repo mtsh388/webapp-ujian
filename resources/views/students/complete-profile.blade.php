@@ -191,7 +191,11 @@
                     }
                 }
 
-                levelSelect.addEventListener('change', filterClasses);
+                if (window.jQuery) {
+                    jQuery(levelSelect).on('change.qseeClassFilter', filterClasses);
+                } else {
+                    levelSelect.addEventListener('change', filterClasses);
+                }
                 filterClasses();
             }
 
