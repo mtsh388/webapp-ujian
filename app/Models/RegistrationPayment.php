@@ -15,6 +15,8 @@ class RegistrationPayment extends Model
         'payment_type',
         'promo_code',
         'installment_status',
+        'duration_years',
+        'installment_count',
         'rejection_reason',
         'verified_by',
         'verified_at',
@@ -24,6 +26,8 @@ class RegistrationPayment extends Model
     {
         return [
             'amount' => 'integer',
+            'duration_years' => 'integer',
+            'installment_count' => 'integer',
             'verified_at' => 'datetime',
         ];
     }
