@@ -17,6 +17,7 @@ class ClassRoom extends Model
         'code',
         'education_level',
         'grade_level',
+        'registration_type',
         'description',
         'is_active',
     ];
