@@ -127,8 +127,19 @@
 @endsection
 
 @section('scripts')
+    @php
+        $classFilterOptions = $classes->map(function ($classRoom) {
+            return [
+                'value' => (string) $classRoom->id,
+                'text' => $classRoom->name,
+                'level' => strtoupper(trim((string) $classRoom->education_level)),
+            ];
+        })->values();
+    @endphp
     <script>
         (function () {
+            const classOptions = @js($classFilterOptions);
+
             function initializeClassFilter() {
                 const levelSelect = document.getElementById('education_level');
                 const classSelect = document.getElementById('class_id');
@@ -139,20 +150,10 @@
 
                 classSelect.dataset.filterInitialized = 'true';
 
-                const originalOptions = Array.from(classSelect.options)
-                    .slice(1)
-                    .map(function (option) {
-                        return {
-                            value: option.value,
-                            text: option.textContent.trim(),
-                            level: String(option.dataset.level || '').trim().toUpperCase()
-                        };
-                    });
-
                 function filterClasses() {
                     const previousClass = classSelect.value;
                     const selectedLevel = String(levelSelect.value || '').trim().toUpperCase();
-                    const availableOptions = originalOptions.filter(function (option) {
+                    const availableOptions = classOptions.filter(function (option) {
                         return option.level === selectedLevel;
                     });
                     const select2Active = window.jQuery
