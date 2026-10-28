@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\RegistrationPayment;
-use App\Services\StudentFeeBillingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -133,8 +132,6 @@ class RegistrationPaymentController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            app(StudentFeeBillingService::class)->generateForRegistration($payment);
-
             if ($payment->student) {
                 $payment->student->forceFill(['is_active' => false])->save();
 
@@ -159,7 +156,7 @@ class RegistrationPaymentController extends Controller
 
             if ($emails !== []) {
                 Mail::raw(
-                    'Pembayaran registrasi QSEE telah disetujui. Tagihan biaya bimbel sesuai periode pilihan sudah dibuat. Akun siswa aktif setelah pembayaran bimbel pertama disetujui; akun orang tua dapat digunakan untuk memantau tagihan.',
+                    'Pembayaran registrasi QSEE telah disetujui. Biaya bimbel tidak termasuk dalam transaksi registrasi. Silakan buka menu Pembayaran Bimbel untuk memilih periode dan membuat tagihan terpisah.',
                     function ($message) use ($emails) {
                         $message->to($emails)->subject('QSEE - Pembayaran Registrasi Disetujui');
                     }
@@ -169,7 +166,7 @@ class RegistrationPaymentController extends Controller
             report($exception);
         }
 
-        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran registrasi disetujui dan tagihan bimbel berhasil dibuat. Akun Orang Tua diaktifkan; akun Siswa aktif setelah pembayaran bimbel disetujui.');
+        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran registrasi disetujui. Akun Orang Tua diaktifkan; silakan pilih periode dan buat tagihan melalui menu Pembayaran Bimbel.');
     }
 
     public function reject(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
