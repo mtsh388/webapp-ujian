@@ -200,7 +200,7 @@ class AuthController extends Controller
                         'proof_path' => null,
                         'payment_type' => 'registration',
                         'promo_code' => null,
-                        'installment_status' => 'full',
+                        'installment_status' => 'not_allowed',
                     ]);
 
                     return ['user' => $studentUser, 'payment' => $payment];
