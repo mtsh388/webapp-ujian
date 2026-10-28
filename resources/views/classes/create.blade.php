@@ -131,6 +131,18 @@
                             @enderror
                         </div>
 
+                        <div class="col-md-6">
+                            <label for="registration_type" class="form-label">Jenis Kelas</label>
+                            <select id="registration_type" name="registration_type" class="form-select @error('registration_type') is-invalid @enderror" required>
+                                <option value="">Pilih Jenis Kelas</option>
+                                <option value="trial" {{ old('registration_type', $classRoom->registration_type ?? '') === 'trial' ? 'selected' : '' }}>Trial</option>
+                                <option value="paid" {{ old('registration_type', $classRoom->registration_type ?? '') === 'paid' ? 'selected' : '' }}>Berbayar</option>
+                            </select>
+                            @error('registration_type')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="col-12">
 
 
