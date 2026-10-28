@@ -15,6 +15,7 @@ class CompleteStudentProfileRequest extends FormRequest
     public function rules(): array
     {
         $level = $this->input('education_level');
+        $registrationType = $this->user()?->student?->registration_type ?? 'trial';
 
         return [
             'full_name' => ['required', 'string', 'max:255'],
@@ -29,6 +30,7 @@ class CompleteStudentProfileRequest extends FormRequest
                     fn ($query) => $query
                         ->where('education_level', $level)
                         ->where('is_active', true)
+                        ->where('registration_type', $registrationType)
                         ->whereNull('deleted_at')
                 ),
             ],
