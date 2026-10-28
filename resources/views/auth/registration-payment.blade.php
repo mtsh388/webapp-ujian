@@ -32,7 +32,8 @@
                     <div class="border rounded p-4 mb-4">
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Nama Siswa</span><strong>{{ $payment->student?->full_name ?? $payment->user?->name }}</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kelas</span><strong>{{ $payment->student?->classRoom?->name ?? '-' }}</strong></div>
-                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Pendaftaran</span><strong>{{ $payment->promo_code ?: 'Tidak digunakan' }}</strong></div>
+                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Pendaftaran</span><strong>Tidak digunakan</strong></div>
+                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Bimbel</span><strong>{{ $payment->tuition_promo_code ?: 'Tidak digunakan' }}</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Periode Bimbel yang Dipilih</span><strong>{{ $payment->duration_years ?? 1 }} tahun</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Rencana Cicilan Bimbel</span><strong>{{ $payment->installment_count ?? 1 }} kali</strong></div>
                         <hr>
