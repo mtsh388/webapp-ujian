@@ -17,6 +17,7 @@ class RegistrationPayment extends Model
         'installment_status',
         'duration_years',
         'installment_count',
+        'tuition_promo_code',
         'rejection_reason',
         'verified_by',
         'verified_at',
