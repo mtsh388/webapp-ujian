@@ -108,6 +108,7 @@ class AuthController extends Controller
             'parent_address' => ['nullable', 'string', 'max:255'],
             'duration_years' => [Rule::requiredIf($type === 'paid'), 'nullable', 'integer', Rule::in([1, 2])],
             'installment_count' => [Rule::requiredIf($type === 'paid'), 'nullable', 'integer', 'min:1', 'max:5'],
+            'tuition_promo_code' => ['nullable', 'string', 'max:100'],
         ], [
             'email.unique' => 'Email sudah terdaftar. Silakan login atau gunakan email lain.',
             'parent_email.unique' => 'Email orang tua sudah digunakan oleh akun lain.',
@@ -168,6 +169,25 @@ class AuthController extends Controller
                 $eligibleFees->push($fee);
             }
 
+            $tuitionPromo = null;
+            if (filled($validated['tuition_promo_code'] ?? null)) {
+                $tuitionPromo = PromoCode::query()
+                    ->whereRaw('LOWER(code) = ?', [mb_strtolower(trim($validated['tuition_promo_code']))])
+                    ->first();
+
+                if (! $tuitionPromo || ! $tuitionPromo->isValidAt()) {
+                    return back()
+                        ->withInput($request->except(['password', 'payment_proof']))
+                        ->withErrors(['tuition_promo_code' => 'Kode promo bimbel tidak valid, belum berlaku, atau sudah kedaluwarsa.']);
+                }
+
+                if (! $eligibleFees->contains(fn ($fee) => $fee->discount_enabled)) {
+                    return back()
+                        ->withInput($request->except(['password', 'payment_proof']))
+                        ->withErrors(['tuition_promo_code' => 'Tarif Belajar yang dipilih tidak mengizinkan diskon/promo.']);
+                }
+            }
+
             $maximumInstallments = (int) $eligibleFees->min('max_installments');
             if ((int) $validated['installment_count'] > $maximumInstallments) {
                 return back()
@@ -178,7 +198,7 @@ class AuthController extends Controller
             $amount = $registrationFee->amount;
 
             try {
-                $registrationResult = DB::transaction(function () use ($validated, $classRoom, $amount, $duration): array {
+                $registrationResult = DB::transaction(function () use ($validated, $classRoom, $amount, $duration, $tuitionPromo): array {
                     $studentUser = User::create([
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
@@ -251,6 +271,7 @@ class AuthController extends Controller
                         'installment_status' => (int) $validated['installment_count'] > 1 ? 'installments' : 'full',
                         'duration_years' => $duration,
                         'installment_count' => (int) $validated['installment_count'],
+                        'tuition_promo_code' => $tuitionPromo?->code,
                     ]);
 
                     return ['user' => $studentUser, 'payment' => $payment];
