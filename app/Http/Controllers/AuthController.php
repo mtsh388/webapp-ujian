@@ -200,7 +200,7 @@ class AuthController extends Controller
                         'proof_path' => null,
                         'payment_type' => 'registration',
                         'promo_code' => null,
-                        'installment_status' => (int) $validated['installment_count'] > 1 ? 'installments' : 'full',
+                        'installment_status' => 'full',
                     ]);
 
                     return ['user' => $studentUser, 'payment' => $payment];
