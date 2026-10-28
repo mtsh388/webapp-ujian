@@ -95,6 +95,7 @@
                         <th>Nama Kelas</th>
                         <th>Jenjang</th>
                         <th>Kelas</th>
+                        <th>Jenis Kelas</th>
                         <th>Kode</th>
                         <th>Jumlah Siswa</th>
                         <th>Deskripsi</th>
@@ -173,7 +174,7 @@
                                 extend: 'print',
                                 text: '<i class="bx bx-printer me-1"></i>Print',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8]
                                 }
                             },
                             {
@@ -250,6 +251,22 @@
                         name: 'grade_level',
                         render: function (data) {
                             return data ? `Kelas ${data}` : '<span class="text-muted">-</span>';
+                        }
+                    },
+
+                    {
+                        data: 'registration_type',
+                        name: 'registration_type',
+                        render: function (data) {
+                            if (data === 'trial') {
+                                return '<span class="badge bg-label-warning">Trial</span>';
+                            }
+
+                            if (data === 'paid') {
+                                return '<span class="badge bg-label-success">Berbayar</span>';
+                            }
+
+                            return '<span class="text-muted">-</span>';
                         }
                     },
 
