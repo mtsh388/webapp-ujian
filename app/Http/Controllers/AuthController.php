@@ -47,7 +47,18 @@ class AuthController extends Controller
             ->get();
 
         $fees = RegistrationFee::active()->registration()->get()->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
-        return view('auth.register', compact('classes', 'fees'));
+        $learningFees = RegistrationFee::active()
+            ->where(function ($query) {
+                $query->where('fee_type', 'belajar')
+                    ->orWhereRaw('LOWER(fee_type_label) = ?', ['belajar'])
+                    ->orWhereRaw('LOWER(name) = ?', ['belajar']);
+            })
+            ->whereNotNull('education_level')
+            ->whereNotNull('grade_level')
+            ->get()
+            ->keyBy(fn ($fee) => RegistrationFee::keyFor($fee->education_level, $fee->grade_level));
+
+        return view('auth.register', compact('classes', 'fees', 'learningFees'));
     }
 
     public function register(Request $request): RedirectResponse
@@ -127,10 +138,47 @@ class AuthController extends Controller
                     ->withErrors(['class_id' => 'Biaya pendaftaran untuk jenjang dan kelas ini belum tersedia atau tidak aktif.']);
             }
 
+            $duration = min((int) $validated['duration_years'], 2);
+            $maximumGrade = match ($classRoom->education_level) {
+                'SD' => 6,
+                'SMP' => 9,
+                'SMA' => 12,
+            };
+            $duration = min($duration, $maximumGrade - (int) $classRoom->grade_level + 1);
+            $eligibleFees = collect();
+
+            for ($grade = (int) $classRoom->grade_level; $grade < (int) $classRoom->grade_level + $duration; $grade++) {
+                $fee = RegistrationFee::query()
+                    ->active()
+                    ->where(function ($query) {
+                        $query->where('fee_type', 'belajar')
+                            ->orWhereRaw('LOWER(fee_type_label) = ?', ['belajar'])
+                            ->orWhereRaw('LOWER(name) = ?', ['belajar']);
+                    })
+                    ->where('education_level', $classRoom->education_level)
+                    ->where('grade_level', $grade)
+                    ->first();
+
+                if (! $fee) {
+                    return back()
+                        ->withInput($request->except(['password', 'payment_proof']))
+                        ->withErrors(['class_id' => "Tarif Belajar untuk {$classRoom->education_level} kelas {$grade} belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE."]);
+                }
+
+                $eligibleFees->push($fee);
+            }
+
+            $maximumInstallments = (int) $eligibleFees->min('max_installments');
+            if ((int) $validated['installment_count'] > $maximumInstallments) {
+                return back()
+                    ->withInput($request->except(['password', 'payment_proof']))
+                    ->withErrors(['installment_count' => "Tarif yang dipilih hanya mengizinkan maksimal {$maximumInstallments} kali cicilan."]);
+            }
+
             $amount = $registrationFee->amount;
 
             try {
-                $registrationResult = DB::transaction(function () use ($validated, $classRoom, $amount): array {
+                $registrationResult = DB::transaction(function () use ($validated, $classRoom, $amount, $duration): array {
                     $studentUser = User::create([
                         'name' => trim($validated['full_name']),
                         'email' => $validated['email'],
@@ -201,7 +249,7 @@ class AuthController extends Controller
                         'payment_type' => 'registration',
                         'promo_code' => null,
                         'installment_status' => (int) $validated['installment_count'] > 1 ? 'installments' : 'full',
-                        'duration_years' => (int) $validated['duration_years'],
+                        'duration_years' => $duration,
                         'installment_count' => (int) $validated['installment_count'],
                     ]);
 
