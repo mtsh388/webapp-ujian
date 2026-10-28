@@ -84,6 +84,7 @@ class AuthController extends Controller
                 Rule::exists('classes', 'id')->where(fn ($query) => $query
                     ->where('education_level', $request->input('education_level'))
                     ->where('is_active', true)
+                    ->where('registration_type', $type === 'paid' ? 'paid' : 'trial')
                     ->whereNull('deleted_at')),
             ],
             'gender' => ['nullable', Rule::in(['Laki-laki', 'Perempuan'])],
@@ -107,6 +108,7 @@ class AuthController extends Controller
                 ->whereKey($validated['class_id'])
                 ->where('is_active', true)
                 ->where('education_level', $validated['education_level'])
+                ->where('registration_type', 'paid')
                 ->whereNull('deleted_at')
                 ->firstOrFail();
 
