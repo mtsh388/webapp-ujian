@@ -264,6 +264,22 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        if ($request->user()->hasRole('Siswa')) {
+            $student = $request->user()->student;
+
+            if ($student && $student->access_expires_at && $student->access_expires_at->lt(now()->startOfDay())) {
+                $student->forceFill(['is_active' => false])->save();
+                $request->user()->forceFill(['is_active' => false])->save();
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->withErrors([
+                    'email' => 'Masa aktif bimbel telah berakhir. Silakan hubungi Orang Tua atau Keuangan untuk memperpanjang pembayaran.',
+                ]);
+            }
+        }
+
         if ($request->user()->must_change_password) {
             return redirect()->route('password.change');
         }
