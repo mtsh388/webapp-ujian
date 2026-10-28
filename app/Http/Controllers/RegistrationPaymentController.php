@@ -132,13 +132,12 @@ class RegistrationPaymentController extends Controller
                 'rejection_reason' => null,
             ]);
 
-            $payment->user()->update(['is_active' => true]);
+            app(StudentFeeBillingService::class)->generateForRegistration($payment);
 
             if ($payment->student) {
-                $student = $payment->student;
-                $student->update(['is_active' => true]);
+                $payment->student->forceFill(['is_active' => false])->save();
 
-                $student->parents()->with('user')->get()->each(function ($parent) {
+                $payment->student->parents()->with('user')->get()->each(function ($parent) {
                     $parent->forceFill(['is_active' => true])->save();
 
                     if ($parent->user) {
@@ -159,7 +158,7 @@ class RegistrationPaymentController extends Controller
 
             if ($emails !== []) {
                 Mail::raw(
-                    'Pembayaran registrasi QSEE telah disetujui. Akun Siswa dan Orang Tua telah diaktifkan. Silakan login untuk melanjutkan proses belajar.',
+                    'Pembayaran registrasi QSEE telah disetujui. Tagihan biaya bimbel sesuai periode pilihan sudah dibuat. Akun siswa aktif setelah pembayaran bimbel pertama disetujui; akun orang tua dapat digunakan untuk memantau tagihan.',
                     function ($message) use ($emails) {
                         $message->to($emails)->subject('QSEE - Pembayaran Registrasi Disetujui');
                     }
@@ -169,7 +168,7 @@ class RegistrationPaymentController extends Controller
             report($exception);
         }
 
-        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran disetujui. Akun Siswa dan Orang Tua serta status siswa telah diaktifkan.');
+        return redirect()->route('registration-payments.index')->with('success', 'Pembayaran registrasi disetujui dan tagihan bimbel berhasil dibuat. Akun Orang Tua diaktifkan; akun Siswa aktif setelah pembayaran bimbel disetujui.');
     }
 
     public function reject(Request $request, RegistrationPayment $registrationPayment): RedirectResponse
