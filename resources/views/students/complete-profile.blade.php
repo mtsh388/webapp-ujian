@@ -150,15 +150,14 @@
 
                 classSelect.dataset.filterInitialized = 'true';
 
-                const registrationType = @json($student?->registration_type ?? 'trial');
-                const allClasses = @json($classOptions);
+                const allClasses = @js($classOptions);
 
                 function filterClasses() {
                     const previousClass = classSelect.value;
                     const selectedLevel = levelSelect.value;
                     const availableClasses = allClasses.filter(function (classRoom) {
-                        return classRoom.level === selectedLevel
-                            && classRoom.registrationType === registrationType;
+                        return String(classRoom.level).trim().toUpperCase()
+                            === String(selectedLevel).trim().toUpperCase();
                     });
                     const select2Active = window.jQuery
                         && jQuery.fn.select2
