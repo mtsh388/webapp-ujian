@@ -18,6 +18,24 @@ beforeEach(function () {
         'name' => 'Orang Tua',
         'guard_name' => 'web',
     ]);
+
+    foreach (['SD' => [4, 5, 6], 'SMP' => [7, 8, 9], 'SMA' => [10, 11, 12]] as $level => $grades) {
+        foreach ($grades as $grade) {
+            RegistrationFee::firstOrCreate([
+                'fee_type' => 'belajar',
+                'education_level' => $level,
+                'grade_level' => $grade,
+            ], [
+                'fee_type_label' => 'Belajar',
+                'name' => 'Belajar',
+                'billing_period' => 'once',
+                'amount' => 1000000 + ($grade * 100000),
+                'is_active' => true,
+                'discount_enabled' => true,
+                'max_installments' => 5,
+            ]);
+        }
+    }
 });
 
 test('registration page is available to guests', function () {
