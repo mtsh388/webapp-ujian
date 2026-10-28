@@ -14,6 +14,7 @@ class StudentFeeTransaction extends Model
         'amount',
         'amount_paid',
         'details',
+        'promo_code',
         'period_starts_at',
         'period_ends_at',
         'status',
