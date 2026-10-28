@@ -142,6 +142,27 @@
                             </div>
 
                             <hr class="my-5">
+                            <h5 class="mb-3">Rencana Pembayaran Bimbel</h5>
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-6">
+                                    <label for="duration_years" class="form-label">Periode Belajar <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="duration_years" name="duration_years">
+                                        <option value="1" @selected(old('duration_years', '1') === '1')>1 tahun</option>
+                                        <option value="2" @selected(old('duration_years') === '2')>2 tahun (maksimal)</option>
+                                    </select>
+                                    <div class="form-text">Tagihan bimbel dibuat berdasarkan tarif Master Data Biaya untuk kelas yang dipilih dan kelas berikutnya. Tidak melewati kelas akhir jenjang.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="installment_count" class="form-label">Jumlah Pembayaran <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="installment_count" name="installment_count">
+                                        @for ($count = 1; $count <= 5; $count++)
+                                            <option value="{{ $count }}" @selected((string) old('installment_count', '1') === (string) $count)>{{ $count }} kali{{ $count === 1 ? ' (lunas sekaligus)' : ' cicilan' }}</option>
+                                        @endfor
+                                    </select>
+                                    <div class="form-text">Maksimal 5 kali cicilan. Biaya pendaftaran tetap dibayar penuh terpisah.</div>
+                                </div>
+                            </div>
+
                             <h5 class="mb-3">Biaya Registrasi</h5>
                             <div class="mb-4">
                                 <label for="registration_fee_display" class="form-label">Biaya Pendaftaran (Rp)</label>
