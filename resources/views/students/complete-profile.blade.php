@@ -91,7 +91,7 @@
                                 <select id="class_id" name="class_id" class="form-select @error('class_id') is-invalid @enderror" required>
                                     <option value="">Pilih kelas</option>
                                     @foreach ($classes as $classRoom)
-                                        <option value="{{ $classRoom->id }}" data-level="{{ $classRoom->education_level }}" @selected((string) old('class_id', $student?->class_id) === (string) $classRoom->id)>
+                                        <option value="{{ $classRoom->id }}" data-level="{{ $classRoom->education_level }}" data-registration-type="{{ $classRoom->registration_type }}" @selected((string) old('class_id', $student?->class_id) === (string) $classRoom->id)>
                                             {{ $classRoom->name }}
                                         </option>
                                     @endforeach
@@ -131,6 +131,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const levelSelect = document.getElementById('education_level');
             const classSelect = document.getElementById('class_id');
+            const registrationType = @json($student?->registration_type ?? 'trial');
 
             function filterClasses() {
                 const selectedLevel = levelSelect.value;
@@ -143,7 +144,7 @@
                         return;
                     }
 
-                    const visible = option.dataset.level === selectedLevel;
+                    const visible = option.dataset.level === selectedLevel && option.dataset.registrationType === registrationType;
                     option.hidden = !visible;
 
                     if (visible && option.value === selectedClass) {
