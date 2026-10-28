@@ -30,6 +30,7 @@ class ClassRoomRepository
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('education_level', 'like', "%{$search}%")
                     ->orWhere('grade_level', 'like', "%{$search}%")
+                    ->orWhere('registration_type', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
 
             });
@@ -45,6 +46,7 @@ class ClassRoomRepository
             'name',
             'education_level',
             'grade_level',
+            'registration_type',
             'code',
             'students_count',
             'description',
@@ -110,6 +112,8 @@ class ClassRoomRepository
                     'education_level' => $item->education_level,
 
                     'grade_level' => $item->grade_level,
+
+                    'registration_type' => $item->registration_type,
 
                     'code' => $item->code,
 
