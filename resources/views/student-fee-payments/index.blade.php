@@ -12,6 +12,45 @@
         <div class="card-body">
             @if (session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
             @if ($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+            @if ($eligibleStudents->isNotEmpty())
+                <div class="border rounded p-3 mb-4">
+                    <h5 class="mb-2">Buat Tagihan Bimbel</h5>
+                    <p class="text-muted">Tagihan ini terpisah dari Biaya Pendaftaran. Pilih periode belajar dan jumlah cicilan; tarif dihitung dari Master Data Biaya.</p>
+                    <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
+                        @csrf
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="student_id" class="form-label">Siswa</label>
+                                <select class="form-select" name="student_id" id="student_id" required>
+                                    @foreach ($eligibleStudents as $eligibleStudent)
+                                        <option value="{{ $eligibleStudent->id }}" @selected((string) old('student_id') === (string) $eligibleStudent->id)>{{ $eligibleStudent->full_name }} — {{ $eligibleStudent->classRoom?->name ?? 'Kelas belum ditentukan' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="duration_years" class="form-label">Periode Belajar</label>
+                                <select class="form-select" name="duration_years" id="duration_years" required>
+                                    <option value="1" @selected(old('duration_years', '1') === '1')>1 tahun</option>
+                                    <option value="2" @selected(old('duration_years') === '2')>2 tahun</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="installment_count" class="form-label">Jumlah Pembayaran</label>
+                                <select class="form-select" name="installment_count" id="installment_count" required>
+                                    @for ($count = 1; $count <= 5; $count++)
+                                        <option value="{{ $count }}" @selected((string) old('installment_count', '1') === (string) $count)>{{ $count }} kali{{ $count === 1 ? ' (lunas)' : ' cicilan' }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="promo_code" class="form-label">Kode Promo (Opsional)</label>
+                                <input class="form-control" type="text" name="promo_code" id="promo_code" value="{{ old('promo_code') }}" maxlength="100">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Buat Tagihan Bimbel</button>
+                    </form>
+                </div>
+            @endif
             @forelse ($transactions as $transaction)
                 <div class="border rounded p-3 mb-4">
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
@@ -72,7 +111,7 @@
             @empty
                 <div class="text-center py-5">
                     <h5>Belum Ada Tagihan Bimbel</h5>
-                    <p class="text-muted mb-0">Tagihan bimbel akan muncul setelah pembayaran registrasi disetujui.</p>
+                    <p class="text-muted mb-0">Setelah pembayaran registrasi disetujui, buat tagihan bimbel secara terpisah melalui formulir di atas. Jika formulir belum muncul, pastikan registrasi sudah disetujui dan tidak ada tagihan bimbel yang belum lunas.</p>
                 </div>
             @endforelse
             @if ($transactions->hasPages())<div class="mt-3">{{ $transactions->links() }}</div>@endif
