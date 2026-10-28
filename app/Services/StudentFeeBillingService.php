@@ -40,6 +40,19 @@ class StudentFeeBillingService
         $duration = min(max(1, (int) $payment->duration_years), 2, $maximumGrade - $startGrade + 1);
         $details = [];
         $total = 0;
+        $promo = null;
+
+        if (filled($payment->tuition_promo_code)) {
+            $promo = PromoCode::query()
+                ->whereRaw('LOWER(code) = ?', [mb_strtolower(trim($payment->tuition_promo_code))])
+                ->first();
+
+            if (! $promo || ! $promo->isValidAt()) {
+                throw ValidationException::withMessages([
+                    'tuition_promo_code' => 'Kode promo bimbel tidak valid atau sudah kedaluwarsa saat tagihan dibuat.',
+                ]);
+            }
+        }
 
         for ($grade = $startGrade; $grade < $startGrade + $duration; $grade++) {
             $fee = RegistrationFee::query()
@@ -60,16 +73,18 @@ class StudentFeeBillingService
             }
 
             $amount = (int) $fee->amount;
+            $discount = $promo && $fee->discount_enabled ? $promo->discountFor($amount) : 0;
+            $amountDue = $amount - $discount;
             $details[] = [
                 'fee_id' => $fee->id,
                 'name' => $fee->fee_type_label ?: $fee->name,
                 'education_level' => $class->education_level,
                 'grade_level' => $grade,
                 'amount' => $amount,
-                'discount_amount' => 0,
-                'amount_due' => $amount,
+                'discount_amount' => $discount,
+                'amount_due' => $amountDue,
             ];
-            $total += $amount;
+            $total += $amountDue;
         }
 
         $installmentCount = min(max(1, (int) $payment->installment_count), 5);
@@ -94,6 +109,7 @@ class StudentFeeBillingService
             'amount' => $total,
             'amount_paid' => 0,
             'details' => $details,
+            'promo_code' => $promo?->code,
             'period_starts_at' => $start->toDateString(),
             'period_ends_at' => $end->toDateString(),
             'status' => 'awaiting_payment',
