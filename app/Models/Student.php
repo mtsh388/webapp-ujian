@@ -24,6 +24,7 @@ class Student extends Model
         'parent_phone',
         'address',
         'is_active',
+        'access_expires_at',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class Student extends Model
         return [
             'birth_date' => 'date',
             'is_active' => 'boolean',
+            'access_expires_at' => 'datetime',
         ];
     }
 
