@@ -94,7 +94,7 @@
                                     <select class="form-select" id="class_id" name="class_id">
                                         <option value="">Pilih Kelas</option>
                                         @foreach ($classes as $class)
-                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-grade="{{ $class->grade_level }}" data-fee="{{ $fees->get($class->education_level . '-' . $class->grade_level)?->amount ?? '' }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
+                                            <option value="{{ $class->id }}" data-level="{{ $class->education_level }}" data-registration-type="{{ $class->registration_type }}" data-grade="{{ $class->grade_level }}" data-fee="{{ $fees->get($class->education_level . '-' . $class->grade_level)?->amount ?? '' }}" @selected((string) old('class_id') === (string) $class->id)>{{ $class->name }} ({{ $class->education_level }} {{ $class->grade_level }})</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -230,12 +230,14 @@
                 }
 
                 const matchesLevel = Boolean(level) && option.dataset.level === level;
-                option.hidden = !matchesLevel;
-                option.disabled = !matchesLevel;
+                const matchesType = option.dataset.registrationType === 'paid';
+                const visible = matchesLevel && matchesType;
+                option.hidden = !visible;
+                option.disabled = !visible;
             });
 
             const selected = classSelect.options[classSelect.selectedIndex];
-            if (selected && selected.value && selected.dataset.level !== level) {
+            if (selected && selected.value && (selected.dataset.level !== level || selected.dataset.registrationType !== 'paid')) {
                 classSelect.value = '';
             }
 
