@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\RegistrationFee;
-use App\Models\RegistrationPayment;
 use App\Models\PromoCode;
+use App\Models\RegistrationFee;
+use App\Models\Student;
 use App\Models\StudentFeePayment;
 use App\Models\StudentFeeTransaction;
 use Illuminate\Support\Carbon;
@@ -12,22 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 class StudentFeeBillingService
 {
-    public function generateForRegistration(RegistrationPayment $payment): StudentFeeTransaction
+    public function generateForStudent(Student $student, int $durationYears, int $installmentCount, ?string $promoCode = null): StudentFeeTransaction
     {
-        $existing = StudentFeeTransaction::query()
-            ->where('registration_payment_id', $payment->id)
-            ->first();
+        $student->loadMissing('classRoom');
 
-        if ($existing) {
-            return $existing;
-        }
-
-        $student = $payment->student()->with('classRoom')->first();
-
-        if (! $student || ! $student->classRoom) {
-            throw ValidationException::withMessages([
-                'student' => 'Kelas siswa belum ditentukan sehingga tagihan bimbel belum dapat dibuat.',
-            ]);
+        if (! $student->classRoom) {
+            throw ValidationException::withMessages(['student' => 'Kelas siswa belum ditentukan sehingga tagihan bimbel belum dapat dibuat.']);
         }
 
         $class = $student->classRoom;
@@ -38,23 +28,11 @@ class StudentFeeBillingService
             'SMA' => 12,
             default => $startGrade,
         };
-        $duration = min(max(1, (int) $payment->duration_years), 2, $maximumGrade - $startGrade + 1);
+        $duration = min(max(1, $durationYears), 2, $maximumGrade - $startGrade + 1);
+        $installmentCount = min(max(1, $installmentCount), 5);
+        $fees = collect();
         $details = [];
         $total = 0;
-        $eligiblePromoAmount = 0;
-        $promo = null;
-
-        if (filled($payment->tuition_promo_code)) {
-            $promo = PromoCode::query()
-                ->whereRaw('LOWER(code) = ?', [mb_strtolower(trim($payment->tuition_promo_code))])
-                ->first();
-
-            if (! $promo || ! $promo->isValidAt()) {
-                throw ValidationException::withMessages([
-                    'tuition_promo_code' => 'Kode promo bimbel tidak valid atau sudah kedaluwarsa saat tagihan dibuat.',
-                ]);
-            }
-        }
 
         for ($grade = $startGrade; $grade < $startGrade + $duration; $grade++) {
             $fee = RegistrationFee::query()
@@ -70,40 +48,50 @@ class StudentFeeBillingService
 
             if (! $fee) {
                 throw ValidationException::withMessages([
-                    'registration_payment' => "Master Data Biaya untuk {$class->education_level} kelas {$grade} belum tersedia atau tidak aktif. Lengkapi tarif kelas tersebut sebelum menyetujui registrasi.",
+                    'duration_years' => "Tarif Belajar untuk {$class->education_level} kelas {$grade} belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE.",
                 ]);
             }
 
+            $fees->push($fee);
             $amount = (int) $fee->amount;
-            if ($promo && $fee->discount_enabled) {
-                $eligiblePromoAmount += $amount;
-            }
-
             $details[] = [
                 'fee_id' => $fee->id,
                 'name' => $fee->fee_type_label ?: $fee->name,
                 'education_level' => $class->education_level,
                 'grade_level' => $grade,
                 'amount' => $amount,
-                'discount_enabled' => (bool) $fee->discount_enabled,
                 'discount_amount' => 0,
                 'amount_due' => $amount,
             ];
             $total += $amount;
         }
 
-        if ($promo) {
+        $maximumInstallments = (int) $fees->min('max_installments');
+        if ($installmentCount > $maximumInstallments) {
+            throw ValidationException::withMessages([
+                'installment_count' => "Tarif yang dipilih hanya mengizinkan maksimal {$maximumInstallments} kali cicilan.",
+            ]);
+        }
+
+        $promo = null;
+        if (filled($promoCode)) {
+            $promo = PromoCode::query()
+                ->whereRaw('LOWER(code) = ?', [mb_strtolower(trim($promoCode))])
+                ->first();
+
+            if (! $promo || ! $promo->isValidAt()) {
+                throw ValidationException::withMessages(['promo_code' => 'Kode promo bimbel tidak valid, belum berlaku, atau sudah kedaluwarsa.']);
+            }
+
+            $eligiblePromoAmount = (int) $fees->filter(fn ($fee) => $fee->discount_enabled)->sum('amount');
             if ($eligiblePromoAmount <= 0) {
-                throw ValidationException::withMessages([
-                    'tuition_promo_code' => 'Tarif Belajar yang dipilih tidak mengizinkan diskon/promo.',
-                ]);
+                throw ValidationException::withMessages(['promo_code' => 'Tarif Belajar yang dipilih tidak mengizinkan diskon/promo.']);
             }
 
             $remainingDiscount = $promo->discountFor($eligiblePromoAmount);
-
             foreach ($details as &$detail) {
-                if (! $detail['discount_enabled'] || $remainingDiscount <= 0) {
-                    unset($detail['discount_enabled']);
+                $fee = $fees->firstWhere('id', $detail['fee_id']);
+                if (! $fee->discount_enabled || $remainingDiscount <= 0) {
                     continue;
                 }
 
@@ -111,27 +99,9 @@ class StudentFeeBillingService
                 $detail['discount_amount'] = $discount;
                 $detail['amount_due'] = (int) $detail['amount'] - $discount;
                 $remainingDiscount -= $discount;
-                unset($detail['discount_enabled']);
             }
             unset($detail);
-
             $total = array_sum(array_column($details, 'amount_due'));
-        } else {
-            foreach ($details as &$detail) {
-                unset($detail['discount_enabled']);
-            }
-            unset($detail);
-        }
-
-        $installmentCount = min(max(1, (int) $payment->installment_count), 5);
-        $maximumInstallments = min(array_map(function (array $detail) {
-            return (int) RegistrationFee::query()->find($detail['fee_id'])->max_installments;
-        }, $details));
-
-        if ($installmentCount > $maximumInstallments) {
-            throw ValidationException::withMessages([
-                'installment_count' => "Jumlah cicilan melebihi batas pada Master Data Biaya. Maksimal yang diizinkan untuk tarif yang dipilih adalah {$maximumInstallments} kali.",
-            ]);
         }
 
         $start = Carbon::today();
@@ -139,7 +109,7 @@ class StudentFeeBillingService
 
         $transaction = StudentFeeTransaction::create([
             'student_id' => $student->id,
-            'registration_payment_id' => $payment->id,
+            'registration_payment_id' => null,
             'duration_years' => $duration,
             'installment_count' => $installmentCount,
             'amount' => $total,
