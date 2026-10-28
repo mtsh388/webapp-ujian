@@ -20,7 +20,7 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
-                        <tr><th>Siswa</th><th>Orang Tua</th><th>Nominal</th><th>Rencana Bimbel</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr>
+                        <tr><th>Siswa</th><th>Orang Tua</th><th>Biaya Pendaftaran</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr>
                     </thead>
                     <tbody>
                         @forelse ($payments as $payment)
@@ -39,7 +39,6 @@
                                     @endforelse
                                 </td>
                                 <td class="text-nowrap">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</td>
-                                <td><div>{{ $payment->duration_years ?? 1 }} tahun</div><div class="small text-muted">{{ $payment->installment_count ?? 1 }} kali pembayaran</div><div class="small text-muted">Promo: {{ $payment->tuition_promo_code ?: '-' }}</div></td>
                                 <td>
                                     <span class="badge {{ $payment->status === 'verified' ? 'bg-label-success' : ($payment->status === 'pending_verification' ? 'bg-label-warning' : ($payment->status === 'rejected' ? 'bg-label-danger' : 'bg-label-secondary')) }}">
                                         {{ str_replace('_', ' ', ucfirst($payment->status)) }}
@@ -74,7 +73,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-center text-muted py-4">Belum ada pembayaran registrasi.</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted py-4">Belum ada pembayaran registrasi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
