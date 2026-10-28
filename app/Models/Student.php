@@ -59,6 +59,11 @@ class Student extends Model
         ])->withTimestamps();
     }
 
+    public function feeTransactions()
+    {
+        return $this->hasMany(StudentFeeTransaction::class);
+    }
+
     public function examParticipants()
     {
         return $this->hasMany(ExamParticipant::class);
