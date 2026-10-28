@@ -23,9 +23,11 @@ class StudentProfileController extends Controller
         abort_unless($user->hasRole('Siswa'), 403);
 
         $student = $user->student;
+        $registrationType = $student?->registration_type ?? 'trial';
 
         $classes = ClassRoom::query()
             ->where('is_active', true)
+            ->where('registration_type', $registrationType)
             ->whereIn('education_level', ['SD', 'SMP', 'SMA'])
             ->orderByRaw("CASE education_level WHEN 'SD' THEN 1 WHEN 'SMP' THEN 2 WHEN 'SMA' THEN 3 ELSE 4 END")
             ->orderBy('grade_level')
