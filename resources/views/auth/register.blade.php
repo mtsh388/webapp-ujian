@@ -291,7 +291,7 @@
 
             tuitionInput.value = rupiah.format(total);
             tuitionInput.placeholder = '';
-            tuitionDescription.textContent = 'Total tarif Belajar untuk ' + actualDuration + ' tahun. Maksimal cicilan untuk tarif terpilih: ' + maxInstallments + ' kali.';
+            tuitionDescription.textContent = 'Estimasi sebelum diskon/promo untuk ' + actualDuration + ' tahun. Maksimal cicilan untuk tarif terpilih: ' + maxInstallments + ' kali.';
             Array.from(installmentSelect.options).forEach(option => {
                 option.disabled = Number(option.value) > maxInstallments;
             });
