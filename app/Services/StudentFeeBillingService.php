@@ -41,6 +41,7 @@ class StudentFeeBillingService
         $duration = min(max(1, (int) $payment->duration_years), 2, $maximumGrade - $startGrade + 1);
         $details = [];
         $total = 0;
+        $eligiblePromoAmount = 0;
         $promo = null;
 
         if (filled($payment->tuition_promo_code)) {
@@ -74,18 +75,52 @@ class StudentFeeBillingService
             }
 
             $amount = (int) $fee->amount;
-            $discount = $promo && $fee->discount_enabled ? $promo->discountFor($amount) : 0;
-            $amountDue = $amount - $discount;
+            if ($promo && $fee->discount_enabled) {
+                $eligiblePromoAmount += $amount;
+            }
+
             $details[] = [
                 'fee_id' => $fee->id,
                 'name' => $fee->fee_type_label ?: $fee->name,
                 'education_level' => $class->education_level,
                 'grade_level' => $grade,
                 'amount' => $amount,
-                'discount_amount' => $discount,
-                'amount_due' => $amountDue,
+                'discount_enabled' => (bool) $fee->discount_enabled,
+                'discount_amount' => 0,
+                'amount_due' => $amount,
             ];
-            $total += $amountDue;
+            $total += $amount;
+        }
+
+        if ($promo) {
+            if ($eligiblePromoAmount <= 0) {
+                throw ValidationException::withMessages([
+                    'tuition_promo_code' => 'Tarif Belajar yang dipilih tidak mengizinkan diskon/promo.',
+                ]);
+            }
+
+            $remainingDiscount = $promo->discountFor($eligiblePromoAmount);
+
+            foreach ($details as &$detail) {
+                if (! $detail['discount_enabled'] || $remainingDiscount <= 0) {
+                    unset($detail['discount_enabled']);
+                    continue;
+                }
+
+                $discount = min((int) $detail['amount'], $remainingDiscount);
+                $detail['discount_amount'] = $discount;
+                $detail['amount_due'] = (int) $detail['amount'] - $discount;
+                $remainingDiscount -= $discount;
+                unset($detail['discount_enabled']);
+            }
+            unset($detail);
+
+            $total = array_sum(array_column($details, 'amount_due'));
+        } else {
+            foreach ($details as &$detail) {
+                unset($detail['discount_enabled']);
+            }
+            unset($detail);
         }
 
         $installmentCount = min(max(1, (int) $payment->installment_count), 5);
