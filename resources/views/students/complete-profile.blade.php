@@ -127,6 +127,17 @@
 @endsection
 
 @section('scripts')
+    @php
+        $classOptions = $classes->map(function ($classRoom) {
+            return [
+                'id' => (string) $classRoom->id,
+                'name' => $classRoom->name,
+                'level' => $classRoom->education_level,
+                'registrationType' => $classRoom->registration_type,
+            ];
+        })->values();
+    @endphp
+
     <script>
         (function () {
             function initializeClassFilter() {
@@ -140,12 +151,7 @@
                 classSelect.dataset.filterInitialized = 'true';
 
                 const registrationType = @json($student?->registration_type ?? 'trial');
-                const allClasses = @json($classes->map(fn ($classRoom) => [
-                    'id' => (string) $classRoom->id,
-                    'name' => $classRoom->name,
-                    'level' => $classRoom->education_level,
-                    'registrationType' => $classRoom->registration_type,
-                ])->values());
+                const allClasses = @json($classOptions);
 
                 function filterClasses() {
                     const previousClass = classSelect.value;
