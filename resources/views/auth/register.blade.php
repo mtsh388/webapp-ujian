@@ -175,6 +175,12 @@
                                 <input type="text" id="tuition_estimate" class="form-control fw-semibold" value="" placeholder="Pilih kelas dan periode belajar" readonly aria-live="polite">
                                 <div id="tuitionEstimateDescription" class="form-text">Estimasi mengikuti tarif Belajar pada Master Data Biaya untuk setiap kelas dalam periode yang dipilih. Biaya pendaftaran belum termasuk.</div>
                             </div>
+                            <div class="mb-4">
+                                <label for="tuition_promo_code" class="form-label">Kode Promo Bimbel (Opsional)</label>
+                                <input type="text" id="tuition_promo_code" name="tuition_promo_code" class="form-control" value="{{ old('tuition_promo_code') }}" maxlength="100" autocomplete="off">
+                                <div class="form-text">Promo hanya diterapkan pada tarif Belajar yang mengizinkan Diskon / Promo. Biaya Pendaftaran tetap dibayar penuh.</div>
+                                @error('tuition_promo_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
                         </div>
 
                         <div class="mt-5">
