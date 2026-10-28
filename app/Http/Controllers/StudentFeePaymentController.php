@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RegistrationPayment;
+use App\Models\Student;
 use App\Models\StudentFeePayment;
 use App\Models\StudentFeeTransaction;
 use Illuminate\Http\RedirectResponse;
@@ -9,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use App\Services\StudentFeeBillingService;
 use Throwable;
 
 class StudentFeePaymentController extends Controller
@@ -22,7 +25,8 @@ class StudentFeePaymentController extends Controller
 
         if ($user->hasRole('Siswa')) {
             abort_unless($user->student, 403);
-            $query->where('student_id', $user->student->id);
+            $studentIds = collect([$user->student->id]);
+            $query->whereIn('student_id', $studentIds);
         } elseif ($user->hasRole('Orang Tua')) {
             $studentIds = $user->parentProfile?->students()->pluck('students.id') ?? collect();
             $query->whereIn('student_id', $studentIds);
@@ -30,10 +34,63 @@ class StudentFeePaymentController extends Controller
             abort(403);
         }
 
+        $eligibleStudents = Student::query()
+            ->with('classRoom')
+            ->whereIn('id', $studentIds)
+            ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
+            ->whereDoesntHave('feeTransactions', fn ($builder) => $builder->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial']))
+            ->get();
+
         return view('student-fee-payments.index', [
             'transactions' => $query->paginate(15),
+            'eligibleStudents' => $eligibleStudents,
             'isParent' => $user->hasRole('Orang Tua'),
         ]);
+    }
+
+    public function createPlan(Request $request, StudentFeeBillingService $billingService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id' => ['required', 'integer', 'exists:students,id'],
+            'duration_years' => ['required', 'integer', 'in:1,2'],
+            'installment_count' => ['required', 'integer', 'min:1', 'max:5'],
+            'promo_code' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = auth()->user();
+        $student = Student::query()->with('classRoom')->findOrFail($validated['student_id']);
+
+        if ($user->hasRole('Siswa')) {
+            abort_unless($student->user_id === $user->id, 403);
+        } elseif ($user->hasRole('Orang Tua')) {
+            $isLinked = $user->parentProfile?->students()->where('students.id', $student->id)->exists() ?? false;
+            abort_unless($isLinked, 403);
+        } else {
+            abort(403);
+        }
+
+        abort_unless(
+            RegistrationPayment::query()->where('student_id', $student->id)->where('status', 'verified')->exists(),
+            422,
+            'Pembayaran registrasi harus disetujui sebelum membuat tagihan bimbel.'
+        );
+
+        abort_unless(
+            ! StudentFeeTransaction::query()->where('student_id', $student->id)->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial'])->exists(),
+            422,
+            'Siswa masih memiliki tagihan bimbel yang belum lunas.'
+        );
+
+        DB::transaction(function () use ($billingService, $student, $validated) {
+            $billingService->generateForStudent(
+                $student,
+                (int) $validated['duration_years'],
+                (int) $validated['installment_count'],
+                $validated['promo_code'] ?? null
+            );
+        }, 3);
+
+        return redirect()->route('student-fee-payments.index')->with('success', 'Tagihan bimbel berhasil dibuat terpisah dari registrasi.');
     }
 
     public function adminIndex(): View
