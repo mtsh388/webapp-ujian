@@ -13,11 +13,12 @@ class StudentClassPromotedNotification extends Notification
     public function __construct(
         public string $title,
         public string $message,
+        public bool $databaseOnly = false,
     ) {}
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        return $this->databaseOnly ? ['database'] : ['database', 'mail'];
     }
 
     public function toArray(object $notifiable): array
