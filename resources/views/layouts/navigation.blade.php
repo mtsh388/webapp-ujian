@@ -18,6 +18,15 @@
                 </div>
             </div>
 
+            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                <a href="{{ route('notifications.index') }}" class="relative inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900">
+                    Notifikasi
+                    @if (Auth::user()->unreadNotifications()->exists())
+                        <span class="ms-2 rounded-full bg-red-600 px-2 py-0.5 text-xs text-white">{{ Auth::user()->unreadNotifications()->count() }}</span>
+                    @endif
+                </a>
+            </div>
+
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
@@ -69,6 +78,12 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+        </div>
+
+        <div class="pt-2 pb-2">
+            <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
+                Notifikasi @if (Auth::user()->unreadNotifications()->exists()) ({{ Auth::user()->unreadNotifications()->count() }}) @endif
             </x-responsive-nav-link>
         </div>
 
