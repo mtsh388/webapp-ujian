@@ -8,7 +8,7 @@ use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Mail;
+use App\Notifications\StudentClassPromotedEmailNotification;
 use Throwable;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -144,13 +144,12 @@ class RegistrationPaymentController extends Controller
                 ->values()
                 ->all();
 
-            if ($emails !== []) {
-                Mail::raw(
-                    'Pembayaran registrasi QSEE telah disetujui. Biaya bimbel tidak termasuk dalam transaksi registrasi. Silakan buka menu Pembayaran Bimbel untuk memilih periode dan membuat tagihan terpisah.',
-                    function ($message) use ($emails) {
-                        $message->to($emails)->subject('QSEE - Pembayaran Registrasi Disetujui');
-                    }
-                );
+            foreach ($emails as $email) {
+                $recipient = User::query()->where('email', $email)->first();
+                $recipient?->notify(new StudentClassPromotedEmailNotification(
+                    'QSEE - Pembayaran Registrasi Disetujui',
+                    'Pembayaran registrasi QSEE telah disetujui. Biaya bimbel tidak termasuk dalam transaksi registrasi. Silakan buka menu Pembayaran Bimbel untuk memilih periode dan membuat tagihan terpisah.'
+                ));
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -206,13 +205,12 @@ class RegistrationPaymentController extends Controller
                 ['registrationPayment' => $registrationPayment->id]
             );
 
-            if ($emails !== []) {
-                Mail::raw(
-                    "Pembayaran registrasi QSEE ditolak. Alasan: {$validated['rejection_reason']}\n\nSilakan buka tautan berikut untuk memperbaiki dan mengunggah ulang bukti pembayaran:\n{$paymentUrl}",
-                    function ($message) use ($emails) {
-                        $message->to($emails)->subject('QSEE - Pembayaran Registrasi Perlu Diperbaiki');
-                    }
-                );
+            foreach ($emails as $email) {
+                $recipient = User::query()->where('email', $email)->first();
+                $recipient?->notify(new StudentClassPromotedEmailNotification(
+                    'QSEE - Pembayaran Registrasi Perlu Diperbaiki',
+                    "Pembayaran registrasi QSEE ditolak. Alasan: {$validated['rejection_reason']}\n\nSilakan buka tautan berikut untuk memperbaiki dan mengunggah ulang bukti pembayaran:\n{$paymentUrl}"
+                ));
             }
         } catch (Throwable $exception) {
             report($exception);
