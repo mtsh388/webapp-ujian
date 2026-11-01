@@ -73,4 +73,9 @@ class Student extends Model
     {
         return $this->hasMany(ExamAttempt::class);
     }
+
+    public function classHistories()
+    {
+        return $this->hasMany(StudentClassHistory::class)->orderBy('started_at');
+    }
 }
