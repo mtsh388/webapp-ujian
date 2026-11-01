@@ -84,7 +84,9 @@ class RegistrationPaymentController extends Controller
         try {
             $notice = new StudentClassPromotedNotification(
                 'Pembayaran registrasi menunggu verifikasi',
-                'Bukti pembayaran registrasi ' . ($registrationPayment->user?->name ?? 'siswa') . ' telah diunggah dan menunggu verifikasi.'
+                'Bukti pembayaran registrasi ' . ($registrationPayment->user?->name ?? 'siswa') . ' telah diunggah dan menunggu verifikasi.',
+                false,
+                route('registration-payments.index', absolute: false)
             );
             User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->get()->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
@@ -157,7 +159,7 @@ class RegistrationPaymentController extends Controller
 
         try {
             $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
-            $notice = new StudentClassPromotedNotification('Pembayaran registrasi disetujui', 'Pembayaran registrasi QSEE telah disetujui. Silakan lanjutkan proses aktivasi dan pembayaran bimbel.', true);
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi disetujui', 'Pembayaran registrasi QSEE telah disetujui. Silakan lanjutkan proses aktivasi dan pembayaran bimbel.', true, route('student-fee-payments.index', absolute: false));
             collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
@@ -218,7 +220,7 @@ class RegistrationPaymentController extends Controller
 
         try {
             $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
-            $notice = new StudentClassPromotedNotification('Pembayaran registrasi ditolak', 'Pembayaran registrasi ditolak. Alasan: ' . $validated['rejection_reason'], true);
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi ditolak', 'Pembayaran registrasi ditolak. Alasan: ' . $validated['rejection_reason'], true, route('my-registration-payments.index', absolute: false), 'Periksa pembayaran');
             collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
