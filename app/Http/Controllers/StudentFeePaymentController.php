@@ -83,8 +83,28 @@ class StudentFeePaymentController extends Controller
         );
 
         $transaction = DB::transaction(function () use ($billingService, $student, $validated) {
+            $lockedStudent = Student::query()
+                ->whereKey($student->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_unless(
+                RegistrationPayment::query()->where('student_id', $lockedStudent->id)->where('status', 'verified')->exists(),
+                422,
+                'Pembayaran registrasi harus disetujui sebelum memperpanjang paket bimbel.'
+            );
+
+            abort_unless(
+                ! StudentFeeTransaction::query()
+                    ->where('student_id', $lockedStudent->id)
+                    ->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial'])
+                    ->exists(),
+                422,
+                'Siswa masih memiliki tagihan bimbel yang belum lunas. Selesaikan tagihan tersebut sebelum memperpanjang paket.'
+            );
+
             return $billingService->generateForStudent(
-                $student,
+                $lockedStudent->load('classRoom'),
                 $validated['package_type'],
                 (int) $validated['installment_count'],
                 $validated['promo_code'] ?? null
@@ -103,7 +123,7 @@ class StudentFeePaymentController extends Controller
             report($exception);
         }
 
-        return redirect()->route('student-fee-payments.index')->with('success', 'Tagihan bimbel berhasil dibuat terpisah dari registrasi.');
+        return redirect()->route('student-fee-payments.index')->with('success', 'Tagihan perpanjangan paket bimbel berhasil dibuat. Periode paket aktif tetap diperhitungkan.');
     }
 
     public function adminIndex(): View
