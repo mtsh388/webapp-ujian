@@ -11,7 +11,6 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
 use App\Notifications\StudentClassPromotedNotification;
-use App\Notifications\StudentClassPromotedEmailNotification;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
@@ -265,8 +264,7 @@ class AuthController extends Controller
         $noticeTitle = 'Registrasi siswa trial baru';
         $noticeMessage = 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.';
         User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))->each(function (User $recipient) use ($noticeTitle, $noticeMessage): void {
-            $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, true));
-            $recipient->notify(new StudentClassPromotedEmailNotification($noticeTitle, $noticeMessage));
+            $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage));
         });
 
         return redirect()
