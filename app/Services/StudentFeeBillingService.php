@@ -36,7 +36,7 @@ class StudentFeeBillingService
             default => $startGrade,
         };
         $gradeCount = min($package['grades'], $maximumGrade - $startGrade + 1);
-        $installmentCount = min(max(1, $installmentCount), 5);
+        $installmentCount = max(1, $installmentCount);
         $fees = collect();
         $details = [];
         $normalTotal = 0;
@@ -73,7 +73,32 @@ class StudentFeeBillingService
             $normalTotal += $amount;
         }
 
-        $maximumInstallments = (int) $fees->min('max_installments');
+        $today = Carbon::today();
+        $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
+            ? $student->access_expires_at->copy()->startOfDay()
+            : null;
+        $start = $activeUntil ? $activeUntil->addDay() : $today->copy();
+
+        if ($packageType === 'semester') {
+            $end = $start->month <= 6
+                ? $start->copy()->endOfJune()
+                : $start->copy()->endOfDecember();
+        } else {
+            $academicYearEnd = $start->month <= 6
+                ? $start->copy()->endOfJune()
+                : $start->copy()->addYear()->endOfJune();
+
+            $end = $packageType === 'two_years'
+                ? $academicYearEnd->copy()->addYear()->endOfJune()
+                : $academicYearEnd;
+        }
+
+        $durationMonths = (($end->year - $start->year) * 12) + $end->month - $start->month + 1;
+        if ($durationMonths < 1) {
+            throw ValidationException::withMessages(['package_type' => 'Periode paket tidak valid.']);
+        }
+
+        $maximumInstallments = min(5, (int) $fees->min('max_installments'), $durationMonths);
         if ($installmentCount > $maximumInstallments) {
             throw ValidationException::withMessages([
                 'installment_count' => "Tarif yang dipilih hanya mengizinkan maksimal {$maximumInstallments} kali cicilan.",
@@ -117,14 +142,12 @@ class StudentFeeBillingService
         }
 
         $total = array_sum(array_column($details, 'amount_due'));
-        $start = Carbon::today();
-        $end = $start->copy()->addMonths($package['months'])->subDay();
 
         $transaction = StudentFeeTransaction::create([
             'student_id' => $student->id,
             'registration_payment_id' => null,
             'duration_years' => $package['years'],
-            'duration_months' => $package['months'],
+            'duration_months' => $durationMonths,
             'package_type' => $packageType,
             'installment_count' => $installmentCount,
             'amount' => $total,
@@ -143,7 +166,7 @@ class StudentFeeBillingService
             StudentFeePayment::create([
                 'student_fee_transaction_id' => $transaction->id,
                 'installment_number' => $number,
-                'due_date' => $start->copy()->addMonths($number - 1)->toDateString(),
+                'due_date' => $start->copy()->addMonthsNoOverflow($number - 1)->toDateString(),
                 'amount' => $base + ($number <= $remainder ? 1 : 0),
                 'status' => 'awaiting_payment',
             ]);
