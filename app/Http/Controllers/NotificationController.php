@@ -19,6 +19,20 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notifications'));
     }
 
+    public function open(Request $request, string $notification): RedirectResponse
+    {
+        $item = $request->user()->notifications()->whereKey($notification)->firstOrFail();
+        $item->markAsRead();
+
+        $url = data_get($item->data, 'url');
+
+        if (is_string($url) && str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+            return redirect()->to($url);
+        }
+
+        return redirect()->route('notifications.index');
+    }
+
     public function read(Request $request, string $notification): RedirectResponse
     {
         $item = $request->user()->notifications()->whereKey($notification)->firstOrFail();
