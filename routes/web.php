@@ -34,6 +34,7 @@ Route::post('/registrasi/pembayaran/{registrationPayment}', [RegistrationPayment
 
 Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifikasi/{notification}/buka', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])
