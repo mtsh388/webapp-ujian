@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Models\Student;
+use App\Console\Commands\PromoteStudentsForNewAcademicYear;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -26,3 +27,5 @@ Schedule::call(function (): void {
             }
         });
 })->dailyAt('00:10')->name('deactivate-expired-student-access')->withoutOverlapping();
+
+Schedule::command(PromoteStudentsForNewAcademicYear::class)->yearlyOn(7, 1, '00:20')->name('promote-students-for-new-academic-year')->withoutOverlapping();

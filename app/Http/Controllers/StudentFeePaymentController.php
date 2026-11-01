@@ -36,6 +36,7 @@ class StudentFeePaymentController extends Controller
 
         $eligibleStudents = Student::query()
             ->with('classRoom')
+            ->when(! $user->hasRole('Orang Tua'), fn ($builder) => $builder->whereRaw('1 = 0'))
             ->whereIn('id', $studentIds)
             ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
             ->whereDoesntHave('feeTransactions', fn ($builder) => $builder->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial']))
@@ -60,9 +61,7 @@ class StudentFeePaymentController extends Controller
         $user = auth()->user();
         $student = Student::query()->with('classRoom')->findOrFail($validated['student_id']);
 
-        if ($user->hasRole('Siswa')) {
-            abort_unless($student->user_id === $user->id, 403);
-        } elseif ($user->hasRole('Orang Tua')) {
+        if ($user->hasRole('Orang Tua')) {
             $isLinked = $user->parentProfile?->students()->where('students.id', $student->id)->exists() ?? false;
             abort_unless($isLinked, 403);
         } else {
@@ -138,6 +137,10 @@ class StudentFeePaymentController extends Controller
             throw $exception;
         }
 
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;
+        $notice = new StudentClassPromotedNotification('Bukti pembayaran bimbel masuk', 'Bukti pembayaran bimbel untuk ' . $student->full_name . ' menunggu verifikasi.');
+        User::role(['Admin', 'Keuangan'])->each(fn (User $user) => $user->notify($notice));
+
         if ($oldPath && $oldPath !== $newPath) {
             Storage::disk('local')->delete($oldPath);
         }
@@ -181,16 +184,13 @@ class StudentFeePaymentController extends Controller
             $transaction->update([
                 'amount_paid' => $amountPaid,
                 'status' => $amountPaid >= $transaction->amount ? 'paid' : 'partial',
-                ...($isFirstApprovedPayment ? [
-                    'period_starts_at' => now()->toDateString(),
-                    'period_ends_at' => now()->addMonths((int) $transaction->duration_months)->subDay()->toDateString(),
-                ] : []),
+
             ]);
 
             if ($isFirstApprovedPayment) {
                 $student->forceFill([
                     'is_active' => true,
-                    'access_expires_at' => $transaction->fresh()->period_ends_at,
+                    'access_expires_at' => $transaction->period_ends_at,
                 ])->save();
 
                 if ($student->user) {
@@ -198,6 +198,11 @@ class StudentFeePaymentController extends Controller
                 }
             }
         }, 3);
+
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;
+        $notice = new StudentClassPromotedNotification('Pembayaran bimbel disetujui', 'Pembayaran bimbel untuk ' . $student->full_name . ' telah disetujui.');
+        $student->user?->notify($notice);
+        $student->parents->each(fn ($parent) => $parent->user?->notify($notice));
 
         return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan bimbel disetujui.');
     }
@@ -219,6 +224,11 @@ class StudentFeePaymentController extends Controller
                 'verified_at' => now(),
             ]);
         }, 3);
+
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;
+        $notice = new StudentClassPromotedNotification('Pembayaran bimbel ditolak', 'Pembayaran bimbel untuk ' . $student->full_name . ' ditolak. Alasan: ' . $validated['rejection_reason']);
+        $student->user?->notify($notice);
+        $student->parents->each(fn ($parent) => $parent->user?->notify($notice));
 
         return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan ditolak. Alasan penolakan disimpan.');
     }

@@ -16,6 +16,7 @@ use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\RegistrationPaymentController;
 use App\Http\Controllers\MyRegistrationPaymentController;
 use App\Http\Controllers\StudentFeePaymentController;
+use App\Http\Controllers\NotificationController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +33,9 @@ Route::post('/registrasi/pembayaran/{registrationPayment}', [RegistrationPayment
     ->name('register.payment.store');
 
 Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])
         ->middleware('role:Siswa|Orang Tua')
         ->name('my-registration-payments.index');
@@ -39,7 +43,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('role:Siswa|Orang Tua')
         ->name('student-fee-payments.index');
     Route::post('/pembayaran-bimbel/rencana', [StudentFeePaymentController::class, 'createPlan'])
-        ->middleware('role:Siswa|Orang Tua')
+        ->middleware('role:Orang Tua')
         ->name('student-fee-payments.plan.store');
     Route::post('/pembayaran-bimbel/{studentFeePayment}/bukti', [StudentFeePaymentController::class, 'submitProof'])
         ->middleware('role:Siswa|Orang Tua')
