@@ -508,9 +508,11 @@ class ResultController extends Controller
                     ->orWhere('e.status', 'closed');
             });
 
+        $totalChildren = (clone $query)->distinct()->count('s.id');
         $totalAttempts = (clone $query)->count('ea.id');
 
         return view('results.children', [
+            'totalChildren' => $totalChildren,
             'totalAttempts' => $totalAttempts,
             'totalFinished' => $totalAttempts,
         ]);
