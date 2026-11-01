@@ -12,13 +12,20 @@ use Illuminate\Validation\ValidationException;
 
 class StudentFeeBillingService
 {
-    public function generateForStudent(Student $student, int $durationYears, int $installmentCount, ?string $promoCode = null): StudentFeeTransaction
+    public function generateForStudent(Student $student, string $packageType, int $installmentCount, ?string $promoCode = null): StudentFeeTransaction
     {
         $student->loadMissing('classRoom');
 
         if (! $student->classRoom) {
             throw ValidationException::withMessages(['student' => 'Kelas siswa belum ditentukan sehingga tagihan bimbel belum dapat dibuat.']);
         }
+
+        $package = match ($packageType) {
+            'semester' => ['months' => 6, 'years' => 1, 'grades' => 1, 'factor' => 0.60, 'label' => '1 Semester'],
+            'yearly' => ['months' => 12, 'years' => 1, 'grades' => 1, 'factor' => 1.00, 'label' => '1 Tahun'],
+            'two_years' => ['months' => 24, 'years' => 2, 'grades' => 2, 'factor' => 1.00, 'label' => '2 Tahun'],
+            default => throw ValidationException::withMessages(['package_type' => 'Paket belajar tidak valid.']),
+        };
 
         $class = $student->classRoom;
         $startGrade = (int) $class->grade_level;
@@ -28,13 +35,13 @@ class StudentFeeBillingService
             'SMA' => 12,
             default => $startGrade,
         };
-        $duration = min(max(1, $durationYears), 2, $maximumGrade - $startGrade + 1);
+        $gradeCount = min($package['grades'], $maximumGrade - $startGrade + 1);
         $installmentCount = min(max(1, $installmentCount), 5);
         $fees = collect();
         $details = [];
-        $total = 0;
+        $normalTotal = 0;
 
-        for ($grade = $startGrade; $grade < $startGrade + $duration; $grade++) {
+        for ($grade = $startGrade; $grade < $startGrade + $gradeCount; $grade++) {
             $fee = RegistrationFee::query()
                 ->active()
                 ->where(function ($query) {
@@ -48,7 +55,7 @@ class StudentFeeBillingService
 
             if (! $fee) {
                 throw ValidationException::withMessages([
-                    'duration_years' => "Tarif Belajar untuk {$class->education_level} kelas {$grade} belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE.",
+                    'package_type' => "Tarif Belajar untuk {$class->education_level} kelas {$grade} belum tersedia atau tidak aktif. Silakan hubungi Admin QSEE.",
                 ]);
             }
 
@@ -63,7 +70,7 @@ class StudentFeeBillingService
                 'discount_amount' => 0,
                 'amount_due' => $amount,
             ];
-            $total += $amount;
+            $normalTotal += $amount;
         }
 
         $maximumInstallments = (int) $fees->min('max_installments');
@@ -71,6 +78,12 @@ class StudentFeeBillingService
             throw ValidationException::withMessages([
                 'installment_count' => "Tarif yang dipilih hanya mengizinkan maksimal {$maximumInstallments} kali cicilan.",
             ]);
+        }
+
+        $packageTotal = (int) round($normalTotal * $package['factor']);
+        if ($package['factor'] < 1) {
+            $details[0]['discount_amount'] = $normalTotal - $packageTotal;
+            $details[0]['amount_due'] = $packageTotal;
         }
 
         $promo = null;
@@ -95,22 +108,24 @@ class StudentFeeBillingService
                     continue;
                 }
 
-                $discount = min((int) $detail['amount'], $remainingDiscount);
-                $detail['discount_amount'] = $discount;
-                $detail['amount_due'] = (int) $detail['amount'] - $discount;
+                $discount = min((int) $detail['amount_due'], $remainingDiscount);
+                $detail['discount_amount'] += $discount;
+                $detail['amount_due'] -= $discount;
                 $remainingDiscount -= $discount;
             }
             unset($detail);
-            $total = array_sum(array_column($details, 'amount_due'));
         }
 
+        $total = array_sum(array_column($details, 'amount_due'));
         $start = Carbon::today();
-        $end = $start->copy()->addYears($duration)->subDay();
+        $end = $start->copy()->addMonths($package['months'])->subDay();
 
         $transaction = StudentFeeTransaction::create([
             'student_id' => $student->id,
             'registration_payment_id' => null,
-            'duration_years' => $duration,
+            'duration_years' => $package['years'],
+            'duration_months' => $package['months'],
+            'package_type' => $packageType,
             'installment_count' => $installmentCount,
             'amount' => $total,
             'amount_paid' => 0,
@@ -128,6 +143,7 @@ class StudentFeeBillingService
             StudentFeePayment::create([
                 'student_fee_transaction_id' => $transaction->id,
                 'installment_number' => $number,
+                'due_date' => $start->copy()->addMonths($number - 1)->toDateString(),
                 'amount' => $base + ($number <= $remainder ? 1 : 0),
                 'status' => 'awaiting_payment',
             ]);
