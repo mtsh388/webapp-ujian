@@ -3,8 +3,8 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\StudentClassPromotedEmailNotification;
 
 class StudentClassPromotedNotification extends Notification
 {
@@ -18,23 +18,18 @@ class StudentClassPromotedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->databaseOnly ? ['database'] : ['database', 'mail'];
+        return ['database'];
     }
 
     public function toArray(object $notifiable): array
     {
+        if (! $this->databaseOnly && filled($notifiable->email)) {
+            $notifiable->notify(new StudentClassPromotedEmailNotification($this->title, $this->message));
+        }
+
         return [
             'title' => $this->title,
             'message' => $this->message,
         ];
-    }
-
-    public function toMail(object $notifiable): MailMessage
-    {
-        return (new MailMessage)
-            ->subject($this->title)
-            ->greeting('Halo ' . ($notifiable->name ?? ''))
-            ->line($this->message)
-            ->line('Silakan masuk ke aplikasi QSEE untuk melihat informasi lebih lanjut.');
     }
 }
