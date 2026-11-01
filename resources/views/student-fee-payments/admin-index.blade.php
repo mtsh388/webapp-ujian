@@ -15,16 +15,16 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
-                <thead><tr><th>Siswa</th><th>Periode</th><th>Total</th><th>Cicilan</th><th>Bukti</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Siswa</th><th>Paket / Periode</th><th>Total</th><th>Cicilan / Jatuh Tempo</th><th>Bukti</th><th>Aksi</th></tr></thead>
                 <tbody>
                 @forelse ($transactions as $transaction)
                     @foreach ($transaction->installments as $installment)
                         <tr>
                             <td><div class="fw-semibold">{{ $transaction->student?->full_name ?? '-' }}</div><div class="small text-muted">{{ $transaction->student?->classRoom?->name ?? '-' }}</div></td>
-                            <td>{{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</td>
+                            <td><div class="fw-semibold">{{ $transaction->package_type === 'semester' ? '1 Semester' : ($transaction->duration_months === 24 ? '2 Tahun' : '1 Tahun') }}</div><div class="small text-muted">{{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div></td>
                             <td><div>Tagihan: Rp {{ number_format($transaction->amount, 0, ',', '.') }}</div><div class="small text-muted">Cicilan: Rp {{ number_format($installment->amount, 0, ',', '.') }}</div></td>
                             <td>
-                                {{ $installment->installment_number }} / {{ $transaction->installment_count }}
+                                {{ $installment->installment_number }} / {{ $transaction->installment_count }}<div class="small text-muted">Jatuh tempo: {{ $installment->due_date?->format('d M Y') ?? '-' }}</div>
                                 <div><span class="badge {{ $installment->status === 'verified' ? 'bg-label-success' : ($installment->status === 'pending_verification' ? 'bg-label-warning' : ($installment->status === 'rejected' ? 'bg-label-danger' : 'bg-label-secondary')) }}">{{ str_replace('_', ' ', ucfirst($installment->status)) }}</span></div>
                                 @if ($installment->rejection_reason)<div class="small text-danger">{{ $installment->rejection_reason }}</div>@endif
                             </td>
