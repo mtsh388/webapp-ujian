@@ -36,10 +36,20 @@
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                    <h6 class="mb-1">{{ data_get($notification->data, 'title', 'Notifikasi QSEE') }}</h6>
+                                    @if (filled(data_get($notification->data, 'url')))
+                                        <a class="fw-semibold text-body text-decoration-none" href="{{ route('notifications.open', $notification->id) }}">{{ data_get($notification->data, 'title', 'Notifikasi QSEE') }}</a>
+                                    @else
+                                        <h6 class="mb-1">{{ data_get($notification->data, 'title', 'Notifikasi QSEE') }}</h6>
+                                    @endif
                                     <small class="text-body-secondary">{{ $notification->created_at->format('d/m/Y H:i') }}</small>
                                 </div>
                                 <p class="mb-2 text-body">{{ data_get($notification->data, 'message', '') }}</p>
+                                @if (filled(data_get($notification->data, 'url')))
+                                    <a href="{{ route('notifications.open', $notification->id) }}" class="btn btn-sm btn-primary mb-2">
+                                        {{ data_get($notification->data, 'action_label', 'Lihat detail') }}
+                                        <i class="icon-base bx bx-right-arrow-alt ms-1"></i>
+                                    </a>
+                                @endif
                                 <div class="d-flex align-items-center justify-content-between">
                                     @if ($notification->read_at)
                                         <span class="badge bg-label-secondary">Sudah dibaca</span>
