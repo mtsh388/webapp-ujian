@@ -94,15 +94,15 @@ class StudentFeeBillingService
 
         if ($packageType === 'semester') {
             $end = $start->month <= 6
-                ? $start->copy()->endOfJune()
-                : $start->copy()->endOfDecember();
+                ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
+                : $start->copy()->setDate($start->year, 12, 1)->endOfMonth();
         } else {
             $academicYearEnd = $start->month <= 6
-                ? $start->copy()->endOfJune()
-                : $start->copy()->addYear()->endOfJune();
+                ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
+                : $start->copy()->addYear()->setDate($start->year + 1, 6, 1)->endOfMonth();
 
             $end = $packageType === 'two_years'
-                ? $academicYearEnd->copy()->addYear()->endOfJune()
+                ? $academicYearEnd->copy()->addYear()->setDate($academicYearEnd->year + 1, 6, 1)->endOfMonth()
                 : $academicYearEnd;
         }
 
