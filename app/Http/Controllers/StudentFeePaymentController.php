@@ -137,7 +137,7 @@ class StudentFeePaymentController extends Controller
             throw $exception;
         }
 
-        if ($oldPath && $oldPath !== $newPath) {
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;\n        $notice = new StudentClassPromotedNotification('Bukti pembayaran bimbel masuk', 'Bukti pembayaran bimbel untuk ' . $student->full_name . ' menunggu verifikasi.');\n        User::role(['Admin', 'Keuangan'])->each(fn (User $user) => $user->notify($notice));\n\n        if ($oldPath && $oldPath !== $newPath) {
             Storage::disk('local')->delete($oldPath);
         }
 
@@ -195,7 +195,7 @@ class StudentFeePaymentController extends Controller
             }
         }, 3);
 
-        return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan bimbel disetujui.');
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;\n        $notice = new StudentClassPromotedNotification('Pembayaran bimbel disetujui', 'Pembayaran bimbel untuk ' . $student->full_name . ' telah disetujui.');\n        $student->user?->notify($notice);\n        $student->parents->each(fn ($parent) => $parent->user?->notify($notice));\n\n        return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan bimbel disetujui.');
     }
 
     public function reject(Request $request, StudentFeePayment $studentFeePayment): RedirectResponse
@@ -216,7 +216,7 @@ class StudentFeePaymentController extends Controller
             ]);
         }, 3);
 
-        return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan ditolak. Alasan penolakan disimpan.');
+        $student = $studentFeePayment->transaction()->with('student.user', 'student.parents.user')->firstOrFail()->student;\n        $notice = new StudentClassPromotedNotification('Pembayaran bimbel ditolak', 'Pembayaran bimbel untuk ' . $student->full_name . ' ditolak. Alasan: ' . $validated['rejection_reason']);\n        $student->user?->notify($notice);\n        $student->parents->each(fn ($parent) => $parent->user?->notify($notice));\n\n        return redirect()->route('student-fee-payments.admin')->with('success', 'Pembayaran cicilan ditolak. Alasan penolakan disimpan.');
     }
 
     private function authorizeOwner(StudentFeePayment $payment): void
