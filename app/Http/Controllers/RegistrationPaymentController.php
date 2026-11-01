@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\RegistrationPayment;
+use App\Models\User;
+use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -80,23 +82,11 @@ class RegistrationPaymentController extends Controller
         }
 
         try {
-            $financeEmails = \App\Models\User::query()
-                ->role('Keuangan')
-                ->where('is_active', true)
-                ->pluck('email')
-                ->filter()
-                ->unique()
-                ->values()
-                ->all();
-
-            if ($financeEmails !== []) {
-                Mail::raw(
-                    'Ada pembayaran registrasi baru yang menunggu verifikasi. Silakan buka menu Keuangan > Verifikasi Pembayaran di QSEE.',
-                    function ($message) use ($financeEmails) {
-                        $message->to($financeEmails)->subject('QSEE - Pembayaran Registrasi Menunggu Verifikasi');
-                    }
-                );
-            }
+            $notice = new StudentClassPromotedNotification(
+                'Pembayaran registrasi menunggu verifikasi',
+                'Bukti pembayaran registrasi ' . ($registrationPayment->user?->name ?? 'siswa') . ' telah diunggah dan menunggu verifikasi.'
+            );
+            User::role(['Admin', 'Keuangan'])->where('is_active', true)->get()->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
         }
@@ -166,6 +156,14 @@ class RegistrationPaymentController extends Controller
             report($exception);
         }
 
+        try {
+            $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi disetujui', 'Pembayaran registrasi QSEE telah disetujui. Silakan lanjutkan proses aktivasi dan pembayaran bimbel.');
+            collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
         return redirect()->route('registration-payments.index')->with('success', 'Pembayaran registrasi disetujui. Akun Orang Tua diaktifkan; silakan pilih periode dan buat tagihan melalui menu Pembayaran Bimbel.');
     }
 
@@ -216,6 +214,14 @@ class RegistrationPaymentController extends Controller
                     }
                 );
             }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        try {
+            $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi ditolak', 'Pembayaran registrasi ditolak. Alasan: ' . $validated['rejection_reason']);
+            collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
         }
