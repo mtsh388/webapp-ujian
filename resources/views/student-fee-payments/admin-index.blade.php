@@ -13,41 +13,70 @@
             @if (session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
             @if ($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead><tr><th>Siswa</th><th>Paket / Periode</th><th>Total</th><th>Cicilan / Jatuh Tempo</th><th>Bukti</th><th>Aksi</th></tr></thead>
-                <tbody>
-                @forelse ($transactions as $transaction)
-                    @foreach ($transaction->installments as $installment)
-                        <tr>
-                            <td><div class="fw-semibold">{{ $transaction->student?->full_name ?? '-' }}</div><div class="small text-muted">{{ $transaction->student?->classRoom?->name ?? '-' }}</div></td>
-                            <td><div class="fw-semibold">{{ $transaction->package_type === 'semester' ? '1 Semester' : ($transaction->duration_months === 24 ? '2 Tahun' : '1 Tahun') }}</div><div class="small text-muted">{{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div></td>
-                            <td><div>Tagihan: Rp {{ number_format($transaction->amount, 0, ',', '.') }}</div><div class="small text-muted">Cicilan: Rp {{ number_format($installment->amount, 0, ',', '.') }}</div></td>
-                            <td>
-                                {{ $installment->installment_number }} / {{ $transaction->installment_count }}<div class="small text-muted">Jatuh tempo: {{ $installment->due_date?->format('d M Y') ?? '-' }}</div>
-                                <div><span class="badge {{ $installment->status === 'verified' ? 'bg-label-success' : ($installment->status === 'pending_verification' ? 'bg-label-warning' : ($installment->status === 'rejected' ? 'bg-label-danger' : 'bg-label-secondary')) }}">{{ str_replace('_', ' ', ucfirst($installment->status)) }}</span></div>
-                                @if ($installment->rejection_reason)<div class="small text-danger">{{ $installment->rejection_reason }}</div>@endif
-                            </td>
-                            <td>@if ($installment->proof_path)<a class="btn btn-sm btn-outline-primary" href="{{ route('student-fee-payments.proof', $installment) }}">Lihat Bukti</a>@else<span class="text-muted">Belum ada</span>@endif</td>
-                            <td>
-                                @if ($installment->status === 'pending_verification')
-                                    <div class="d-flex flex-column gap-2">
-                                        <form method="POST" action="{{ route('student-fee-payments.approve', $installment) }}">@csrf<button class="btn btn-sm btn-success" type="submit">Setujui</button></form>
-                                        <form method="POST" action="{{ route('student-fee-payments.reject', $installment) }}">@csrf<input name="rejection_reason" class="form-control form-control-sm mb-1" placeholder="Alasan penolakan" maxlength="1000" required><button class="btn btn-sm btn-outline-danger" type="submit">Tolak</button></form>
-                                    </div>
-                                @else
-                                    <span class="text-muted small">{{ $installment->verifier?->name ?? '-' }}</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                @empty
-                    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada tagihan bimbel.</td></tr>
-                @endforelse
-                </tbody>
+        <div class="card-datatable table-responsive">
+            <table id="studentFeePaymentsTable" class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Siswa</th>
+                        <th>Paket / Periode</th>
+                        <th>Total</th>
+                        <th>Cicilan / Jatuh Tempo</th>
+                        <th>Bukti</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
             </table>
         </div>
-        <div class="card-body">{{ $transactions->links() }}</div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.querySelector('#studentFeePaymentsTable');
+
+        if (!table) {
+            return;
+        }
+
+        new DataTable(table, {
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route('student-fee-payments.admin.data') }}',
+                type: 'GET'
+            },
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            order: [[0, 'asc']],
+            scrollX: true,
+            dom: '<"row mx-2"<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"l><"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>>t<"row mx-2 mt-3 mb-4"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-end"p>>',
+            columns: [
+                { data: 'student', name: 'student', orderable: false, searchable: false },
+                { data: 'package', name: 'package', orderable: false, searchable: false },
+                { data: 'amount', name: 'amount', orderable: false, searchable: false },
+                { data: 'installment', name: 'installment', orderable: false, searchable: false },
+                { data: 'proof', name: 'proof', orderable: false, searchable: false },
+                { data: 'actions', name: 'actions', orderable: false, searchable: false }
+            ],
+            language: {
+                processing: 'Memuat data...',
+                search: '',
+                searchPlaceholder: 'Cari siswa, kelas, paket, periode, cicilan, status...',
+                lengthMenu: '_MENU_',
+                info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+                zeroRecords: 'Data tidak ditemukan',
+                emptyTable: 'Belum ada pembayaran bimbel',
+                paginate: {
+                    first: 'Pertama',
+                    last: 'Terakhir',
+                    next: '›',
+                    previous: '‹'
+                }
+            }
+        });
+    });
+</script>
 @endsection
