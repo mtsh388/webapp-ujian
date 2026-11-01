@@ -66,55 +66,32 @@
 
         @if(
             auth()->user()->can('class.view') ||
-            auth()->user()->can('registration-fee.view') ||
-            auth()->user()->can('promo-code.view') ||
             auth()->user()->can('subject.view') ||
             auth()->user()->can('student.view') ||
             auth()->user()->can('parent.view')
         )
             <li class="menu-header small text-uppercase">
-                <span class="menu-header-text">Master Data</span>
+                <span class="menu-header-text">Master Data Akademik</span>
             </li>
 
-            <li class="menu-item
-                {{
-                    request()->routeIs('classes.*') ||
-                    request()->routeIs('registration-fees.*') ||
-                    request()->routeIs('promo-codes.*') ||
-                    request()->routeIs('subjects.*') ||
-                    request()->routeIs('students.*') ||
-                    request()->routeIs('parents.*')
-                        ? 'active open'
-                        : ''
-                }}">
-
+            <li class="menu-item {{
+                request()->routeIs('classes.*') ||
+                request()->routeIs('subjects.*') ||
+                request()->routeIs('students.*') ||
+                request()->routeIs('parents.*')
+                    ? 'active open'
+                    : ''
+            }}">
                 <a href="javascript:void(0)" class="menu-link menu-toggle">
                     <i class="menu-icon tf-icons bx bx-data"></i>
-                    <div>Master Data</div>
+                    <div>Master Data Akademik</div>
                 </a>
 
                 <ul class="menu-sub">
-
                     @can('class.view')
                         <li class="menu-item {{ request()->routeIs('classes.*') ? 'active' : '' }}">
                             <a href="{{ route('classes.index') }}" class="menu-link">
                                 <div>Kelas</div>
-                            </a>
-                        </li>
-                    @endcan
-
-                    @can('registration-fee.view')
-                        <li class="menu-item {{ request()->routeIs('registration-fees.*') ? 'active' : '' }}">
-                            <a href="{{ route('registration-fees.index') }}" class="menu-link">
-                                <div>Biaya</div>
-                            </a>
-                        </li>
-                    @endcan
-
-                    @can('promo-code.view')
-                        <li class="menu-item {{ request()->routeIs('promo-codes.*') ? 'active' : '' }}">
-                            <a href="{{ route('promo-codes.index') }}" class="menu-link">
-                                <div>Kode Promo</div>
                             </a>
                         </li>
                     @endcan
@@ -142,7 +119,45 @@
                             </a>
                         </li>
                     @endcan
+                </ul>
+            </li>
+        @endif
 
+        @if(
+            auth()->user()->can('registration-fee.view') ||
+            auth()->user()->can('promo-code.view')
+        )
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Pengaturan Keuangan</span>
+            </li>
+
+            <li class="menu-item {{
+                request()->routeIs('registration-fees.*') ||
+                request()->routeIs('promo-codes.*')
+                    ? 'active open'
+                    : ''
+            }}">
+                <a href="javascript:void(0)" class="menu-link menu-toggle">
+                    <i class="menu-icon tf-icons bx bx-cog"></i>
+                    <div>Pengaturan Keuangan</div>
+                </a>
+
+                <ul class="menu-sub">
+                    @can('registration-fee.view')
+                        <li class="menu-item {{ request()->routeIs('registration-fees.*') ? 'active' : '' }}">
+                            <a href="{{ route('registration-fees.index') }}" class="menu-link">
+                                <div>Master Data Biaya</div>
+                            </a>
+                        </li>
+                    @endcan
+
+                    @can('promo-code.view')
+                        <li class="menu-item {{ request()->routeIs('promo-codes.*') ? 'active' : '' }}">
+                            <a href="{{ route('promo-codes.index') }}" class="menu-link">
+                                <div>Kode Promo</div>
+                            </a>
+                        </li>
+                    @endcan
                 </ul>
             </li>
         @endif
@@ -256,15 +271,17 @@
 
         @can('registration-payment.view')
             <li class="menu-header small text-uppercase">
-                <span class="menu-header-text">Keuangan</span>
+                <span class="menu-header-text">Transaksi Keuangan</span>
             </li>
+
             <li class="menu-item {{ request()->routeIs('registration-payments.*') ? 'active' : '' }}">
                 <a href="{{ route('registration-payments.index') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-wallet"></i>
-                    <div>Verifikasi Pembayaran</div>
+                    <div>Verifikasi Pembayaran Registrasi</div>
                 </a>
             </li>
-            <li class="menu-item {{ request()->routeIs('student-fee-payments.admin', 'student-fee-payments.proof', 'student-fee-payments.approve', 'student-fee-payments.reject') ? 'active' : '' }}">
+
+            <li class="menu-item {{ request()->routeIs('student-fee-payments.admin', 'student-fee-payments.admin.data', 'student-fee-payments.proof', 'student-fee-payments.approve', 'student-fee-payments.reject') ? 'active' : '' }}">
                 <a href="{{ route('student-fee-payments.admin') }}" class="menu-link">
                     <i class="menu-icon tf-icons bx bx-credit-card"></i>
                     <div>Verifikasi Pembayaran Bimbel</div>
