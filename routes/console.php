@@ -27,4 +27,5 @@ Schedule::call(function (): void {
             }
         });
 })->dailyAt('00:10')->name('deactivate-expired-student-access')->withoutOverlapping();
-\nSchedule::command(PromoteStudentsForNewAcademicYear::class)->yearlyOn(7, 1, '00:20')->name('promote-students-for-new-academic-year')->withoutOverlapping();\n
+
+Schedule::command(PromoteStudentsForNewAcademicYear::class)->yearlyOn(7, 1, '00:20')->name('promote-students-for-new-academic-year')->withoutOverlapping();
