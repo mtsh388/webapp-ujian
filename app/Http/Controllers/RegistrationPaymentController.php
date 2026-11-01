@@ -158,7 +158,7 @@ class RegistrationPaymentController extends Controller
 
         try {
             $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
-            $notice = new StudentClassPromotedNotification('Pembayaran registrasi disetujui', 'Pembayaran registrasi QSEE telah disetujui. Silakan lanjutkan proses aktivasi dan pembayaran bimbel.');
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi disetujui', 'Pembayaran registrasi QSEE telah disetujui. Silakan lanjutkan proses aktivasi dan pembayaran bimbel.', true);
             collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
@@ -220,7 +220,7 @@ class RegistrationPaymentController extends Controller
 
         try {
             $payment = $registrationPayment->fresh(['user', 'student.parents.user']);
-            $notice = new StudentClassPromotedNotification('Pembayaran registrasi ditolak', 'Pembayaran registrasi ditolak. Alasan: ' . $validated['rejection_reason']);
+            $notice = new StudentClassPromotedNotification('Pembayaran registrasi ditolak', 'Pembayaran registrasi ditolak. Alasan: ' . $validated['rejection_reason'], true);
             collect([$payment?->user])->merge($payment?->student?->parents?->pluck('user') ?? collect())->filter()->unique('id')->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
