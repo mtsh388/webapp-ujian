@@ -10,7 +10,6 @@ use App\Models\ExamQuestionOption;
 use App\Models\ParentModel;
 use App\Models\QuestionBank;
 use App\Models\QuestionOption;
-use App\Models\RegistrationFee;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
