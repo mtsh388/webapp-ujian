@@ -96,7 +96,7 @@ class StudentFeePaymentController extends Controller
                 'Tagihan bimbel baru',
                 'Tagihan bimbel untuk ' . $student->full_name . ' berhasil dibuat dan menunggu pembayaran.'
             );
-            User::role(['Admin', 'Keuangan'])->where('is_active', true)->get()->each(fn (User $recipient) => $recipient->notify($notice));
+            User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->get()->each(fn (User $recipient) => $recipient->notify($notice));
             $student->loadMissing('user');
             $student->user?->notify($notice);
         } catch (Throwable $exception) {
