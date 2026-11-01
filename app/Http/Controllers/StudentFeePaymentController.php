@@ -6,6 +6,8 @@ use App\Models\RegistrationPayment;
 use App\Models\Student;
 use App\Models\StudentFeePayment;
 use App\Models\StudentFeeTransaction;
+use App\Models\User;
+use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -80,14 +82,26 @@ class StudentFeePaymentController extends Controller
             'Siswa masih memiliki tagihan bimbel yang belum lunas.'
         );
 
-        DB::transaction(function () use ($billingService, $student, $validated) {
-            $billingService->generateForStudent(
+        $transaction = DB::transaction(function () use ($billingService, $student, $validated) {
+            return $billingService->generateForStudent(
                 $student,
                 $validated['package_type'],
                 (int) $validated['installment_count'],
                 $validated['promo_code'] ?? null
             );
         }, 3);
+
+        try {
+            $notice = new StudentClassPromotedNotification(
+                'Tagihan bimbel baru',
+                'Tagihan bimbel untuk ' . $student->full_name . ' berhasil dibuat dan menunggu pembayaran.'
+            );
+            User::role(['Admin', 'Keuangan'])->where('is_active', true)->get()->each(fn (User $recipient) => $recipient->notify($notice));
+            $student->loadMissing('user');
+            $student->user?->notify($notice);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return redirect()->route('student-fee-payments.index')->with('success', 'Tagihan bimbel berhasil dibuat terpisah dari registrasi.');
     }
