@@ -48,6 +48,40 @@
             {{--                    </li>--}}
             {{--                </ul>--}}
             {{--            </li>--}}
+            @php
+                $unreadNotifications = auth()->user()->unreadNotifications()->latest()->take(5)->get();
+                $unreadNotificationCount = auth()->user()->unreadNotifications()->count();
+            @endphp
+            <li class="nav-item dropdown me-2">
+                <a class="nav-link dropdown-toggle hide-arrow position-relative" href="{{ route('notifications.index') }}" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifikasi">
+                    <i class="icon-base bx bx-bell icon-md"></i>
+                    @if ($unreadNotificationCount > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+                        </span>
+                    @endif
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end p-0" style="width: min(22rem, calc(100vw - 2rem));">
+                    <li class="px-3 py-2 d-flex align-items-center justify-content-between border-bottom">
+                        <span class="fw-semibold">Notifikasi</span>
+                        <a href="{{ route('notifications.index') }}" class="small">Lihat semua</a>
+                    </li>
+                    @forelse ($unreadNotifications as $notification)
+                        <li>
+                            <a class="dropdown-item py-3 text-wrap border-bottom" href="{{ route('notifications.index') }}">
+                                <span class="d-block fw-semibold">{{ data_get($notification->data, 'title', 'Notifikasi QSEE') }}</span>
+                                <span class="d-block small text-body-secondary mt-1">{{ \Illuminate\Support\Str::limit(data_get($notification->data, 'message', ''), 90) }}</span>
+                                <span class="d-block small text-body-tertiary mt-1">{{ $notification->created_at->diffForHumans() }}</span>
+                            </a>
+                        </li>
+                    @empty
+                        <li class="px-3 py-4 text-center small text-body-secondary">Tidak ada notifikasi baru.</li>
+                    @endforelse
+                    <li class="p-2 text-center border-top">
+                        <a href="{{ route('notifications.index') }}" class="small">Buka pusat notifikasi</a>
+                    </li>
+                </ul>
+            </li>
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a
