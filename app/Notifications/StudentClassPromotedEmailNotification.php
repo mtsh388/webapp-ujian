@@ -15,7 +15,7 @@ class StudentClassPromotedEmailNotification extends Notification implements Shou
         public string $title,
         public string $message,
     ) {
-        $this->afterCommit();
+        $this->onConnection('database')->afterCommit();
     }
 
     public function via(object $notifiable): array
