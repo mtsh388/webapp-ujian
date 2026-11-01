@@ -651,15 +651,23 @@ class ExamAttemptService
         $examTitle = $attempt->exam?->title ?: 'Ujian';
 
         if ($emails !== []) {
-            $notice = new StudentClassPromotedNotification(
-                'Hasil ujian tersedia',
-                'Hasil ujian ' . $examTitle . ' untuk ' . $studentName . ' telah tersedia. Nilai: ' . number_format((float) $attempt->score, 2, ',', '.') . '.',
-                true
-            );
-
             try {
-                $attempt->student?->user?->notify($notice);
-                $attempt->student?->parents?->each(fn ($parent) => $parent->user?->notify($notice));
+                $studentUser = $attempt->student?->user;
+                $studentUser?->notify(new StudentClassPromotedNotification(
+                    'Hasil ujian tersedia',
+                    'Hasil ujian ' . $examTitle . ' untuk ' . $studentName . ' telah tersedia. Nilai: ' . number_format((float) $attempt->score, 2, ',', '.') . '.',
+                    true,
+                    route('results.my.show', ['attempt' => $attempt->id], absolute: false)
+                ));
+
+                $attempt->student?->parents?->each(function ($parent) use ($attempt, $examTitle, $studentName): void {
+                    $parent->user?->notify(new StudentClassPromotedNotification(
+                        'Hasil ujian tersedia',
+                        'Hasil ujian ' . $examTitle . ' untuk ' . $studentName . ' telah tersedia.',
+                        true,
+                        route('results.children.show', ['attempt' => $attempt->id], absolute: false)
+                    ));
+                });
             } catch (Throwable $exception) {
                 report($exception);
             }
@@ -677,9 +685,14 @@ class ExamAttemptService
             $emailBody = "Yth. Siswa dan Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE";
             foreach ($emails as $email) {
                 $recipient = \App\Models\User::query()->where('email', $email)->first();
+                $resultUrl = $recipient?->hasRole('Orang Tua')
+                    ? route('results.children.show', ['attempt' => $attempt->id], absolute: false)
+                    : route('results.my.show', ['attempt' => $attempt->id], absolute: false);
+
                 $recipient?->notify(new StudentClassPromotedEmailNotification(
                     "QSEE - Hasil Ujian {$studentName}: {$examTitle}",
-                    $emailBody
+                    $emailBody,
+                    $resultUrl
                 ));
             }
 
