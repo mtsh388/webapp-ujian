@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
 use App\Notifications\StudentClassPromotedNotification;
+use App\Notifications\StudentClassPromotedEmailNotification;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
@@ -233,8 +234,12 @@ class AuthController extends Controller
 
             $registrationPayment = $registrationResult['payment'];
 
-            $notice = new StudentClassPromotedNotification('Registrasi siswa berbayar baru', 'Registrasi berbayar ' . $registrationResult['user']->name . ' berhasil dibuat dan menunggu pembayaran.');
-            User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->each(fn (User $recipient) => $recipient->notify($notice));
+            $noticeTitle = 'Registrasi siswa berbayar baru';
+            $noticeMessage = 'Registrasi berbayar ' . $registrationResult['user']->name . ' berhasil dibuat dan menunggu pembayaran.';
+            User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->each(function (User $recipient) use ($noticeTitle, $noticeMessage): void {
+                $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, true));
+                $recipient->notify(new StudentClassPromotedEmailNotification($noticeTitle, $noticeMessage));
+            });
 
             return redirect()->to(\Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'register.payment.show',
@@ -257,8 +262,12 @@ class AuthController extends Controller
 
         $user->assignRole($this->studentRole());
 
-        $notice = new StudentClassPromotedNotification('Registrasi siswa trial baru', 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.');
-        User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))->each(fn (User $recipient) => $recipient->notify($notice));
+        $noticeTitle = 'Registrasi siswa trial baru';
+        $noticeMessage = 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.';
+        User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))->each(function (User $recipient) use ($noticeTitle, $noticeMessage): void {
+            $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, true));
+            $recipient->notify(new StudentClassPromotedEmailNotification($noticeTitle, $noticeMessage));
+        });
 
         return redirect()
             ->route('login')
