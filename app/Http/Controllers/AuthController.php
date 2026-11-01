@@ -237,7 +237,7 @@ class AuthController extends Controller
             $noticeTitle = 'Registrasi siswa berbayar baru';
             $noticeMessage = 'Registrasi berbayar ' . $registrationResult['user']->name . ' berhasil dibuat dan menunggu pembayaran.';
             User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->each(function (User $recipient) use ($noticeTitle, $noticeMessage): void {
-                $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, true));
+                $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, true, route('registration-payments.index', absolute: false)));
                 $recipient->notify(new StudentClassPromotedEmailNotification($noticeTitle, $noticeMessage));
             });
 
@@ -265,7 +265,7 @@ class AuthController extends Controller
         $noticeTitle = 'Registrasi siswa trial baru';
         $noticeMessage = 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.';
         User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))->each(function (User $recipient) use ($noticeTitle, $noticeMessage): void {
-            $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage));
+            $recipient->notify(new StudentClassPromotedNotification($noticeTitle, $noticeMessage, false, route('students.index', absolute: false)));
         });
 
         return redirect()
