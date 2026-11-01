@@ -15,7 +15,7 @@
             @if ($eligibleStudents->isNotEmpty())
                 <div class="border rounded p-3 mb-4">
                     <h5 class="mb-2">Buat Tagihan Bimbel</h5>
-                    <p class="text-muted">Tagihan ini terpisah dari Biaya Pendaftaran. Pilih periode belajar dan jumlah cicilan; tarif dihitung dari Master Data Biaya.</p>
+                    <p class="text-muted">Tagihan ini terpisah dari Biaya Pendaftaran. Paket 1 semester dikenakan 60% dari tarif normal 1 tahun. Cicilan dibayarkan setiap bulan.</p>
                     <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
                         @csrf
                         <div class="row g-3">
@@ -28,10 +28,11 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="duration_years" class="form-label">Periode Belajar</label>
-                                <select class="form-select" name="duration_years" id="duration_years" required>
-                                    <option value="1" @selected(old('duration_years', '1') === '1')>1 tahun</option>
-                                    <option value="2" @selected(old('duration_years') === '2')>2 tahun</option>
+                                <label for="package_type" class="form-label">Paket Belajar</label>
+                                <select class="form-select" name="package_type" id="package_type" required>
+                                    <option value="semester" @selected(old('package_type', 'semester') === 'semester')>1 semester (6 bulan) — 60% harga normal</option>
+                                    <option value="yearly" @selected(old('package_type') === 'yearly')>1 tahun (12 bulan) — harga normal</option>
+                                    <option value="two_years" @selected(old('package_type') === 'two_years')>2 tahun (24 bulan) — harga normal</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -55,7 +56,7 @@
                 <div class="border rounded p-3 mb-4">
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                         <div>
-                            <h5 class="mb-1">{{ $transaction->student?->full_name ?? 'Siswa' }} — {{ $transaction->duration_years }} tahun</h5>
+                            <h5 class="mb-1">{{ $transaction->student?->full_name ?? 'Siswa' }} — {{ $transaction->package_type === 'semester' ? '1 semester' : ($transaction->duration_months === 24 ? '2 tahun' : '1 tahun') }}</h5>
                             <div class="text-muted small">{{ $transaction->student?->classRoom?->name ?? '-' }} · Periode {{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div>
                         </div>
                         <div class="text-md-end">
@@ -78,11 +79,12 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle mb-0">
-                            <thead><tr><th>Cicilan</th><th>Nominal</th><th>Status</th><th>Bukti / Aksi</th></tr></thead>
+                            <thead><tr><th>Cicilan</th><th>Jatuh Tempo</th><th>Nominal</th><th>Status</th><th>Bukti / Aksi</th></tr></thead>
                             <tbody>
                                 @foreach ($transaction->installments as $installment)
                                     <tr>
                                         <td>{{ $installment->installment_number }} dari {{ $transaction->installment_count }}</td>
+                                        <td class="text-nowrap">{{ $installment->due_date?->format('d M Y') ?? '-' }}</td>
                                         <td class="text-nowrap">Rp {{ number_format($installment->amount, 0, ',', '.') }}</td>
                                         <td>
                                             @php($labels = ['awaiting_payment' => 'Menunggu Pembayaran', 'pending_verification' => 'Menunggu Verifikasi', 'verified' => 'Disetujui', 'rejected' => 'Ditolak'])
