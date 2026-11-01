@@ -10,6 +10,8 @@ class StudentFeeTransaction extends Model
         'student_id',
         'registration_payment_id',
         'duration_years',
+        'duration_months',
+        'package_type',
         'installment_count',
         'amount',
         'amount_paid',
@@ -24,6 +26,7 @@ class StudentFeeTransaction extends Model
     {
         return [
             'duration_years' => 'integer',
+            'duration_months' => 'integer',
             'installment_count' => 'integer',
             'amount' => 'integer',
             'amount_paid' => 'integer',
