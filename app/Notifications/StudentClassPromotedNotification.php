@@ -14,6 +14,8 @@ class StudentClassPromotedNotification extends Notification
         public string $title,
         public string $message,
         public bool $databaseOnly = false,
+        public ?string $url = null,
+        public string $actionLabel = 'Lihat detail',
     ) {}
 
     public function via(object $notifiable): array
@@ -30,6 +32,8 @@ class StudentClassPromotedNotification extends Notification
         return [
             'title' => $this->title,
             'message' => $this->message,
+            'url' => $this->url,
+            'action_label' => $this->actionLabel,
         ];
     }
 }
