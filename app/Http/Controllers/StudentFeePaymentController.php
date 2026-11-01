@@ -9,6 +9,7 @@ use App\Models\StudentFeeTransaction;
 use App\Models\User;
 use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -128,12 +129,75 @@ class StudentFeePaymentController extends Controller
 
     public function adminIndex(): View
     {
-        return view('student-fee-payments.admin-index', [
-            'transactions' => StudentFeeTransaction::query()
-                ->with(['student.classRoom', 'installments.verifier'])
-                ->latest()
-                ->paginate(20),
-        ]);
+        return view('student-fee-payments.admin-index');
+    }
+
+    public function adminData(Request $request): JsonResponse
+    {
+        $baseQuery = StudentFeePayment::query()
+            ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
+            ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
+            ->leftJoin('class_rooms', 'class_rooms.id', '=', 'students.class_id');
+
+        $recordsTotal = (clone $baseQuery)->count('student_fee_payments.id');
+        $query = StudentFeePayment::query()
+            ->select('student_fee_payments.*')
+            ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
+            ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
+            ->leftJoin('class_rooms', 'class_rooms.id', '=', 'students.class_id')
+            ->with(['transaction.student.classRoom', 'verifier']);
+
+        $search = trim((string) $request->input('search.value', ''));
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('students.full_name', 'like', "%{$search}%")
+                    ->orWhere('class_rooms.name', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.package_type', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.period_starts_at', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.period_ends_at', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.amount', 'like', "%{$search}%")
+                    ->orWhere('student_fee_payments.status', 'like', "%{$search}%")
+                    ->orWhere('student_fee_payments.rejection_reason', 'like', "%{$search}%")
+                    ->orWhere('student_fee_payments.installment_number', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count('student_fee_payments.id');
+        $columns = [0 => 'students.full_name', 1 => 'student_fee_transactions.package_type', 2 => 'student_fee_transactions.amount', 3 => 'student_fee_payments.installment_number', 4 => 'student_fee_payments.status'];
+        $orderColumn = $columns[(int) $request->input('order.0.column', 0)] ?? 'student_fee_payments.created_at';
+        $direction = $request->input('order.0.dir', 'desc');
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length > 0 ? min($length, 100) : 10;
+
+        $payments = $query->orderBy($orderColumn, $direction)->skip($start)->take($length)->get();
+        $data = $payments->map(function (StudentFeePayment $payment) {
+            $transaction = $payment->transaction;
+            $student = $transaction?->student;
+            $studentHtml = '<div class="fw-semibold">' . e($student?->full_name ?? '-') . '</div><div class="small text-muted">' . e($student?->classRoom?->name ?? '-') . '</div>';
+            $packageName = $transaction?->package_type === 'semester' ? '1 Semester' : ($transaction?->duration_months === 24 ? '2 Tahun' : '1 Tahun');
+            $period = ($transaction?->period_starts_at?->format('d M Y') ?? '-') . '–' . ($transaction?->period_ends_at?->format('d M Y') ?? '-');
+            $packageHtml = '<div class="fw-semibold">' . e($packageName) . '</div><div class="small text-muted">' . e($period) . '</div>';
+            $amountHtml = '<div>Tagihan: Rp ' . number_format((int) ($transaction?->amount ?? 0), 0, ',', '.') . '</div><div class="small text-muted">Cicilan: Rp ' . number_format((int) $payment->amount, 0, ',', '.') . '</div>';
+            $installmentHtml = $payment->installment_number . ' / ' . ($transaction?->installment_count ?? '-') . '<div class="small text-muted">Jatuh tempo: ' . e($payment->due_date?->format('d M Y') ?? '-') . '</div>';
+            $statusClass = $payment->status === 'verified' ? 'success' : ($payment->status === 'pending_verification' ? 'warning' : ($payment->status === 'rejected' ? 'danger' : 'secondary'));
+            $installmentHtml .= '<div><span class="badge bg-label-' . $statusClass . '">' . e(str_replace('_', ' ', ucfirst($payment->status))) . '</span></div>';
+            if ($payment->rejection_reason) {
+                $installmentHtml .= '<div class="small text-danger">' . e($payment->rejection_reason) . '</div>';
+            }
+            $proof = $payment->proof_path ? '<a class="btn btn-sm btn-outline-primary" href="' . e(route('student-fee-payments.proof', $payment)) . '">Lihat Bukti</a>' : '<span class="text-muted">Belum ada</span>';
+            if ($payment->status === 'pending_verification') {
+                $actions = '<div class="d-flex flex-column gap-2"><form method="POST" action="' . e(route('student-fee-payments.approve', $payment)) . '">' . csrf_field() . '<button type="submit" class="btn btn-sm btn-success">Setujui</button></form>'
+                    . '<form method="POST" action="' . e(route('student-fee-payments.reject', $payment)) . '">' . csrf_field() . '<input name="rejection_reason" class="form-control form-control-sm mb-1" placeholder="Alasan penolakan" maxlength="1000" required><button type="submit" class="btn btn-sm btn-outline-danger">Tolak</button></form></div>';
+            } else {
+                $actions = '<span class="text-muted small">' . e($payment->verifier?->name ?? '-') . '</span>';
+            }
+
+            return ['student' => $studentHtml, 'package' => $packageHtml, 'amount' => $amountHtml, 'installment' => $installmentHtml, 'proof' => $proof, 'actions' => $actions];
+        });
+
+        return response()->json(['draw' => (int) $request->input('draw'), 'recordsTotal' => $recordsTotal, 'recordsFiltered' => $recordsFiltered, 'data' => $data]);
     }
 
     public function submitProof(Request $request, StudentFeePayment $studentFeePayment): RedirectResponse
