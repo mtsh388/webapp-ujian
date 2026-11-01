@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ClassRoom;
 use App\Models\Student;
+use App\Models\User;
 use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +60,14 @@ class PromoteStudentsForNewAcademicYear extends Command
 
                     DB::transaction(function () use ($student, $current, $nextLevel, $nextGrade, $date, &$promoted, &$graduated): void {
                         if ($nextLevel === null) {
+                            $student->classHistories()->create([
+                                'class_id' => $current->id,
+                                'education_level' => $current->education_level,
+                                'grade_level' => $current->grade_level,
+                                'started_at' => $student->created_at?->toDateString() ?? $date->toDateString(),
+                                'ended_at' => $date->copy()->subDay()->toDateString(),
+                                'change_reason' => 'graduation',
+                            ]);
                             $student->forceFill(['graduated_at' => $date->toDateString()])->save();
                             $graduated++;
 
@@ -71,6 +80,7 @@ class PromoteStudentsForNewAcademicYear extends Command
                             $student->parents()->with('user')->get()->each(
                                 fn ($parent) => $parent->user?->notify($notification)
                             );
+                            User::role(['Admin', 'Tentor'])->each(fn (User $user) => $user->notify($notification));
 
                             return;
                         }
@@ -111,6 +121,7 @@ class PromoteStudentsForNewAcademicYear extends Command
                         $student->parents()->with('user')->get()->each(
                             fn ($parent) => $parent->user?->notify($notification)
                         );
+                        User::role(['Admin', 'Tentor'])->each(fn (User $user) => $user->notify($notification));
                     });
                 }
             });
