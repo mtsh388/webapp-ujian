@@ -77,7 +77,20 @@ class StudentFeeBillingService
         $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
             ? $student->access_expires_at->copy()->startOfDay()
             : null;
-        $start = $activeUntil ? $activeUntil->addDay() : $today->copy();
+
+        if ($activeUntil) {
+            if ($packageType === 'semester') {
+                $start = $activeUntil->month <= 6
+                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
+                    : $activeUntil->copy()->addYear()->startOfYear();
+            } else {
+                $start = $activeUntil->month <= 6
+                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
+                    : $activeUntil->copy()->addYear()->startOfYear();
+            }
+        } else {
+            $start = $today->copy();
+        }
 
         if ($packageType === 'semester') {
             $end = $start->month <= 6
