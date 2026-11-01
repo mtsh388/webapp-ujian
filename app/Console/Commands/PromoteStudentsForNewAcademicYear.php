@@ -55,12 +55,15 @@ class PromoteStudentsForNewAcademicYear extends Command
                             $student->forceFill(['graduated_at' => $date->toDateString()])->save();
                             $graduated++;
 
-                            if ($student->user) {
-                                $student->user->notify(new StudentClassPromotedNotification(
-                                    'Kelulusan',
-                                    'Selamat! Siswa telah menyelesaikan jenjang SMA kelas 12.',
-                                ));
-                            }
+                            $notification = new StudentClassPromotedNotification(
+                                'Kelulusan',
+                                'Selamat! Siswa telah menyelesaikan jenjang SMA kelas 12.',
+                            );
+
+                            $student->user?->notify($notification);
+                            $student->parents()->with('user')->get()->each(
+                                fn ($parent) => $parent->user?->notify($notification)
+                            );
 
                             return;
                         }
@@ -92,12 +95,15 @@ class PromoteStudentsForNewAcademicYear extends Command
 
                         $promoted++;
 
-                        if ($student->user) {
-                            $student->user->notify(new StudentClassPromotedNotification(
-                                'Promosi kelas',
-                                "Siswa telah dipromosikan ke {$nextClass->name}.",
-                            ));
-                        }
+                        $notification = new StudentClassPromotedNotification(
+                            'Promosi kelas',
+                            "Siswa telah dipromosikan ke {$nextClass->name}.",
+                        );
+
+                        $student->user?->notify($notification);
+                        $student->parents()->with('user')->get()->each(
+                            fn ($parent) => $parent->user?->notify($notification)
+                        );
                     });
                 }
             });
