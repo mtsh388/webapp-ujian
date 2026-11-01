@@ -52,7 +52,7 @@ class StudentFeePaymentController extends Controller
     {
         $validated = $request->validate([
             'student_id' => ['required', 'integer', 'exists:students,id'],
-            'duration_years' => ['required', 'integer', 'in:1,2'],
+            'package_type' => ['required', 'string', 'in:semester,yearly,two_years'],
             'installment_count' => ['required', 'integer', 'min:1', 'max:5'],
             'promo_code' => ['nullable', 'string', 'max:100'],
         ]);
@@ -84,7 +84,7 @@ class StudentFeePaymentController extends Controller
         DB::transaction(function () use ($billingService, $student, $validated) {
             $billingService->generateForStudent(
                 $student,
-                (int) $validated['duration_years'],
+                $validated['package_type'],
                 (int) $validated['installment_count'],
                 $validated['promo_code'] ?? null
             );
@@ -183,7 +183,7 @@ class StudentFeePaymentController extends Controller
                 'status' => $amountPaid >= $transaction->amount ? 'paid' : 'partial',
                 ...($isFirstApprovedPayment ? [
                     'period_starts_at' => now()->toDateString(),
-                    'period_ends_at' => now()->addYears((int) $transaction->duration_years)->subDay()->toDateString(),
+                    'period_ends_at' => now()->addMonths((int) $transaction->duration_months)->subDay()->toDateString(),
                 ] : []),
             ]);
 
