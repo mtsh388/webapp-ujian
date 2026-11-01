@@ -8,6 +8,7 @@ use App\Models\ExamAttempt;
 use App\Models\ExamAttemptApproval;
 use App\Models\ExamQuestion;
 use App\Models\Student;
+use App\Notifications\StudentClassPromotedNotification;
 use App\Repositories\ExamAttemptRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -646,12 +647,27 @@ class ExamAttemptService
             ->values()
             ->all() ?? [];
 
+        $studentName = $attempt->student?->full_name ?: 'Siswa';
+        $examTitle = $attempt->exam?->title ?: 'Ujian';
+
+        if ($emails !== []) {
+            $notice = new StudentClassPromotedNotification(
+                'Hasil ujian tersedia',
+                'Hasil ujian ' . $examTitle . ' untuk ' . $studentName . ' telah tersedia. Nilai: ' . number_format((float) $attempt->score, 2, ',', '.') . '.',
+                true
+            );
+
+            try {
+                $attempt->student?->user?->notify($notice);
+                $attempt->student?->parents?->each(fn ($parent) => $parent->user?->notify($notice));
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
+
         if ($emails === []) {
             return;
         }
-
-        $studentName = $attempt->student?->full_name ?: 'Siswa';
-        $examTitle = $attempt->exam?->title ?: 'Ujian';
         $score = number_format((float) $attempt->score, 2, ',', '.');
         $resultStatus = $attempt->passed === null
             ? 'Nilai kelulusan belum ditentukan.'
