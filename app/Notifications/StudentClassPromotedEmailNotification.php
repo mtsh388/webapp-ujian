@@ -14,7 +14,8 @@ class StudentClassPromotedEmailNotification extends Notification implements Shou
     public function __construct(
         public string $title,
         public string $message,
-    ) {
+        public ?string $url = null,
+    ) {}
         $this->onConnection('database')->afterCommit();
     }
 
@@ -29,6 +30,7 @@ class StudentClassPromotedEmailNotification extends Notification implements Shou
             ->subject($this->title)
             ->greeting('Halo ' . ($notifiable->name ?? ''))
             ->line($this->message)
-            ->line('Silakan masuk ke aplikasi QSEE untuk melihat informasi lebih lanjut.');
+            ->when($this->url, fn (MailMessage $mail) => $mail->action('Buka QSEE', $this->url))
+            ->line('Salam, QSEE.');
     }
 }
