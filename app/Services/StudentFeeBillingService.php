@@ -86,7 +86,7 @@ class StudentFeeBillingService
             } else {
                 $start = $activeUntil->month <= 6
                     ? $activeUntil->copy()->startOfYear()->addMonths(6)
-                    : $activeUntil->copy()->addYear()->startOfYear();
+                    : $activeUntil->copy()->addYear()->startOfYear()->addMonths(6);
             }
         } else {
             $start = $today->copy();
