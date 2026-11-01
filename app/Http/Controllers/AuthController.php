@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
 use App\Notifications\StudentClassPromotedNotification;
+use App\Notifications\StudentClassPromotedEmailNotification;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
