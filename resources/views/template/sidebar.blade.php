@@ -26,6 +26,18 @@
             </li>
         @endcan
 
+        @if(auth()->user()->hasRole('Siswa'))
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Data Siswa</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('students.profile.*') ? 'active' : '' }}">
+                <a href="{{ route('students.profile.edit') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div>Data Siswa</div>
+                </a>
+            </li>
+        @endif
+
         @if(auth()->user()->hasAnyRole(['Siswa', 'Orang Tua']))
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Keuangan</span>
@@ -50,18 +62,6 @@
                     </a>
                 </li>
             @endif
-        @endif
-
-        @if(auth()->user()->hasRole('Siswa'))
-            <li class="menu-header small text-uppercase">
-                <span class="menu-header-text">Data Siswa</span>
-            </li>
-            <li class="menu-item {{ request()->routeIs('students.profile.*') ? 'active' : '' }}">
-                <a href="{{ route('students.profile.edit') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-user"></i>
-                    <div>Data Siswa</div>
-                </a>
-            </li>
         @endif
 
         @if(
