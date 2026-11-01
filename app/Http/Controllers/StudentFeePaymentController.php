@@ -36,6 +36,7 @@ class StudentFeePaymentController extends Controller
 
         $eligibleStudents = Student::query()
             ->with('classRoom')
+            ->when(! $user->hasRole('Orang Tua'), fn ($builder) => $builder->whereRaw('1 = 0'))
             ->whereIn('id', $studentIds)
             ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
             ->whereDoesntHave('feeTransactions', fn ($builder) => $builder->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial']))
@@ -60,9 +61,7 @@ class StudentFeePaymentController extends Controller
         $user = auth()->user();
         $student = Student::query()->with('classRoom')->findOrFail($validated['student_id']);
 
-        if ($user->hasRole('Siswa')) {
-            abort_unless($student->user_id === $user->id, 403);
-        } elseif ($user->hasRole('Orang Tua')) {
+        if ($user->hasRole('Orang Tua')) {
             $isLinked = $user->parentProfile?->students()->where('students.id', $student->id)->exists() ?? false;
             abort_unless($isLinked, 403);
         } else {
@@ -181,16 +180,13 @@ class StudentFeePaymentController extends Controller
             $transaction->update([
                 'amount_paid' => $amountPaid,
                 'status' => $amountPaid >= $transaction->amount ? 'paid' : 'partial',
-                ...($isFirstApprovedPayment ? [
-                    'period_starts_at' => now()->toDateString(),
-                    'period_ends_at' => now()->addMonths((int) $transaction->duration_months)->subDay()->toDateString(),
-                ] : []),
+
             ]);
 
             if ($isFirstApprovedPayment) {
                 $student->forceFill([
                     'is_active' => true,
-                    'access_expires_at' => $transaction->fresh()->period_ends_at,
+                    'access_expires_at' => $transaction->period_ends_at,
                 ])->save();
 
                 if ($student->user) {
