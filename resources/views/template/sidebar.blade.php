@@ -17,6 +17,15 @@
 
     <ul class="menu-inner py-1">
 
+        @can('dashboard.view')
+            <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-home"></i>
+                    <div>Dashboard</div>
+                </a>
+            </li>
+        @endcan
+
         @if(auth()->user()->hasAnyRole(['Siswa', 'Orang Tua']))
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Keuangan</span>
@@ -54,15 +63,6 @@
                 </a>
             </li>
         @endif
-
-        @can('dashboard.view')
-            <li class="menu-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                <a href="{{ route('dashboard') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-home"></i>
-                    <div>Dashboard</div>
-                </a>
-            </li>
-        @endcan
 
         @if(
             auth()->user()->can('class.view') ||
@@ -146,24 +146,6 @@
                 </ul>
             </li>
         @endif
-
-        @can('registration-payment.view')
-            <li class="menu-header small text-uppercase">
-                <span class="menu-header-text">Keuangan</span>
-            </li>
-            <li class="menu-item {{ request()->routeIs('registration-payments.*') ? 'active' : '' }}">
-                <a href="{{ route('registration-payments.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-wallet"></i>
-                    <div>Verifikasi Pembayaran</div>
-                </a>
-            </li>
-            <li class="menu-item {{ request()->routeIs('student-fee-payments.admin', 'student-fee-payments.proof', 'student-fee-payments.approve', 'student-fee-payments.reject') ? 'active' : '' }}">
-                <a href="{{ route('student-fee-payments.admin') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-credit-card"></i>
-                    <div>Verifikasi Pembayaran Bimbel</div>
-                </a>
-            </li>
-        @endcan
 
         @if(
             auth()->user()->can('question.view') ||
@@ -271,6 +253,24 @@
             </li>
         @endif
 
+
+        @can('registration-payment.view')
+            <li class="menu-header small text-uppercase">
+                <span class="menu-header-text">Keuangan</span>
+            </li>
+            <li class="menu-item {{ request()->routeIs('registration-payments.*') ? 'active' : '' }}">
+                <a href="{{ route('registration-payments.index') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-wallet"></i>
+                    <div>Verifikasi Pembayaran</div>
+                </a>
+            </li>
+            <li class="menu-item {{ request()->routeIs('student-fee-payments.admin', 'student-fee-payments.proof', 'student-fee-payments.approve', 'student-fee-payments.reject') ? 'active' : '' }}">
+                <a href="{{ route('student-fee-payments.admin') }}" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-credit-card"></i>
+                    <div>Verifikasi Pembayaran Bimbel</div>
+                </a>
+            </li>
+        @endcan
 
         @can('exam.violation.view')
             <li class="menu-header small text-uppercase">
