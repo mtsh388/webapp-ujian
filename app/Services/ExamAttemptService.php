@@ -11,7 +11,7 @@ use App\Models\Student;
 use App\Notifications\StudentClassPromotedNotification;
 use App\Repositories\ExamAttemptRepositoryInterface;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
+use App\Notifications\StudentClassPromotedEmailNotification;
 use Throwable;
 use RuntimeException;
 
@@ -674,12 +674,14 @@ class ExamAttemptService
             : ($attempt->passed ? 'Status: Lulus.' : 'Status: Belum lulus.');
 
         try {
-            Mail::raw(
-                "Yth. Siswa dan Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE",
-                function ($message) use ($emails, $studentName, $examTitle) {
-                    $message->to($emails)->subject("QSEE - Hasil Ujian {$studentName}: {$examTitle}");
-                }
-            );
+            $emailBody = "Yth. Siswa dan Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE";
+            foreach ($emails as $email) {
+                $recipient = \App\Models\User::query()->where('email', $email)->first();
+                $recipient?->notify(new StudentClassPromotedEmailNotification(
+                    "QSEE - Hasil Ujian {$studentName}: {$examTitle}",
+                    $emailBody
+                ));
+            }
 
             $attempt->forceFill(['parent_result_sent_at' => now()])->save();
         } catch (Throwable $exception) {
