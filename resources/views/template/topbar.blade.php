@@ -68,7 +68,7 @@
                     </li>
                     @forelse ($unreadNotifications as $notification)
                         <li>
-                            <a class="dropdown-item py-3 text-wrap border-bottom" href="{{ route('notifications.index') }}">
+                            <a class="dropdown-item py-3 text-wrap border-bottom" href="{{ filled(data_get($notification->data, 'url')) ? route('notifications.open', $notification->id) : route('notifications.index') }}">
                                 <span class="d-block fw-semibold">{{ data_get($notification->data, 'title', 'Notifikasi QSEE') }}</span>
                                 <span class="d-block small text-body-secondary mt-1">{{ \Illuminate\Support\Str::limit(data_get($notification->data, 'message', ''), 90) }}</span>
                                 <span class="d-block small text-body-tertiary mt-1">{{ $notification->created_at->diffForHumans() }}</span>
