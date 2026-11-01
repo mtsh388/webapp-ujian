@@ -640,12 +640,12 @@ class ExamAttemptService
 
         $attempt->loadMissing(['exam', 'student.parents.user']);
 
-        $emails = $attempt->student?->parents
-            ?->pluck('user.email')
+        $emails = collect([$attempt->student?->user?->email])
+            ->merge($attempt->student?->parents?->pluck('user.email') ?? collect())
             ->filter()
             ->unique()
             ->values()
-            ->all() ?? [];
+            ->all();
 
         $studentName = $attempt->student?->full_name ?: 'Siswa';
         $examTitle = $attempt->exam?->title ?: 'Ujian';
@@ -675,7 +675,7 @@ class ExamAttemptService
 
         try {
             Mail::raw(
-                "Yth. Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE",
+                "Yth. Siswa dan Orang Tua/Wali dari {$studentName},\n\nHasil ujian siswa telah tersedia.\nUjian: {$examTitle}\nNama Siswa: {$studentName}\nPercobaan: {$attempt->attempt_number}\nNilai: {$score}\n{$resultStatus}\nWaktu pengumpulan: " . ($attempt->submitted_at?->format('d-m-Y H:i') ?? '-') . "\n\nSalam,\nQSEE",
                 function ($message) use ($emails, $studentName, $examTitle) {
                     $message->to($emails)->subject("QSEE - Hasil Ujian {$studentName}: {$examTitle}");
                 }
