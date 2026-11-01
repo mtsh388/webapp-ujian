@@ -86,7 +86,7 @@ class RegistrationPaymentController extends Controller
                 'Pembayaran registrasi menunggu verifikasi',
                 'Bukti pembayaran registrasi ' . ($registrationPayment->user?->name ?? 'siswa') . ' telah diunggah dan menunggu verifikasi.'
             );
-            User::role(['Admin', 'Keuangan'])->where('is_active', true)->get()->each(fn (User $recipient) => $recipient->notify($notice));
+            User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->get()->each(fn (User $recipient) => $recipient->notify($notice));
         } catch (Throwable $exception) {
             report($exception);
         }
