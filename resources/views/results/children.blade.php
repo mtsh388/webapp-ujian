@@ -24,7 +24,7 @@
                             <div>
                                 <span class="text-muted">Jumlah Anak</span>
                                 <h3 class="mb-0 mt-2">
-                                    {{ $attempts->pluck('student.id')->unique()->count() }}
+                                    {{ $totalChildren }}
                                 </h3>
                             </div>
                             <span class="avatar-initial rounded bg-label-primary p-3">
