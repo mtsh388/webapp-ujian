@@ -234,7 +234,7 @@ class AuthController extends Controller
             $registrationPayment = $registrationResult['payment'];
 
             $notice = new StudentClassPromotedNotification('Registrasi siswa berbayar baru', 'Registrasi berbayar ' . $registrationResult['user']->name . ' berhasil dibuat dan menunggu pembayaran.');
-            User::role(['Admin', 'Keuangan'])->where('is_active', true)->each(fn (User $recipient) => $recipient->notify($notice));
+            User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->whereIn('name', ['Admin', 'Keuangan']))->each(fn (User $recipient) => $recipient->notify($notice));
 
             return redirect()->to(\Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'register.payment.show',
@@ -258,7 +258,7 @@ class AuthController extends Controller
         $user->assignRole($this->studentRole());
 
         $notice = new StudentClassPromotedNotification('Registrasi siswa trial baru', 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.');
-        User::role('Admin')->where('is_active', true)->each(fn (User $recipient) => $recipient->notify($notice));
+        User::query()->where('is_active', true)->whereHas('roles', fn ($query) => $query->where('name', 'Admin'))->each(fn (User $recipient) => $recipient->notify($notice));
 
         return redirect()
             ->route('login')
