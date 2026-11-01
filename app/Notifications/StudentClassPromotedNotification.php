@@ -1,10 +1,10 @@
 <?php
 
-namespace App\\Notifications;
+namespace App\Notifications;
 
-use Illuminate\\Bus\\Queueable;
-use Illuminate\\Notifications\\Messages\\MailMessage;
-use Illuminate\\Notifications\\Notification;
+use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class StudentClassPromotedNotification extends Notification
 {
