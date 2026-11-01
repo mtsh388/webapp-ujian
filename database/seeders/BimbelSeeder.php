@@ -21,11 +21,13 @@ class BimbelSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@bimbel.test',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@bimbel.test'],
+            [
+                'name' => 'Administrator',
+                'password' => Hash::make('password'),
+            ]
+        );
         $admin->forceFill(['must_change_password' => false])->save();
 
         $tentor = User::create([
@@ -100,7 +102,7 @@ class BimbelSeeder extends Seeder
                     'amount' => $feeData['amount'],
                     'is_active' => true,
                     'discount_enabled' => true,
-                    'max_installments' => 1,
+                    'max_installments' => 5,
                 ]
             );
         }
