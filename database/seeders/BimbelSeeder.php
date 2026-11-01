@@ -26,6 +26,7 @@ class BimbelSeeder extends Seeder
             'email' => 'admin@bimbel.test',
             'password' => Hash::make('password'),
         ]);
+        $admin->forceFill(['must_change_password' => false])->save();
 
         $tentor = User::create([
             'name' => 'Tentor Matematika',
@@ -95,10 +96,11 @@ class BimbelSeeder extends Seeder
                     'fee_type_label' => $feeData['name'],
                     'name' => $feeData['name'],
                     'description' => $feeData['name'] . ' untuk jenjang SMA',
+                    'billing_period' => 'once',
                     'amount' => $feeData['amount'],
                     'is_active' => true,
-                    'discount_enabled' => false,
-                    'max_installments' => 5,
+                    'discount_enabled' => true,
+                    'max_installments' => 1,
                 ]
             );
         }
