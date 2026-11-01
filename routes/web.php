@@ -39,7 +39,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('role:Siswa|Orang Tua')
         ->name('student-fee-payments.index');
     Route::post('/pembayaran-bimbel/rencana', [StudentFeePaymentController::class, 'createPlan'])
-        ->middleware('role:Siswa|Orang Tua')
+        ->middleware('role:Orang Tua')
         ->name('student-fee-payments.plan.store');
     Route::post('/pembayaran-bimbel/{studentFeePayment}/bukti', [StudentFeePaymentController::class, 'submitProof'])
         ->middleware('role:Siswa|Orang Tua')
