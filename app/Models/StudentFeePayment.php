@@ -10,6 +10,7 @@ class StudentFeePayment extends Model
         'student_fee_transaction_id',
         'installment_number',
         'amount',
+        'due_date',
         'status',
         'proof_path',
         'rejection_reason',
@@ -22,6 +23,7 @@ class StudentFeePayment extends Model
         return [
             'installment_number' => 'integer',
             'amount' => 'integer',
+            'due_date' => 'date',
             'verified_at' => 'datetime',
         ];
     }
