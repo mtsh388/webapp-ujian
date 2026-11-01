@@ -16,6 +16,7 @@ use App\Http\Controllers\PromoCodeController;
 use App\Http\Controllers\RegistrationPaymentController;
 use App\Http\Controllers\MyRegistrationPaymentController;
 use App\Http\Controllers\StudentFeePaymentController;
+use App\Http\Controllers\NotificationController;
 use App\Models\Exam;
 use Illuminate\Support\Facades\Route;
 
@@ -31,7 +32,10 @@ Route::post('/registrasi/pembayaran/{registrationPayment}', [RegistrationPayment
     ->middleware('signed')
     ->name('register.payment.store');
 
-Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {\n    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');\n    Route::post('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');\n    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+Route::middleware(['auth', 'password.first', 'profile.completed'])->group(function () {
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifikasi/{notification}/baca', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifikasi/baca-semua', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/pembayaran-registrasi', [MyRegistrationPaymentController::class, 'index'])
         ->middleware('role:Siswa|Orang Tua')
         ->name('my-registration-payments.index');
