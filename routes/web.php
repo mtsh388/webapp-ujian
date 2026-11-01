@@ -210,6 +210,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('permission:registration-payment.view')
         ->group(function () {
             Route::get('/', [RegistrationPaymentController::class, 'index'])->name('registration-payments.index');
+            Route::get('/data', [RegistrationPaymentController::class, 'data'])->name('registration-payments.data');
             Route::get('/{registrationPayment}/bukti', [RegistrationPaymentController::class, 'proof'])->name('registration-payments.proof');
             Route::post('/{registrationPayment}/setujui', [RegistrationPaymentController::class, 'approve'])->middleware('permission:registration-payment.approve')->name('registration-payments.approve');
             Route::post('/{registrationPayment}/tolak', [RegistrationPaymentController::class, 'reject'])->middleware('permission:registration-payment.approve')->name('registration-payments.reject');
@@ -219,6 +220,7 @@ Route::middleware(['auth', 'password.first', 'profile.completed'])->group(functi
         ->middleware('permission:registration-payment.view')
         ->group(function () {
             Route::get('/', [StudentFeePaymentController::class, 'adminIndex'])->name('student-fee-payments.admin');
+            Route::get('/data', [StudentFeePaymentController::class, 'adminData'])->name('student-fee-payments.admin.data');
             Route::get('/{studentFeePayment}/bukti', [StudentFeePaymentController::class, 'proof'])->name('student-fee-payments.proof');
             Route::post('/{studentFeePayment}/setujui', [StudentFeePaymentController::class, 'approve'])->middleware('permission:registration-payment.approve')->name('student-fee-payments.approve');
             Route::post('/{studentFeePayment}/tolak', [StudentFeePaymentController::class, 'reject'])->middleware('permission:registration-payment.approve')->name('student-fee-payments.reject');
