@@ -686,8 +686,8 @@ class ExamAttemptService
             foreach ($emails as $email) {
                 $recipient = \App\Models\User::query()->where('email', $email)->first();
                 $resultUrl = $recipient?->hasRole('Orang Tua')
-                    ? route('results.children.show', ['attempt' => $attempt->id], absolute: false)
-                    : route('results.my.show', ['attempt' => $attempt->id], absolute: false);
+                    ? route('results.children.show', ['attempt' => $attempt->id])
+                    : route('results.my.show', ['attempt' => $attempt->id]);
 
                 $recipient?->notify(new StudentClassPromotedEmailNotification(
                     "QSEE - Hasil Ujian {$studentName}: {$examTitle}",
