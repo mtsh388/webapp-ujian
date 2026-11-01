@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -93,7 +94,7 @@ class AuthController extends Controller
             'phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
             'parent_full_name' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:255'],
-            'parent_email' => [Rule::requiredIf($type === 'paid'), 'nullable', 'email', 'max:255', 'different:email', 'unique:users,email'],
+            'parent_email' => [Rule::requiredIf($type === 'paid'), 'nullable', 'email', 'max:255', 'different:email'],
             'parent_phone' => [Rule::requiredIf($type === 'paid'), 'nullable', 'string', 'max:30'],
             'parent_address' => ['nullable', 'string', 'max:255'],
         ], [
@@ -161,29 +162,49 @@ class AuthController extends Controller
                         'is_active' => false,
                     ]);
 
-                    $parentUser = User::create([
-                        'name' => trim($validated['parent_full_name']),
-                        'email' => $validated['parent_email'],
-                        'password' => Str::before($validated['parent_email'], '@'),
-                        'is_active' => false,
-                    ]);
+                    $parentUser = User::query()
+                        ->where('email', $validated['parent_email'])
+                        ->lockForUpdate()
+                        ->first();
 
-                    $parentUser->forceFill([
-                        'must_change_password' => true,
-                    ])->save();
+                    if ($parentUser && ! $parentUser->hasRole('Orang Tua')) {
+                        throw ValidationException::withMessages([
+                            'parent_email' => 'Email tersebut sudah digunakan oleh akun yang bukan Orang Tua. Gunakan email akun Orang Tua yang valid.',
+                        ]);
+                    }
 
-                    $parentUser->assignRole(Role::firstOrCreate([
-                        'name' => 'Orang Tua',
-                        'guard_name' => 'web',
-                    ]));
+                    if (! $parentUser) {
+                        $parentUser = User::create([
+                            'name' => trim($validated['parent_full_name']),
+                            'email' => $validated['parent_email'],
+                            'password' => Str::before($validated['parent_email'], '@'),
+                            'is_active' => false,
+                        ]);
 
-                    $parent = ParentModel::create([
-                        'user_id' => $parentUser->id,
-                        'full_name' => trim($validated['parent_full_name']),
-                        'phone' => trim($validated['parent_phone']),
-                        'address' => $validated['parent_address'] ?? null,
-                        'is_active' => false,
-                    ]);
+                        $parentUser->forceFill([
+                            'must_change_password' => true,
+                        ])->save();
+
+                        $parentUser->assignRole(Role::firstOrCreate([
+                            'name' => 'Orang Tua',
+                            'guard_name' => 'web',
+                        ]));
+                    }
+
+                    $parent = ParentModel::query()
+                        ->where('user_id', $parentUser->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $parent) {
+                        $parent = ParentModel::create([
+                            'user_id' => $parentUser->id,
+                            'full_name' => trim($validated['parent_full_name']),
+                            'phone' => trim($validated['parent_phone']),
+                            'address' => $validated['parent_address'] ?? null,
+                            'is_active' => $parentUser->is_active,
+                        ]);
+                    }
 
                     $student->parents()->attach($parent->id, [
                         'relationship' => 'Orang Tua/Wali',
