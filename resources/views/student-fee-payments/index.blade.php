@@ -13,9 +13,9 @@
             @if (session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
             @if ($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
             @if ($eligibleStudents->isNotEmpty())
-                <div class="border rounded p-3 mb-4">
-                    <h5 class="mb-2">Buat Tagihan Bimbel</h5>
-                    <p class="text-muted">Tagihan ini terpisah dari Biaya Pendaftaran. Paket 1 semester dikenakan 60% dari tarif normal 1 tahun. Cicilan dibayarkan setiap bulan.</p>
+                <div class="border rounded p-3 mb-4" id="perpanjang-paket">
+                    <h5 class="mb-2">Perpanjang Paket Bimbel</h5>
+                    <p class="text-muted">Pilih anak dan paket belajar berikutnya. Perpanjangan tidak menghapus sisa masa paket aktif; periode baru dimulai setelah masa akses yang sedang berlaku berakhir. Paket 1 semester dikenakan 60% dari tarif normal 1 tahun. Cicilan dibayarkan setiap bulan.</p>
                     <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
                         @csrf
                         <div class="row g-3">
@@ -48,7 +48,7 @@
                                 <input class="form-control" type="text" name="promo_code" id="promo_code" value="{{ old('promo_code') }}" maxlength="100">
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-3">Buat Tagihan Bimbel</button>
+                        <button type="submit" class="btn btn-primary mt-3"><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
                     </form>
                 </div>
             @endif
@@ -113,7 +113,7 @@
             @empty
                 <div class="text-center py-5">
                     <h5>Belum Ada Tagihan Bimbel</h5>
-                    <p class="text-muted mb-0">Setelah pembayaran registrasi disetujui, buat tagihan bimbel secara terpisah melalui formulir di atas. Jika formulir belum muncul, pastikan registrasi sudah disetujui dan tidak ada tagihan bimbel yang belum lunas.</p>
+                    <p class="text-muted mb-0">Setelah pembayaran registrasi disetujui, formulir perpanjangan paket akan tersedia selama tidak ada tagihan bimbel yang belum lunas.</p>
                 </div>
             @endforelse
             @if ($transactions->hasPages())<div class="mt-3">{{ $transactions->links() }}</div>@endif
