@@ -8,6 +8,8 @@ use App\Models\ExamParticipant;
 use App\Models\ExamAttempt;
 use App\Models\ExamAttemptApproval;
 use App\Models\Student;
+use App\Models\User;
+use App\Notifications\StudentClassPromotedNotification;
 use App\Services\ExamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -516,8 +518,27 @@ class ExamController extends Controller
 
     public function publish(Exam $exam)
     {
+        $wasPublished = $exam->status === 'published';
         $exam->forceFill(['status' => 'published'])->save();
         $this->examService->syncAutoAssignedParticipants($exam->fresh('subject'));
+
+        if (! $wasPublished) {
+            try {
+                $exam->loadMissing('participants.student.user');
+                $notice = new StudentClassPromotedNotification(
+                    'Ujian baru tersedia',
+                    'Ujian ' . $exam->title . ' telah dipublikasikan dan dapat dikerjakan sesuai jadwal.'
+                );
+                $exam->participants
+                    ->where('is_active', true)
+                    ->pluck('student.user')
+                    ->filter()
+                    ->unique('id')
+                    ->each(fn (User $recipient) => $recipient->notify($notice));
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
 
         return redirect()
             ->route('exams.index')
