@@ -290,3 +290,69 @@ test('paid registration is rejected when the selected master fee is inactive', f
     ]);
 });
 
+test('multiple paid students can share the same parent account', function () {
+    Storage::fake('local');
+
+    $class = ClassRoom::create([
+        'name' => 'Kelas 10 SMA Bersama',
+        'code' => 'SMA-10-BERSAMA',
+        'education_level' => 'SMA',
+        'grade_level' => 10,
+        'is_active' => true,
+    ]);
+
+    $first = $this->post('/register', [
+        'registration_type' => 'paid',
+        'email' => 'anak.pertama@example.com',
+        'password' => 'password123',
+        'full_name' => 'Anak Pertama',
+        'school_name' => 'SMA Negeri 1',
+        'education_level' => 'SMA',
+        'class_id' => $class->id,
+        'phone' => '081234567890',
+        'parent_phone' => '081234567891',
+        'parent_full_name' => 'Nama Orang Tua',
+        'parent_email' => 'orangtua.bersama@example.com',
+    ]);
+
+    $first->assertRedirect();
+    $parentUser = User::where('email', 'orangtua.bersama@example.com')->firstOrFail();
+    $parentId = $parentUser->parentProfile->id;
+    $originalPassword = $parentUser->password;
+
+    $second = $this->post('/register', [
+        'registration_type' => 'paid',
+        'email' => 'anak.kedua@example.com',
+        'password' => 'password123',
+        'full_name' => 'Anak Kedua',
+        'school_name' => 'SMA Negeri 1',
+        'education_level' => 'SMA',
+        'class_id' => $class->id,
+        'phone' => '081234567892',
+        'parent_phone' => '081234567891',
+        'parent_full_name' => 'Nama Orang Tua',
+        'parent_email' => 'orangtua.bersama@example.com',
+    ]);
+
+    $second->assertRedirect();
+
+    $parentUser->refresh();
+    $parent = $parentUser->parentProfile;
+    $children = $parent->students()->pluck('students.id');
+
+    expect(User::where('email', 'orangtua.bersama@example.com')->count())->toBe(1)
+        ->and($parent->id)->toBe($parentId)
+        ->and($parentUser->password)->toBe($originalPassword)
+        ->and($children)->toHaveCount(2);
+
+    $this->assertDatabaseHas('student_parent', [
+        'parent_id' => $parentId,
+        'student_id' => Student::whereHas('user', fn ($query) => $query->where('email', 'anak.pertama@example.com'))->value('id'),
+    ]);
+
+    $this->assertDatabaseHas('student_parent', [
+        'parent_id' => $parentId,
+        'student_id' => Student::whereHas('user', fn ($query) => $query->where('email', 'anak.kedua@example.com'))->value('id'),
+    ]);
+});
+
