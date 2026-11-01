@@ -10,6 +10,7 @@ use App\Models\PromoCode;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\ExamService;
+use App\Notifications\StudentClassPromotedNotification;
 use Spatie\Permission\Models\Role;
 use App\Http\Requests\ChangePasswordRequest;
 use Illuminate\Auth\Events\PasswordReset;
@@ -232,6 +233,9 @@ class AuthController extends Controller
 
             $registrationPayment = $registrationResult['payment'];
 
+            $notice = new StudentClassPromotedNotification('Registrasi siswa berbayar baru', 'Registrasi berbayar ' . $registrationResult['user']->name . ' berhasil dibuat dan menunggu pembayaran.');
+            User::role(['Admin', 'Keuangan'])->where('is_active', true)->each(fn (User $recipient) => $recipient->notify($notice));
+
             return redirect()->to(\Illuminate\Support\Facades\URL::temporarySignedRoute(
                 'register.payment.show',
                 now()->addDays(30),
@@ -252,6 +256,9 @@ class AuthController extends Controller
         ])->save();
 
         $user->assignRole($this->studentRole());
+
+        $notice = new StudentClassPromotedNotification('Registrasi siswa trial baru', 'Siswa trial dengan email ' . $user->email . ' berhasil mendaftar dan perlu melengkapi profil.');
+        User::role('Admin')->where('is_active', true)->each(fn (User $recipient) => $recipient->notify($notice));
 
         return redirect()
             ->route('login')
