@@ -17,68 +17,70 @@
                     <div class="alert alert-danger"><ul class="mb-0">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
                 @endif
             </div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
+            <div class="card-datatable table-responsive">
+                <table id="registrationPaymentsTable" class="table table-hover align-middle">
                     <thead>
-                        <tr><th>Siswa</th><th>Orang Tua</th><th>Biaya Pendaftaran</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr>
+                        <tr>
+                            <th>Siswa</th>
+                            <th>Orang Tua</th>
+                            <th>Biaya Pendaftaran</th>
+                            <th>Status</th>
+                            <th>Bukti</th>
+                            <th>Aksi</th>
+                        </tr>
                     </thead>
-                    <tbody>
-                        @forelse ($payments as $payment)
-                            <tr>
-                                <td>
-                                    <div class="fw-semibold">{{ $payment->student?->full_name ?? $payment->user?->name ?? '-' }}</div>
-                                    <div class="small text-muted">{{ $payment->user?->email ?? '-' }}</div>
-                                    <div class="small text-muted">{{ $payment->student?->classRoom?->name ?? '-' }}</div>
-                                </td>
-                                <td>
-                                    @forelse ($payment->student?->parents ?? collect() as $parent)
-                                        <div>{{ $parent->full_name }}</div>
-                                        <div class="small text-muted">{{ $parent->user?->email ?? '-' }}</div>
-                                    @empty
-                                        -
-                                    @endforelse
-                                </td>
-                                <td class="text-nowrap">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</td>
-                                <td>
-                                    <span class="badge {{ $payment->status === 'verified' ? 'bg-label-success' : ($payment->status === 'pending_verification' ? 'bg-label-warning' : ($payment->status === 'rejected' ? 'bg-label-danger' : 'bg-label-secondary')) }}">
-                                        {{ str_replace('_', ' ', ucfirst($payment->status)) }}
-                                    </span>
-                                    @if ($payment->rejection_reason)
-                                        <div class="small text-danger mt-1">{{ $payment->rejection_reason }}</div>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($payment->proof_path)
-                                        <a class="btn btn-sm btn-outline-primary" href="{{ route('registration-payments.proof', $payment) }}">Lihat Bukti</a>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($payment->status === 'pending_verification')
-                                        <div class="d-flex flex-column gap-2">
-                                            <form method="POST" action="{{ route('registration-payments.approve', $payment) }}">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-success">Setujui</button>
-                                            </form>
-                                            <form method="POST" action="{{ route('registration-payments.reject', $payment) }}">
-                                                @csrf
-                                                <input type="text" name="rejection_reason" class="form-control form-control-sm mb-1" placeholder="Alasan penolakan" required maxlength="1000">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Tolak</button>
-                                            </form>
-                                        </div>
-                                    @else
-                                        <span class="text-muted small">{{ $payment->verifier?->name ?? '-' }}</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="6" class="text-center text-muted py-4">Belum ada pembayaran registrasi.</td></tr>
-                        @endforelse
-                    </tbody>
                 </table>
             </div>
-            <div class="card-body">{{ $payments->links() }}</div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const table = document.querySelector('#registrationPaymentsTable');
+
+            if (!table) {
+                return;
+            }
+
+            new DataTable(table, {
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '{{ route('registration-payments.data') }}',
+                    type: 'GET'
+                },
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                order: [[0, 'desc']],
+                scrollX: true,
+                dom: '<"row mx-2"<"col-sm-12 col-md-6 d-flex align-items-center justify-content-start"l><"col-sm-12 col-md-6 d-flex align-items-center justify-content-end"f>>t<"row mx-2 mt-3 mb-4"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6 d-flex justify-content-end"p>>',
+                columns: [
+                    { data: 'student', name: 'student', orderable: false, searchable: false },
+                    { data: 'parents', name: 'parents', orderable: false, searchable: false },
+                    { data: 'amount', name: 'amount', searchable: false },
+                    { data: 'status', name: 'status', searchable: false },
+                    { data: 'proof', name: 'proof', orderable: false, searchable: false },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false }
+                ],
+                language: {
+                    processing: 'Memuat data...',
+                    search: '',
+                    searchPlaceholder: 'Cari siswa, orang tua, email, kelas, status...',
+                    lengthMenu: '_MENU_',
+                    info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+                    infoEmpty: 'Menampilkan 0 sampai 0 dari 0 data',
+                    zeroRecords: 'Data tidak ditemukan',
+                    emptyTable: 'Belum ada pembayaran registrasi',
+                    paginate: {
+                        first: 'Pertama',
+                        last: 'Terakhir',
+                        next: '›',
+                        previous: '‹'
+                    }
+                }
+            });
+        });
+    </script>
 @endsection
