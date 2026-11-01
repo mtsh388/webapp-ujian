@@ -35,6 +35,17 @@ class StudentFeeBillingService
             'SMA' => 12,
             default => $startGrade,
         };
+        $today = Carbon::today();
+        $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
+            ? $student->access_expires_at->copy()->startOfDay()
+            : null;
+
+        if ($activeUntil && $startGrade + $package['grades'] - 1 > $maximumGrade) {
+            throw ValidationException::withMessages([
+                'package_type' => "Paket perpanjangan tidak dapat melewati kelas {$maximumGrade} untuk jenjang {$class->education_level}.",
+            ]);
+        }
+
         $gradeCount = min($package['grades'], $maximumGrade - $startGrade + 1);
         $installmentCount = max(1, $installmentCount);
         $fees = collect();
@@ -73,22 +84,8 @@ class StudentFeeBillingService
             $normalTotal += $amount;
         }
 
-        $today = Carbon::today();
-        $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
-            ? $student->access_expires_at->copy()->startOfDay()
-            : null;
-
         if ($activeUntil) {
-            if ($packageType === 'semester') {
-                $start = $activeUntil->month <= 6
-                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
-                    : $activeUntil->copy()->addYear()->startOfYear();
-            } else {
-                $start = $activeUntil->month <= 6
-                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
-                    : $activeUntil->copy()->addYear()->startOfYear()->addMonths(6);
-            }
-
+            $start = $activeUntil->copy()->addDay();
             $durationMonths = $package['months'];
             $end = $start->copy()->addMonthsNoOverflow($durationMonths)->subDay();
         } else {
