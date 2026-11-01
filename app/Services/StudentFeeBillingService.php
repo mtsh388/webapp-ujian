@@ -78,36 +78,14 @@ class StudentFeeBillingService
             ? $student->access_expires_at->copy()->startOfDay()
             : null;
 
-        if ($activeUntil) {
-            if ($packageType === 'semester') {
-                $start = $activeUntil->month <= 6
-                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
-                    : $activeUntil->copy()->addYear()->startOfYear();
-            } else {
-                $start = $activeUntil->month <= 6
-                    ? $activeUntil->copy()->startOfYear()->addMonths(6)
-                    : $activeUntil->copy()->addYear()->startOfYear()->addMonths(6);
-            }
-        } else {
-            $start = $today->copy();
-        }
+        $start = $activeUntil
+            ? $activeUntil->copy()->addDay()
+            : $today->copy();
 
-        if ($packageType === 'semester') {
-            $end = $start->month <= 6
-                ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
-                : $start->copy()->setDate($start->year, 12, 1)->endOfMonth();
-        } else {
-            $academicYearEnd = $start->month <= 6
-                ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
-                : $start->copy()->addYear()->setDate($start->year + 1, 6, 1)->endOfMonth();
+        $durationMonths = $package['months'];
+        $end = $start->copy()->addMonthsNoOverflow($durationMonths)->subDay();
 
-            $end = $packageType === 'two_years'
-                ? $academicYearEnd->copy()->addYear()->setDate($academicYearEnd->year + 1, 6, 1)->endOfMonth()
-                : $academicYearEnd;
-        }
-
-        $durationMonths = (($end->year - $start->year) * 12) + $end->month - $start->month + 1;
-        if ($durationMonths < 1) {
+        if ($durationMonths < 1 || $end->lessThan($start)) {
             throw ValidationException::withMessages(['package_type' => 'Periode paket tidak valid.']);
         }
 
