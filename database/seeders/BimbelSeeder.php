@@ -10,6 +10,7 @@ use App\Models\ExamQuestionOption;
 use App\Models\ParentModel;
 use App\Models\QuestionBank;
 use App\Models\QuestionOption;
+use App\Models\RegistrationFee;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\User;
@@ -20,31 +21,27 @@ class BimbelSeeder extends Seeder
 {
     public function run(): void
     {
-        $admin = User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@bimbel.test',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@bimbel.test'],
+            ['name' => 'Administrator', 'password' => Hash::make('password')]
+        );
 
-        $tentor = User::create([
-            'name' => 'Tentor Matematika',
-            'email' => 'tentor@bimbel.test',
-            'password' => Hash::make('password'),
-        ]);
+        $tentor = User::firstOrCreate(
+            ['email' => 'tentor@bimbel.test'],
+            ['name' => 'Tentor Matematika', 'password' => Hash::make('password')]
+        );
 
-        $parentUser1 = User::create([
-            'name' => 'Budi Santoso',
-            'email' => 'budi.orangtua@bimbel.test',
-            'password' => Hash::make('password'),
-        ]);
+        $parentUser1 = User::firstOrCreate(
+            ['email' => 'budi.orangtua@bimbel.test'],
+            ['name' => 'Budi Santoso', 'password' => Hash::make('password')]
+        );
 
-        $parentUser2 = User::create([
-            'name' => 'Siti Rahma',
-            'email' => 'siti.orangtua@bimbel.test',
-            'password' => Hash::make('password'),
-        ]);
+        $parentUser2 = User::firstOrCreate(
+            ['email' => 'siti.orangtua@bimbel.test'],
+            ['name' => 'Siti Rahma', 'password' => Hash::make('password')]
+        );
 
-        $class10 = ClassRoom::create([
+        $class10 = ClassRoom::firstOrCreate(['code' => 'K10-REG'], [
             'name' => 'Kelas 10 Reguler',
             'code' => 'K10-REG',
             'education_level' => 'SMA',
@@ -53,7 +50,7 @@ class BimbelSeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $class11 = ClassRoom::create([
+        $class11 = ClassRoom::firstOrCreate(['code' => 'K11-REG'], [
             'name' => 'Kelas 11 Reguler',
             'code' => 'K11-REG',
             'education_level' => 'SMA',
@@ -87,7 +84,7 @@ class BimbelSeeder extends Seeder
         ];
 
         foreach ($subjects as $subjectData) {
-            Subject::create([
+            Subject::firstOrCreate(['code' => $subjectData['code']], [
                 'name' => $subjectData['name'],
                 'code' => $subjectData['code'],
                 'education_level' => $subjectData['education_level'],
@@ -101,14 +98,13 @@ class BimbelSeeder extends Seeder
         $studentUsers = [];
 
         for ($i = 1; $i <= 5; $i++) {
-            $user = User::create([
-                'name' => "Siswa {$i}",
-                'email' => "siswa{$i}@bimbel.test",
-                'password' => Hash::make('password'),
-            ]);
+            $user = User::firstOrCreate(
+                ['email' => "siswa{$i}@bimbel.test"],
+                ['name' => "Siswa {$i}", 'password' => Hash::make('password')]
+            );
 
-            $student = Student::create([
-                'user_id' => $user->id,
+            $student = Student::firstOrCreate(['user_id' => $user->id], [
+                'registration_type' => 'paid',
                 'class_id' => $i <= 3 ? $class10->id : $class11->id,
                 'student_number' => 'S' . str_pad($i, 4, '0', STR_PAD_LEFT),
                 'full_name' => "Siswa {$i}",
@@ -124,36 +120,34 @@ class BimbelSeeder extends Seeder
 
         $parents = [];
 
-        $parents[] = ParentModel::create([
-            'user_id' => $parentUser1->id,
+        $parents[] = ParentModel::firstOrCreate(['user_id' => $parentUser1->id], [
             'full_name' => 'Budi Santoso',
             'phone' => '081234567890',
             'address' => 'Jakarta',
             'is_active' => true,
         ]);
 
-        $parents[] = ParentModel::create([
-            'user_id' => $parentUser2->id,
+        $parents[] = ParentModel::firstOrCreate(['user_id' => $parentUser2->id], [
             'full_name' => 'Siti Rahma',
             'phone' => '081234567891',
             'address' => 'Jakarta',
             'is_active' => true,
         ]);
 
-        $students[0]->parents()->attach($parents[0]->id, [
+        $students[0]->parents()->syncWithoutDetaching([$parents[0]->id => [
             'relationship' => 'Ayah',
             'is_primary' => true,
-        ]);
+        ]]);
 
-        $students[1]->parents()->attach($parents[0]->id, [
+        $students[1]->parents()->syncWithoutDetaching([$parents[0]->id => [
             'relationship' => 'Ayah',
             'is_primary' => true,
-        ]);
+        ]]);
 
-        $students[2]->parents()->attach($parents[1]->id, [
+        $students[2]->parents()->syncWithoutDetaching([$parents[1]->id => [
             'relationship' => 'Ibu',
             'is_primary' => true,
-        ]);
+        ]]);
 
         $matematika = Subject::where('name', 'Matematika')->first();
         $bahasaIndonesia = Subject::where('name', 'Bahasa Indonesia')->first();
@@ -232,15 +226,17 @@ class BimbelSeeder extends Seeder
 
             unset($questionData['options']);
 
-            $question = QuestionBank::create([
+            $question = QuestionBank::firstOrCreate(['code' => $questionData['code']], [
                 ...$questionData,
                 'default_score' => 1,
                 'is_active' => true,
             ]);
 
             foreach ($options as $index => $option) {
-                QuestionOption::create([
+                QuestionOption::firstOrCreate([
                     'question_bank_id' => $question->id,
+                    'option_key' => $option['key'],
+                ], [
                     'option_key' => $option['key'],
                     'option_text' => $option['text'],
                     'is_correct' => $option['correct'],
@@ -249,7 +245,7 @@ class BimbelSeeder extends Seeder
             }
         }
 
-        $exam = Exam::create([
+        $exam = Exam::firstOrCreate(['code' => 'UJ-MTK-001'], [
             'subject_id' => $matematika->id,
             'code' => 'UJ-MTK-001',
             'title' => 'Ujian Matematika Dasar',
@@ -272,8 +268,10 @@ class BimbelSeeder extends Seeder
             ->get();
 
         foreach ($bankQuestions as $index => $bankQuestion) {
-            $examQuestion = ExamQuestion::create([
+            $examQuestion = ExamQuestion::firstOrCreate([
                 'exam_id' => $exam->id,
+                'question_bank_id' => $bankQuestion->id,
+            ], [
                 'question_bank_id' => $bankQuestion->id,
                 'type' => $bankQuestion->type,
                 'question' => $bankQuestion->question,
@@ -283,8 +281,10 @@ class BimbelSeeder extends Seeder
             ]);
 
             foreach ($bankQuestion->options as $option) {
-                ExamQuestionOption::create([
+                ExamQuestionOption::firstOrCreate([
                     'exam_question_id' => $examQuestion->id,
+                    'option_key' => $option->option_key,
+                ], [
                     'option_key' => $option->option_key,
                     'option_text' => $option->option_text,
                     'is_correct' => $option->is_correct,
@@ -294,22 +294,30 @@ class BimbelSeeder extends Seeder
         }
 
         foreach ($students as $student) {
-            ExamParticipant::create([
+            ExamParticipant::firstOrCreate([
                 'exam_id' => $exam->id,
+                'student_id' => $student->id,
+            ], [
                 'student_id' => $student->id,
                 'assigned_at' => now(),
                 'is_active' => true,
             ]);
         }
-        $admin->assignRole('Admin');
+        $keuangan = User::firstOrCreate(
+            ['email' => 'keuangan@bimbel.test'],
+            ['name' => 'Staff Keuangan', 'password' => Hash::make('password')]
+        );
 
-        $tentor->assignRole('Tentor');
+        $admin->syncRoles(['Admin']);
+        $keuangan->syncRoles(['Keuangan']);
 
-        $parentUser1->assignRole('Orang Tua');
-        $parentUser2->assignRole('Orang Tua');
+        $tentor->syncRoles(['Tentor']);
+
+        $parentUser1->syncRoles(['Orang Tua']);
+        $parentUser2->syncRoles(['Orang Tua']);
 
         foreach ($studentUsers as $studentUser) {
-            $studentUser->assignRole('Siswa');
+            $studentUser->syncRoles(['Siswa']);
         }
     }
 
