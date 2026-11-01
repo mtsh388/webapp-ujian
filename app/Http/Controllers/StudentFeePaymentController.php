@@ -137,14 +137,14 @@ class StudentFeePaymentController extends Controller
         $baseQuery = StudentFeePayment::query()
             ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
             ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
-            ->leftJoin('class_rooms', 'class_rooms.id', '=', 'students.class_id');
+            ->leftJoin('classes as class_rooms', 'class_rooms.id', '=', 'students.class_id');
 
         $recordsTotal = (clone $baseQuery)->count('student_fee_payments.id');
         $query = StudentFeePayment::query()
             ->select('student_fee_payments.*')
             ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
             ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
-            ->leftJoin('class_rooms', 'class_rooms.id', '=', 'students.class_id')
+            ->leftJoin('classes as class_rooms', 'class_rooms.id', '=', 'students.class_id')
             ->with(['transaction.student.classRoom', 'verifier']);
 
         $search = trim((string) $request->input('search.value', ''));
