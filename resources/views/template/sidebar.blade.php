@@ -68,7 +68,11 @@
             auth()->user()->can('class.view') ||
             auth()->user()->can('subject.view') ||
             auth()->user()->can('student.view') ||
-            auth()->user()->can('parent.view')
+            auth()->user()->can('parent.view') ||
+            auth()->user()->can('question.view') ||
+            auth()->user()->can('question.create') ||
+            auth()->user()->can('question.update') ||
+            auth()->user()->can('question.delete')
         )
             <li class="menu-header small text-uppercase">
                 <span class="menu-header-text">Master Data Akademik</span>
@@ -78,7 +82,8 @@
                 request()->routeIs('classes.*') ||
                 request()->routeIs('subjects.*') ||
                 request()->routeIs('students.*') ||
-                request()->routeIs('parents.*')
+                request()->routeIs('parents.*') ||
+                request()->routeIs('questions.*')
                     ? 'active open'
                     : ''
             }}">
@@ -119,6 +124,19 @@
                             </a>
                         </li>
                     @endcan
+
+                    @if(
+                        auth()->user()->can('question.view') ||
+                        auth()->user()->can('question.create') ||
+                        auth()->user()->can('question.update') ||
+                        auth()->user()->can('question.delete')
+                    )
+                        <li class="menu-item {{ request()->routeIs('questions.*') ? 'active' : '' }}">
+                            <a href="{{ route('questions.index') }}" class="menu-link">
+                                <div>Bank Soal</div>
+                            </a>
+                        </li>
+                    @endif
                 </ul>
             </li>
         @endif
@@ -159,24 +177,6 @@
                         </li>
                     @endcan
                 </ul>
-            </li>
-        @endif
-
-        @if(
-            auth()->user()->can('question.view') ||
-            auth()->user()->can('question.create') ||
-            auth()->user()->can('question.update') ||
-            auth()->user()->can('question.delete')
-        )
-            <li class="menu-header small text-uppercase">
-                <span class="menu-header-text">Bank Soal</span>
-            </li>
-
-            <li class="menu-item {{ request()->routeIs('questions.*') ? 'active' : '' }}">
-                <a href="{{ route('questions.index') }}" class="menu-link">
-                    <i class="menu-icon tf-icons bx bx-book-open"></i>
-                    <div>Bank Soal</div>
-                </a>
             </li>
         @endif
 
