@@ -6,6 +6,7 @@ use App\Models\RegistrationPayment;
 use App\Models\User;
 use App\Notifications\StudentClassPromotedNotification;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\StudentClassPromotedEmailNotification;
@@ -17,12 +18,64 @@ class RegistrationPaymentController extends Controller
 {
     public function index(): View
     {
-        return view('registration-payments.index', [
-            'payments' => RegistrationPayment::query()
-                ->with(['user', 'student.classRoom', 'student.parents.user', 'verifier'])
-                ->latest()
-                ->paginate(20),
-        ]);
+        return view('registration-payments.index');
+    }
+
+    public function data(Request $request): JsonResponse
+    {
+        $recordsTotal = RegistrationPayment::query()->count();
+        $query = RegistrationPayment::query()
+            ->with(['user', 'student.classRoom', 'student.parents.user', 'verifier']);
+
+        $search = trim((string) $request->input('search.value', ''));
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('status', 'like', "%{$search}%")
+                    ->orWhere('amount', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhereHas('student', function ($studentQuery) use ($search) {
+                        $studentQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('parents', function ($parentQuery) use ($search) {
+                                $parentQuery->where('full_name', 'like', "%{$search}%")
+                                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', "%{$search}%"));
+                            });
+                    });
+            });
+        }
+
+        $recordsFiltered = (clone $query)->count();
+        $columns = [0 => 'id', 1 => 'amount', 2 => 'status', 3 => 'created_at'];
+        $orderColumn = $columns[(int) $request->input('order.0.column', 0)] ?? 'id';
+        $direction = $request->input('order.0.dir', 'desc');
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'desc';
+        $start = max(0, (int) $request->input('start', 0));
+        $length = (int) $request->input('length', 10);
+        $length = $length > 0 ? min($length, 100) : 10;
+
+        $payments = $query->orderBy($orderColumn, $direction)->skip($start)->take($length)->get();
+        $data = $payments->map(function (RegistrationPayment $payment) {
+            $student = '<div class="fw-semibold">' . e($payment->student?->full_name ?? $payment->user?->name ?? '-') . '</div>'
+                . '<div class="small text-muted">' . e($payment->user?->email ?? '-') . '</div>'
+                . '<div class="small text-muted">' . e($payment->student?->classRoom?->name ?? '-') . '</div>';
+            $parents = $payment->student?->parents?->map(fn ($parent) => '<div>' . e($parent->full_name) . '</div><div class="small text-muted">' . e($parent->user?->email ?? '-') . '</div>')->implode('') ?: '-';
+            $statusClass = $payment->status === 'verified' ? 'success' : ($payment->status === 'pending_verification' ? 'warning' : ($payment->status === 'rejected' ? 'danger' : 'secondary'));
+            $status = '<span class="badge bg-label-' . $statusClass . '">' . e(str_replace('_', ' ', ucfirst($payment->status))) . '</span>';
+            if ($payment->rejection_reason) {
+                $status .= '<div class="small text-danger mt-1">' . e($payment->rejection_reason) . '</div>';
+            }
+            $proof = $payment->proof_path ? '<a class="btn btn-sm btn-outline-primary" href="' . e(route('registration-payments.proof', $payment)) . '">Lihat Bukti</a>' : '-';
+            if ($payment->status === 'pending_verification') {
+                $actions = '<div class="d-flex flex-column gap-2"><form method="POST" action="' . e(route('registration-payments.approve', $payment)) . '">' . csrf_field() . '<button type="submit" class="btn btn-sm btn-success">Setujui</button></form>'
+                    . '<form method="POST" action="' . e(route('registration-payments.reject', $payment)) . '">' . csrf_field() . '<input name="rejection_reason" class="form-control form-control-sm mb-1" placeholder="Alasan penolakan" required maxlength="1000"><button type="submit" class="btn btn-sm btn-outline-danger">Tolak</button></form></div>';
+            } else {
+                $actions = '<span class="text-muted small">' . e($payment->verifier?->name ?? '-') . '</span>';
+            }
+
+            return ['student' => $student, 'parents' => $parents, 'amount' => 'Rp ' . number_format((int) $payment->amount, 0, ',', '.'), 'status' => $status, 'proof' => $proof, 'actions' => $actions];
+        });
+
+        return response()->json(['draw' => (int) $request->input('draw'), 'recordsTotal' => $recordsTotal, 'recordsFiltered' => $recordsFiltered, 'data' => $data]);
     }
 
     public function showPayment(RegistrationPayment $registrationPayment): View|RedirectResponse
