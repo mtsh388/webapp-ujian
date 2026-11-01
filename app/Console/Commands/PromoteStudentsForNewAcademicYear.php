@@ -37,6 +37,13 @@ class PromoteStudentsForNewAcademicYear extends Command
             ->whereNull('graduated_at')
             ->chunkById(100, function ($students) use ($date, &$promoted, &$graduated): void {
                 foreach ($students as $student) {
+                    if ($student->classHistories()
+                        ->where('change_reason', 'promotion')
+                        ->whereDate('ended_at', $date->copy()->subDay()->toDateString())
+                        ->exists()) {
+                        continue;
+                    }
+
                     $current = $student->classRoom;
 
                     if (! $current) {
