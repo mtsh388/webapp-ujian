@@ -33,6 +33,14 @@
                     <div>Pembayaran Bimbel</div>
                 </a>
             </li>
+            @if(auth()->user()->hasRole('Orang Tua'))
+                <li class="menu-item {{ request()->routeIs('student-fee-payments.index') && request()->getRequestUri() !== route('student-fee-payments.index', [], false) ? 'active' : '' }}">
+                    <a href="{{ route('student-fee-payments.index') }}#perpanjang-paket" class="menu-link">
+                        <i class="menu-icon tf-icons bx bx-refresh"></i>
+                        <div>Perpanjang Paket Bimbel</div>
+                    </a>
+                </li>
+            @endif
         @endif
 
         @if(auth()->user()->hasRole('Siswa'))
