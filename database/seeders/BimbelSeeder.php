@@ -8,6 +8,7 @@ use App\Models\ExamParticipant;
 use App\Models\ExamQuestion;
 use App\Models\ExamQuestionOption;
 use App\Models\ParentModel;
+use App\Models\RegistrationFee;
 use App\Models\QuestionBank;
 use App\Models\QuestionOption;
 use App\Models\Student;
@@ -61,6 +62,46 @@ class BimbelSeeder extends Seeder
             'description' => 'Kelas reguler tingkat 11',
             'is_active' => true,
         ]);
+
+        $class12 = ClassRoom::withTrashed()->updateOrCreate(
+            ['code' => 'K12-REG'],
+            [
+                'name' => 'Kelas 12 Reguler',
+                'education_level' => 'SMA',
+                'grade_level' => 12,
+                'description' => 'Kelas reguler tingkat 12',
+                'is_active' => true,
+            ]
+        );
+
+        if ($class12->trashed()) {
+            $class12->restore();
+        }
+
+        $learningFees = [
+            ['grade_level' => 10, 'name' => 'Biaya Belajar Kelas 10', 'amount' => 1000000],
+            ['grade_level' => 11, 'name' => 'Biaya Belajar Kelas 11', 'amount' => 1000000],
+            ['grade_level' => 12, 'name' => 'Biaya Belajar Kelas 12', 'amount' => 1500000],
+        ];
+
+        foreach ($learningFees as $feeData) {
+            RegistrationFee::updateOrCreate(
+                [
+                    'fee_type' => 'belajar',
+                    'education_level' => 'SMA',
+                    'grade_level' => $feeData['grade_level'],
+                ],
+                [
+                    'fee_type_label' => $feeData['name'],
+                    'name' => $feeData['name'],
+                    'description' => $feeData['name'] . ' untuk jenjang SMA',
+                    'amount' => $feeData['amount'],
+                    'is_active' => true,
+                    'discount_enabled' => false,
+                    'max_installments' => 5,
+                ]
+            );
+        }
 
         $subjects = [
             [
