@@ -35,7 +35,9 @@ class RegistrationPaymentController extends Controller
                     ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
                     ->orWhereHas('student', function ($studentQuery) use ($search) {
                         $studentQuery->where('full_name', 'like', "%{$search}%")
-                            ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', "%{$search}%"))
+                            ->orWhere('class_name_snapshot', 'like', "%{$search}%")
+                            ->orWhere('education_level_snapshot', 'like', "%{$search}%")
+                            ->orWhere('grade_level_snapshot', 'like', "%{$search}%")
                             ->orWhereHas('parents', function ($parentQuery) use ($search) {
                                 $parentQuery->where('full_name', 'like', "%{$search}%")
                                     ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', "%{$search}%"));
@@ -57,7 +59,8 @@ class RegistrationPaymentController extends Controller
         $data = $payments->map(function (RegistrationPayment $payment) {
             $student = '<div class="fw-semibold">' . e($payment->student?->full_name ?? $payment->user?->name ?? '-') . '</div>'
                 . '<div class="small text-muted">' . e($payment->user?->email ?? '-') . '</div>'
-                . '<div class="small text-muted">' . e($payment->student?->classRoom?->name ?? '-') . '</div>';
+                . '<div class="small text-muted">' . e($payment->class_name_snapshot ?: 'Kelas belum tercatat') . '</div>'
+                . '<div class="small text-muted">' . e(trim(($payment->education_level_snapshot ?? '') . ' ' . ($payment->grade_level_snapshot ? 'Kelas ' . $payment->grade_level_snapshot : ''))) . '</div>';
             $parents = $payment->student?->parents?->map(fn ($parent) => '<div>' . e($parent->full_name) . '</div><div class="small text-muted">' . e($parent->user?->email ?? '-') . '</div>')->implode('') ?: '-';
             $statusClass = $payment->status === 'verified' ? 'success' : ($payment->status === 'pending_verification' ? 'warning' : ($payment->status === 'rejected' ? 'danger' : 'secondary'));
             $status = '<span class="badge bg-label-' . $statusClass . '">' . e(str_replace('_', ' ', ucfirst($payment->status))) . '</span>';
