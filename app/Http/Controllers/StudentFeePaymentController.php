@@ -56,7 +56,7 @@ class StudentFeePaymentController extends Controller
     {
         $validated = $request->validate([
             'student_id' => ['required', 'integer', 'exists:students,id'],
-            'package_type' => ['required', 'string', 'in:semester,yearly,two_years'],
+            'package_type' => ['required', 'string', 'in:semester,yearly'],
             'installment_count' => ['required', 'integer', 'min:1', 'max:5'],
             'promo_code' => ['nullable', 'string', 'max:100'],
         ]);
