@@ -36,11 +36,7 @@ class StudentFeeBillingService
             ]);
         }
 
-        $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
-            ? $student->access_expires_at->copy()->startOfDay()
-            : null;
-
-        $start = $activeUntil ? $activeUntil->copy()->addDay() : $today->copy();
+        $start = $today->copy();
 
         $isOddSemester = $start->month >= 7;
 
