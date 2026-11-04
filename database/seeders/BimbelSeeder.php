@@ -82,9 +82,11 @@ class BimbelSeeder extends Seeder
         }
 
         $learningFees = [
-            ['grade_level' => 10, 'name' => 'Biaya Belajar Kelas 10', 'amount' => 1000000],
-            ['grade_level' => 11, 'name' => 'Biaya Belajar Kelas 11', 'amount' => 1000000],
-            ['grade_level' => 12, 'name' => 'Biaya Belajar Kelas 12', 'amount' => 1500000],
+            ['grade_level' => 10, 'billing_period' => 'semester', 'name' => 'Biaya Belajar Kelas 10 Semesteran', 'amount' => 600000],
+            ['grade_level' => 10, 'billing_period' => 'yearly', 'name' => 'Biaya Belajar Kelas 10 Tahunan', 'amount' => 1000000],
+            ['grade_level' => 11, 'billing_period' => 'semester', 'name' => 'Biaya Belajar Kelas 11 Semesteran', 'amount' => 700000],
+            ['grade_level' => 11, 'billing_period' => 'yearly', 'name' => 'Biaya Belajar Kelas 11 Tahunan', 'amount' => 1200000],
+            ['grade_level' => 12, 'billing_period' => 'yearly', 'name' => 'Biaya Belajar Kelas 12 Tahunan', 'amount' => 1500000],
         ];
 
         foreach ($learningFees as $feeData) {
@@ -93,12 +95,13 @@ class BimbelSeeder extends Seeder
                     'fee_type' => 'belajar',
                     'education_level' => 'SMA',
                     'grade_level' => $feeData['grade_level'],
+                    'billing_period' => $feeData['billing_period'],
                 ],
                 [
                     'fee_type_label' => $feeData['name'],
                     'name' => $feeData['name'],
                     'description' => $feeData['name'] . ' untuk jenjang SMA',
-                    'billing_period' => 'once',
+                    'billing_period' => $feeData['billing_period'],
                     'amount' => $feeData['amount'],
                     'is_active' => true,
                     'discount_enabled' => true,
