@@ -32,8 +32,9 @@
                                 <label for="package_type" class="form-label">Paket Belajar</label>
                                 <select class="form-select" name="package_type" id="package_type" required>
                                     <option value="semester" @selected(old('package_type', 'semester') === 'semester')>Semester (sampai akhir semester)</option>
-                                    <option value="yearly" @selected(old('package_type') === 'yearly')>Tahunan (sampai 30 Juni tahun berikutnya)</option>
+                                    <option value="yearly" @selected(old('package_type') === 'yearly')>Tahunan (semester ganjil saja, sampai 30 Juni tahun berikutnya)</option>
                                 </select>
+                                <div id="no-package-message" class="alert alert-warning mt-2 d-none mb-0">Tidak ada paket yang tersedia untuk tanggal mulai periode ini. Siswa SMA kelas 12 hanya dapat mengambil paket tahunan, sedangkan paket tahunan hanya tersedia pada semester ganjil.</div>
                             </div>
                             <div class="col-md-3">
                                 <label for="installment_count" class="form-label">Jumlah Pembayaran</label>
@@ -48,7 +49,7 @@
                                 <input class="form-control" type="text" name="promo_code" id="promo_code" value="{{ old('promo_code') }}" maxlength="100">
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mt-3"><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
+                        <button type="submit" id="create-plan-button" class="btn btn-primary mt-3"><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
                     </form>
                     <script>
                         document.addEventListener('DOMContentLoaded', function () {
@@ -64,7 +65,8 @@
                                 const startDate = selected.dataset.startDate ? new Date(selected.dataset.startDate + 'T00:00:00') : new Date();
                                 const month = startDate.getMonth() + 1;
                                 const semesterAvailable = !(level === 'SMA' && grade === 12);
-                                const yearlyAvailable = level !== 'SMA' || grade === 12 || month >= 7;
+                                const yearlyAvailable = month >= 7;
+                                const hasAvailablePackage = semesterAvailable || yearlyAvailable;
 
                                 Array.from(packageSelect.options).forEach(function (option) {
                                     if (!option.value) return;
@@ -73,8 +75,12 @@
                                 });
 
                                 if (packageSelect.selectedOptions[0]?.disabled) {
-                                    packageSelect.value = semesterAvailable ? 'semester' : 'yearly';
+                                    packageSelect.value = semesterAvailable ? 'semester' : (yearlyAvailable ? 'yearly' : '');
                                 }
+
+                                packageSelect.disabled = !hasAvailablePackage;
+                                document.getElementById('no-package-message')?.classList.toggle('d-none', hasAvailablePackage);
+                                document.getElementById('create-plan-button')?.toggleAttribute('disabled', !hasAvailablePackage);
                             }
 
                             student.addEventListener('change', updatePackages);
