@@ -16,7 +16,7 @@
             @if ($eligibleStudents->isNotEmpty())
                 <div class="border rounded p-3 mb-4">
                     <h5 class="mb-2">Perpanjang Paket Bimbel</h5>
-                    <p class="text-muted">Pilih anak dan paket belajar berikutnya. Perpanjangan tidak menghapus sisa masa paket aktif; periode baru dimulai setelah masa akses yang sedang berlaku berakhir. Paket 1 semester dikenakan 60% dari tarif normal 1 tahun. Cicilan dibayarkan setiap bulan.</p>
+                    <p class="text-muted">Pilih anak dan paket belajar berikutnya. Periode perpanjangan dimulai satu hari setelah masa akses aktif berakhir. Paket semester berlaku 6 bulan dan paket tahunan 12 bulan. Nominal mengikuti Master Data Biaya; cicilan maksimal 5 kali.</p>
                     <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
                         @csrf
                         <div class="row g-3">
@@ -31,9 +31,8 @@
                             <div class="col-md-3">
                                 <label for="package_type" class="form-label">Paket Belajar</label>
                                 <select class="form-select" name="package_type" id="package_type" required>
-                                    <option value="semester" @selected(old('package_type', 'semester') === 'semester')>1 semester (6 bulan) — 60% harga normal</option>
-                                    <option value="yearly" @selected(old('package_type') === 'yearly')>1 tahun (12 bulan) — harga normal</option>
-                                    <option value="two_years" @selected(old('package_type') === 'two_years')>2 tahun (24 bulan) — harga normal</option>
+                                    <option value="semester" @selected(old('package_type', 'semester') === 'semester')>1 semester (6 bulan)</option>
+                                    <option value="yearly" @selected(old('package_type') === 'yearly')>1 tahun (12 bulan)</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -57,7 +56,7 @@
                 <div class="border rounded p-3 mb-4">
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                         <div>
-                            <h5 class="mb-1">{{ $transaction->student?->full_name ?? 'Siswa' }} — {{ $transaction->package_type === 'semester' ? '1 semester' : ($transaction->duration_months === 24 ? '2 tahun' : '1 tahun') }}</h5>
+                            <h5 class="mb-1">{{ $transaction->student?->full_name ?? 'Siswa' }} — {{ $transaction->package_type === 'semester' ? '1 semester' : '1 tahun' }}</h5>
                             <div class="text-muted small">{{ $transaction->student?->classRoom?->name ?? '-' }} · Periode {{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div>
                         </div>
                         <div class="text-md-end">
