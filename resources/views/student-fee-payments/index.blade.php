@@ -93,6 +93,7 @@
                             const submitButton = document.getElementById('create-plan-button');
                             let requestController = null;
                             let debounceTimer = null;
+                            let previewRequestId = 0;
 
                             if (!form || !student || !packageSelect || !installmentSelect) return;
 
@@ -140,7 +141,9 @@
                                 if (!updatePackages() || !packageSelect.value) return;
 
                                 if (requestController) requestController.abort();
-                                requestController = new AbortController();
+                                const controller = new AbortController();
+                                requestController = controller;
+                                const requestId = ++previewRequestId;
                                 submitButton.disabled = true;
                                 previewCard.classList.remove('d-none');
                                 previewLoading.classList.remove('d-none');
@@ -156,9 +159,10 @@
                                             'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value
                                         },
                                         body: payload,
-                                        signal: requestController.signal
+                                        signal: controller.signal
                                     });
                                     const data = await response.json();
+                                    if (requestId !== previewRequestId) return;
                                     if (!response.ok) {
                                         const messages = data.errors ? Object.values(data.errors).flat() : [data.message || 'Preview pembayaran tidak dapat dihitung.'];
                                         throw new Error(messages.join(' '));
@@ -176,11 +180,13 @@
                                     previewContent.classList.remove('d-none');
                                     submitButton.disabled = false;
                                 } catch (error) {
-                                    if (error.name === 'AbortError') return;
+                                    if (error.name === 'AbortError' || requestId !== previewRequestId) return;
                                     previewError.textContent = error.message;
                                     previewError.classList.remove('d-none');
                                 } finally {
-                                    previewLoading.classList.add('d-none');
+                                    if (requestId === previewRequestId) {
+                                        previewLoading.classList.add('d-none');
+                                    }
                                 }
                             }
 
@@ -189,9 +195,16 @@
                                 debounceTimer = setTimeout(loadPreview, 250);
                             }
 
-                            student.addEventListener('change', schedulePreview);
-                            packageSelect.addEventListener('change', schedulePreview);
-                            installmentSelect.addEventListener('change', schedulePreview);
+                            if (window.jQuery) {
+                                window.jQuery(student).on('change', schedulePreview);
+                                window.jQuery(packageSelect).on('change', schedulePreview);
+                                window.jQuery(installmentSelect).on('change', schedulePreview);
+                            } else {
+                                student.addEventListener('change', schedulePreview);
+                                packageSelect.addEventListener('change', schedulePreview);
+                                installmentSelect.addEventListener('change', schedulePreview);
+                            }
+
                             promoInput?.addEventListener('input', schedulePreview);
                             form.addEventListener('submit', function (event) {
                                 if (submitButton.disabled) {
