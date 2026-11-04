@@ -8,6 +8,9 @@ class StudentFeeTransaction extends Model
 {
     protected $fillable = [
         'student_id',
+        'class_name_snapshot',
+        'education_level_snapshot',
+        'grade_level_snapshot',
         'registration_payment_id',
         'duration_years',
         'duration_months',
@@ -25,6 +28,7 @@ class StudentFeeTransaction extends Model
     protected function casts(): array
     {
         return [
+            'grade_level_snapshot' => 'integer',
             'duration_years' => 'integer',
             'duration_months' => 'integer',
             'installment_count' => 'integer',
