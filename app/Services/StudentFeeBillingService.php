@@ -28,22 +28,10 @@ class StudentFeeBillingService
 
         $class = $student->classRoom;
         $startGrade = (int) $class->grade_level;
-        $maximumGrade = match ($class->education_level) {
-            'SD' => 6,
-            'SMP' => 9,
-            'SMA' => 12,
-            default => $startGrade,
-        };
         $today = Carbon::today();
         $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
             ? $student->access_expires_at->copy()->startOfDay()
             : null;
-
-        if ($activeUntil && $startGrade + $package['grades'] - 1 > $maximumGrade) {
-            throw ValidationException::withMessages([
-                'package_type' => "Paket perpanjangan tidak dapat melewati kelas {$maximumGrade} untuk jenjang {$class->education_level}.",
-            ]);
-        }
 
         $start = $activeUntil ? $activeUntil->copy()->addDay() : $today->copy();
         if ($class->education_level === 'SMA') {
