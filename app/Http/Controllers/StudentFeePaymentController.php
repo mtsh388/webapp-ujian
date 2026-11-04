@@ -31,7 +31,6 @@ class StudentFeePaymentController extends Controller
                         $studentQuery->where('full_name', 'like', "%{$search}%");
                     })
                         ->orWhere('class_name_snapshot', 'like', "%{$search}%")
-                    })
                         ->orWhere('package_type', 'like', "%{$search}%")
                         ->orWhereRaw('CAST(amount AS CHAR) LIKE ?', ["%{$search}%"])
                         ->orWhereRaw("DATE_FORMAT(period_starts_at, '%d %b %Y') LIKE ?", ["%{$search}%"])
