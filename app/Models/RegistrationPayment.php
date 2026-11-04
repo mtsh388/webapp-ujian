@@ -9,6 +9,9 @@ class RegistrationPayment extends Model
     protected $fillable = [
         'user_id',
         'student_id',
+        'class_name_snapshot',
+        'education_level_snapshot',
+        'grade_level_snapshot',
         'amount',
         'status',
         'proof_path',
