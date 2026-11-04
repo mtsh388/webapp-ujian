@@ -42,6 +42,7 @@ class StudentFeePaymentController extends Controller
             ->when(! $user->hasRole('Orang Tua'), fn ($builder) => $builder->whereRaw('1 = 0'))
             ->whereIn('id', $studentIds)
             ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
+            ->whereHas('classRoom')
             ->where(function ($builder) {
                 $builder->whereDoesntHave('classRoom', function ($classQuery) {
                     $classQuery->where('education_level', 'SMA')
