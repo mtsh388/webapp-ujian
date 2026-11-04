@@ -35,17 +35,18 @@ class StudentFeeBillingService
 
         $start = $activeUntil ? $activeUntil->copy()->addDay() : $today->copy();
 
-        if ($class->education_level === 'SMA') {
-            $isGradeTwelve = $startGrade === 12;
-            $isOddSemester = $start->month >= 7;
+        $isOddSemester = $start->month >= 7;
 
-            if (($isGradeTwelve && $packageType !== 'yearly') || (! $isGradeTwelve && ! $isOddSemester && $packageType === 'yearly')) {
-                throw ValidationException::withMessages([
-                    'package_type' => $isGradeTwelve
-                        ? 'Siswa kelas 12 hanya dapat memilih paket tahunan.'
-                        : 'Pada semester genap, siswa kelas 10 dan 11 hanya dapat memilih paket semesteran.',
-                ]);
-            }
+        if ($packageType === 'yearly' && ! $isOddSemester) {
+            throw ValidationException::withMessages([
+                'package_type' => 'Paket tahunan hanya dapat dipilih pada semester ganjil (Juli–Desember).',
+            ]);
+        }
+
+        if ($class->education_level === 'SMA' && $startGrade === 12 && $packageType !== 'yearly') {
+            throw ValidationException::withMessages([
+                'package_type' => 'Siswa SMA kelas 12 hanya dapat memilih paket tahunan pada semester ganjil.',
+            ]);
         }
 
         $end = $packageType === 'semester'
