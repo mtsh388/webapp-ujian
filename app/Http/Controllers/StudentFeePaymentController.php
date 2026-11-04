@@ -176,7 +176,7 @@ class StudentFeePaymentController extends Controller
             $transaction = $payment->transaction;
             $student = $transaction?->student;
             $studentHtml = '<div class="fw-semibold">' . e($student?->full_name ?? '-') . '</div><div class="small text-muted">' . e($student?->classRoom?->name ?? '-') . '</div>';
-            $packageName = $transaction?->package_type === 'semester' ? '1 Semester' : ($transaction?->duration_months === 24 ? '2 Tahun' : '1 Tahun');
+            $packageName = $transaction?->package_type === 'semester' ? '1 Semester' : '1 Tahun';
             $period = ($transaction?->period_starts_at?->format('d M Y') ?? '-') . '–' . ($transaction?->period_ends_at?->format('d M Y') ?? '-');
             $packageHtml = '<div class="fw-semibold">' . e($packageName) . '</div><div class="small text-muted">' . e($period) . '</div>';
             $amountHtml = '<div>Tagihan: Rp ' . number_format((int) ($transaction?->amount ?? 0), 0, ',', '.') . '</div><div class="small text-muted">Cicilan: Rp ' . number_format((int) $payment->amount, 0, ',', '.') . '</div>';
