@@ -30,13 +30,15 @@ class StudentFeeBillingService
         $startGrade = (int) $class->grade_level;
         $today = Carbon::today();
 
-        if ($student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)) {
+        if ($class->education_level === 'SMA' && $startGrade === 12) {
             throw ValidationException::withMessages([
-                'student' => 'Masa aktif langganan siswa masih berlaku sampai ' . $student->access_expires_at->format('d M Y') . '. Tagihan perpanjangan baru dapat dibuat setelah masa aktif berakhir.',
+                'student' => 'Siswa SMA kelas 12 tidak dapat melakukan perpanjangan langganan bimbel.',
             ]);
         }
 
-        $start = $today->copy();
+        $start = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
+            ? $student->access_expires_at->copy()->addDay()
+            : $today->copy();
 
         $isOddSemester = $start->month >= 7;
 
