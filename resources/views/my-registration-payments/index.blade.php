@@ -42,7 +42,7 @@
                                         @if ($isParent)
                                             <td>
                                                 <div class="fw-semibold">{{ $payment->student?->full_name ?? $payment->user?->name ?? '-' }}</div>
-                                                <div class="small text-muted">{{ $payment->student?->classRoom?->name ?? '-' }}</div>
+                                                <div class="small text-muted">{{ $payment->class_name_snapshot ?: 'Kelas belum tercatat' }}</div>
                                             </td>
                                         @endif
                                         <td class="text-nowrap">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</td>
