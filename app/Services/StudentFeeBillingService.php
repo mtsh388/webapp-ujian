@@ -30,12 +30,6 @@ class StudentFeeBillingService
         $startGrade = (int) $class->grade_level;
         $today = Carbon::today();
 
-        if ($class->education_level === 'SMA' && $startGrade === 12) {
-            throw ValidationException::withMessages([
-                'student' => 'Siswa SMA kelas 12 tidak dapat melakukan perpanjangan langganan bimbel.',
-            ]);
-        }
-
         $start = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
             ? $student->access_expires_at->copy()->addDay()
             : $today->copy();
