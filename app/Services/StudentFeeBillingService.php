@@ -29,6 +29,13 @@ class StudentFeeBillingService
         $class = $student->classRoom;
         $startGrade = (int) $class->grade_level;
         $today = Carbon::today();
+
+        if ($student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)) {
+            throw ValidationException::withMessages([
+                'student' => 'Masa aktif langganan siswa masih berlaku sampai ' . $student->access_expires_at->format('d M Y') . '. Tagihan perpanjangan baru dapat dibuat setelah masa aktif berakhir.',
+            ]);
+        }
+
         $activeUntil = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
             ? $student->access_expires_at->copy()->startOfDay()
             : null;
