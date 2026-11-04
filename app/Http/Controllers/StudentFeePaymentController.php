@@ -42,6 +42,11 @@ class StudentFeePaymentController extends Controller
             ->when(! $user->hasRole('Orang Tua'), fn ($builder) => $builder->whereRaw('1 = 0'))
             ->whereIn('id', $studentIds)
             ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
+            ->where(function ($builder) {
+                $builder->where('is_active', false)
+                    ->orWhereNull('access_expires_at')
+                    ->orWhereDate('access_expires_at', '<', today()->toDateString());
+            })
             ->whereDoesntHave('feeTransactions', fn ($builder) => $builder->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial']))
             ->get();
 
@@ -88,6 +93,12 @@ class StudentFeePaymentController extends Controller
                 ->whereKey($student->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            abort_unless(
+                ! ($lockedStudent->is_active && $lockedStudent->access_expires_at && $lockedStudent->access_expires_at->toDateString() >= today()->toDateString()),
+                422,
+                'Masa aktif langganan siswa masih berlaku sampai ' . $lockedStudent->access_expires_at?->format('d M Y') . '. Tagihan perpanjangan baru dapat dibuat setelah masa aktif berakhir.'
+            );
 
             abort_unless(
                 RegistrationPayment::query()->where('student_id', $lockedStudent->id)->where('status', 'verified')->exists(),
