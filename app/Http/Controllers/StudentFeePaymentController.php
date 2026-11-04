@@ -42,11 +42,11 @@ class StudentFeePaymentController extends Controller
             ->when(! $user->hasRole('Orang Tua'), fn ($builder) => $builder->whereRaw('1 = 0'))
             ->whereIn('id', $studentIds)
             ->whereIn('id', RegistrationPayment::query()->where('status', 'verified')->select('student_id'))
-            ->whereHas('classRoom', function ($builder) {
-                $builder->where(function ($query) {
-                    $query->where('education_level', '!=', 'SMA')
-                        ->orWhere('grade_level', '!=', 12);
-                });
+            ->where(function ($builder) {
+                $builder->whereDoesntHave('classRoom', function ($classQuery) {
+                    $classQuery->where('education_level', 'SMA')
+                        ->where('grade_level', 12);
+                })->orWhereDoesntHave('feeTransactions');
             })
             ->whereDoesntHave('feeTransactions', fn ($builder) => $builder->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial']))
             ->get();
@@ -108,6 +108,16 @@ class StudentFeePaymentController extends Controller
                     ->exists(),
                 422,
                 'Siswa masih memiliki tagihan bimbel yang belum lunas. Selesaikan tagihan tersebut sebelum memperpanjang paket.'
+            );
+
+            $lockedStudent->loadMissing('classRoom');
+            $isSma12 = $lockedStudent->classRoom?->education_level === 'SMA'
+                && (int) $lockedStudent->classRoom?->grade_level === 12;
+
+            abort_unless(
+                ! $isSma12 || ! StudentFeeTransaction::query()->where('student_id', $lockedStudent->id)->exists(),
+                422,
+                'Siswa SMA kelas 12 hanya dapat berlangganan satu kali dan tidak dapat melakukan perpanjangan.'
             );
 
             return $billingService->generateForStudent(
