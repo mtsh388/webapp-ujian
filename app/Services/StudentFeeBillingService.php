@@ -189,7 +189,7 @@ class StudentFeeBillingService
             ->latest('id')
             ->first();
 
-        if ($lastAcademicYearHistory && (int) $lastAcademicYearHistory->class_id !== (int) $currentClass->id) {
+        if ($lastAcademicYearHistory && $lastAcademicYearHistory->class_id && (int) $lastAcademicYearHistory->class_id !== (int) $currentClass->id) {
             return $currentClass;
         }
 
