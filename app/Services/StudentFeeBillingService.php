@@ -21,8 +21,8 @@ class StudentFeeBillingService
         }
 
         $package = match ($packageType) {
-            'semester' => ['months' => 6, 'years' => 1, 'billing_period' => 'semester', 'label' => '1 Semester'],
-            'yearly' => ['months' => 12, 'years' => 1, 'billing_period' => 'yearly', 'label' => '1 Tahun'],
+            'semester' => ['years' => 1, 'billing_period' => 'semester', 'label' => '1 Semester'],
+            'yearly' => ['years' => 1, 'billing_period' => 'yearly', 'label' => '1 Tahun'],
             default => throw ValidationException::withMessages(['package_type' => 'Paket belajar tidak valid.']),
         };
 
@@ -34,9 +34,11 @@ class StudentFeeBillingService
             : null;
 
         $start = $activeUntil ? $activeUntil->copy()->addDay() : $today->copy();
+
         if ($class->education_level === 'SMA') {
             $isGradeTwelve = $startGrade === 12;
             $isOddSemester = $start->month >= 7;
+
             if (($isGradeTwelve && $packageType !== 'yearly') || (! $isGradeTwelve && ! $isOddSemester && $packageType === 'yearly')) {
                 throw ValidationException::withMessages([
                     'package_type' => $isGradeTwelve
@@ -44,6 +46,18 @@ class StudentFeeBillingService
                         : 'Pada semester genap, siswa kelas 10 dan 11 hanya dapat memilih paket semesteran.',
                 ]);
             }
+        }
+
+        $end = $packageType === 'semester'
+            ? ($start->month >= 7
+                ? $start->copy()->endOfYear()
+                : $start->copy()->month(6)->endOfMonth())
+            : $start->copy()->addYear()->month(6)->endOfMonth();
+
+        $durationMonths = (($end->year - $start->year) * 12) + $end->month - $start->month + 1;
+
+        if ($durationMonths < 1 || $end->lessThan($start)) {
+            throw ValidationException::withMessages(['package_type' => 'Periode paket tidak valid.']);
         }
 
         $gradeCount = 1;
@@ -83,20 +97,12 @@ class StudentFeeBillingService
             ];
         }
 
-        $durationMonths = $package['months'];
-        $end = $start->copy()->addMonthsNoOverflow($durationMonths)->subDay();
-
-        if ($durationMonths < 1 || $end->lessThan($start)) {
-            throw ValidationException::withMessages(['package_type' => 'Periode paket tidak valid.']);
-        }
-
         $maximumInstallments = min(5, (int) $fees->min('max_installments'), $durationMonths);
         if ($installmentCount > $maximumInstallments) {
             throw ValidationException::withMessages([
                 'installment_count' => "Tarif yang dipilih hanya mengizinkan maksimal {$maximumInstallments} kali cicilan.",
             ]);
         }
-
 
         $promo = null;
         if (filled($promoCode)) {
