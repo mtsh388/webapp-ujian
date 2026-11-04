@@ -138,6 +138,9 @@ class StudentFeeBillingService
 
         $transaction = StudentFeeTransaction::create([
             'student_id' => $student->id,
+            'class_name_snapshot' => $class->name,
+            'education_level_snapshot' => $class->education_level,
+            'grade_level_snapshot' => $startGrade,
             'registration_payment_id' => null,
             'duration_years' => $package['years'],
             'duration_months' => $durationMonths,
