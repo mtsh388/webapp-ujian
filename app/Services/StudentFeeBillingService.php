@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ClassRoom;
 use App\Models\PromoCode;
 use App\Models\RegistrationFee;
 use App\Models\Student;
@@ -26,14 +27,13 @@ class StudentFeeBillingService
             default => throw ValidationException::withMessages(['package_type' => 'Paket belajar tidak valid.']),
         };
 
-        $class = $student->classRoom;
-        $startGrade = (int) $class->grade_level;
         $today = Carbon::today();
-
         $start = $student->is_active && $student->access_expires_at && $student->access_expires_at->greaterThanOrEqualTo($today)
-            ? $student->access_expires_at->copy()->addDay()
+            ? $student->access_expires_at->copy()->addDay()->startOfDay()
             : $today->copy();
 
+        $class = $this->classForBillingPeriod($student, $start);
+        $startGrade = (int) $class->grade_level;
         $isOddSemester = $start->month >= 7;
 
         if ($packageType === 'yearly' && ! $isOddSemester) {
@@ -169,5 +169,56 @@ class StudentFeeBillingService
         }
 
         return $transaction;
+    }
+
+    private function classForBillingPeriod(Student $student, Carbon $periodStart): ClassRoom
+    {
+        $currentClass = $student->classRoom;
+
+        if (
+            ! $student->access_expires_at
+            || $student->access_expires_at->toDateString() !== $periodStart->copy()->subDay()->toDateString()
+            || $periodStart->month !== 7
+            || $periodStart->day !== 1
+        ) {
+            return $currentClass;
+        }
+
+        $lastAcademicYearHistory = $student->classHistories()
+            ->whereDate('ended_at', $periodStart->copy()->subDay()->toDateString())
+            ->latest('id')
+            ->first();
+
+        if ($lastAcademicYearHistory && (int) $lastAcademicYearHistory->class_id !== (int) $currentClass->id) {
+            return $currentClass;
+        }
+
+        [$nextLevel, $nextGrade] = match ([$currentClass->education_level, (int) $currentClass->grade_level]) {
+            ['SD', 6] => ['SMP', 7],
+            ['SMP', 9] => ['SMA', 10],
+            ['SMA', 12] => [null, null],
+            default => [$currentClass->education_level, (int) $currentClass->grade_level + 1],
+        };
+
+        if ($nextLevel === null) {
+            throw ValidationException::withMessages([
+                'package_type' => 'Siswa SMA kelas 12 tidak dapat membuat tagihan untuk tahun ajaran berikutnya karena telah menyelesaikan jenjang SMA.',
+            ]);
+        }
+
+        $nextClass = ClassRoom::query()
+            ->where('education_level', $nextLevel)
+            ->where('grade_level', $nextGrade)
+            ->where('registration_type', $currentClass->registration_type)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $nextClass) {
+            throw ValidationException::withMessages([
+                'package_type' => "Kelas tujuan {$nextLevel} {$nextGrade} belum tersedia atau tidak aktif. Tagihan tidak dibuat agar tarif kelas sebelumnya tidak digunakan.",
+            ]);
+        }
+
+        return $nextClass;
     }
 }
