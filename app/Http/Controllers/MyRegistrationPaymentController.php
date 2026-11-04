@@ -12,7 +12,7 @@ class MyRegistrationPaymentController extends Controller
         $user = auth()->user();
 
         $query = RegistrationPayment::query()
-            ->with(['user', 'student.classRoom'])
+            ->with(['user', 'student'])
             ->latest();
 
         if ($user->hasRole('Siswa')) {
