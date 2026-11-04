@@ -24,7 +24,7 @@
                                 <label for="student_id" class="form-label">Siswa</label>
                                 <select class="form-select" name="student_id" id="student_id" required>
                                     @foreach ($eligibleStudents as $eligibleStudent)
-                                        <option value="{{ $eligibleStudent->id }}" @selected((string) old('student_id') === (string) $eligibleStudent->id)>{{ $eligibleStudent->full_name }} — {{ $eligibleStudent->classRoom?->name ?? 'Kelas belum ditentukan' }}</option>
+                                        <option value="{{ $eligibleStudent->id }}" data-level="{{ $eligibleStudent->classRoom?->education_level }}" data-grade="{{ $eligibleStudent->classRoom?->grade_level }}" data-start-date="{{ $eligibleStudent->is_active && $eligibleStudent->access_expires_at && $eligibleStudent->access_expires_at->isFuture() ? $eligibleStudent->access_expires_at->copy()->addDay()->toDateString() : now()->toDateString() }}" @selected((string) old('student_id') === (string) $eligibleStudent->id)>{{ $eligibleStudent->full_name }} — {{ $eligibleStudent->classRoom?->name ?? 'Kelas belum ditentukan' }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -50,6 +50,37 @@
                         </div>
                         <button type="submit" class="btn btn-primary mt-3"><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
                     </form>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const student = document.getElementById('student_id');
+                            const packageSelect = document.getElementById('package_type');
+
+                            if (!student || !packageSelect) return;
+
+                            function updatePackages() {
+                                const selected = student.options[student.selectedIndex];
+                                const level = selected.dataset.level || '';
+                                const grade = Number(selected.dataset.grade || 0);
+                                const startDate = selected.dataset.startDate ? new Date(selected.dataset.startDate + 'T00:00:00') : new Date();
+                                const month = startDate.getMonth() + 1;
+                                const semesterAvailable = !(level === 'SMA' && grade === 12);
+                                const yearlyAvailable = level !== 'SMA' || grade === 12 || month >= 7;
+
+                                Array.from(packageSelect.options).forEach(function (option) {
+                                    if (!option.value) return;
+                                    option.hidden = option.value === 'semester' ? !semesterAvailable : !yearlyAvailable;
+                                    option.disabled = option.hidden;
+                                });
+
+                                if (packageSelect.selectedOptions[0]?.disabled) {
+                                    packageSelect.value = semesterAvailable ? 'semester' : 'yearly';
+                                }
+                            }
+
+                            student.addEventListener('change', updatePackages);
+                            updatePackages();
+                        });
+                    </script>
                 </div>
             @endif
             @forelse ($transactions as $transaction)
