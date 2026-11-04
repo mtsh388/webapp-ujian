@@ -16,7 +16,7 @@
             @if ($eligibleStudents->isNotEmpty())
                 <div class="border rounded p-3 mb-4">
                     <h5 class="mb-2">Perpanjang Paket Bimbel</h5>
-                    <p class="text-muted">Tagihan perpanjangan hanya dapat dibuat setelah masa aktif langganan berakhir. Periode baru dimulai satu hari setelah masa aktif berakhir. Paket semester berlaku sampai 30 Juni atau 31 Desember sesuai semester mulai. Paket tahunan berlaku sampai 30 Juni tahun berikutnya. Nominal mengikuti Master Data Biaya; cicilan maksimal 5 kali.</p>
+                    <p class="text-muted">Perpanjangan dapat dibuat meskipun masa aktif langganan masih berlaku. Jika masih aktif, periode paket baru dimulai satu hari setelah masa aktif berakhir. Siswa SMA kelas 12 tidak dapat melakukan perpanjangan langganan. Paket semester berlaku sampai 30 Juni atau 31 Desember sesuai semester mulai. Paket tahunan berlaku sampai 30 Juni tahun berikutnya. Nominal mengikuti Master Data Biaya; cicilan maksimal 5 kali.</p>
                     <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
                         @csrf
                         <div class="row g-3">
@@ -24,7 +24,7 @@
                                 <label for="student_id" class="form-label">Siswa</label>
                                 <select class="form-select" name="student_id" id="student_id" required>
                                     @foreach ($eligibleStudents as $eligibleStudent)
-                                        <option value="{{ $eligibleStudent->id }}" data-level="{{ $eligibleStudent->classRoom?->education_level }}" data-grade="{{ $eligibleStudent->classRoom?->grade_level }}" data-start-date="{{ $eligibleStudent->is_active && $eligibleStudent->access_expires_at && $eligibleStudent->access_expires_at->isFuture() ? $eligibleStudent->access_expires_at->copy()->addDay()->toDateString() : now()->toDateString() }}" @selected((string) old('student_id') === (string) $eligibleStudent->id)>{{ $eligibleStudent->full_name }} — {{ $eligibleStudent->classRoom?->name ?? 'Kelas belum ditentukan' }}</option>
+                                        <option value="{{ $eligibleStudent->id }}" data-level="{{ $eligibleStudent->classRoom?->education_level }}" data-grade="{{ $eligibleStudent->classRoom?->grade_level }}" data-start-date="{{ $eligibleStudent->is_active && $eligibleStudent->access_expires_at && $eligibleStudent->access_expires_at->greaterThanOrEqualTo(today()) ? $eligibleStudent->access_expires_at->copy()->addDay()->toDateString() : now()->toDateString() }}" @selected((string) old('student_id') === (string) $eligibleStudent->id)>{{ $eligibleStudent->full_name }} — {{ $eligibleStudent->classRoom?->name ?? 'Kelas belum ditentukan' }}</option>
                                     @endforeach
                                 </select>
                             </div>
