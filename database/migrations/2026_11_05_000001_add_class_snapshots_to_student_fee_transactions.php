@@ -31,7 +31,8 @@ return new class extends Migration
                             $query->whereNull('ended_at')
                                 ->orWhereDate('ended_at', '>=', $transaction->period_starts_at);
                         })
-                        ->orderByDesc('started_at')
+                        ->orderBy('ended_at')
+                        ->orderBy('id')
                         ->first();
 
                     if ($history) {
