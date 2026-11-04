@@ -30,6 +30,7 @@ class RegistrationPayment extends Model
     {
         return [
             'amount' => 'integer',
+            'grade_level_snapshot' => 'integer',
             'duration_years' => 'integer',
             'installment_count' => 'integer',
             'verified_at' => 'datetime',
