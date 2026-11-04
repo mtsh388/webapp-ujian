@@ -89,6 +89,18 @@
                     </script>
                 </div>
             @endif
+            <form method="GET" action="{{ route('student-fee-payments.index') }}" class="row g-2 align-items-center mb-3" role="search">
+                <div class="col-md-8 col-lg-6">
+                    <label for="transaction-search" class="form-label">Cari Tagihan Bimbel</label>
+                    <div class="input-group">
+                        <input type="search" id="transaction-search" name="search" class="form-control" value="{{ $search }}" placeholder="Cari nama siswa, kelas, paket, periode, atau nominal..." autocomplete="off">
+                        <button class="btn btn-outline-primary" type="submit"><i class="bx bx-search me-1"></i> Cari</button>
+                        @if ($search !== '')
+                            <a href="{{ route('student-fee-payments.index') }}" class="btn btn-outline-secondary">Reset</a>
+                        @endif
+                    </div>
+                </div>
+            </form>
             @forelse ($transactions as $transaction)
                 <div class="border rounded p-3 mb-4">
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
@@ -149,8 +161,8 @@
                 </div>
             @empty
                 <div class="text-center py-5">
-                    <h5>Belum Ada Tagihan Bimbel</h5>
-                    <p class="text-muted mb-0">Setelah pembayaran registrasi disetujui, formulir perpanjangan paket akan tersedia selama tidak ada tagihan bimbel yang belum lunas.</p>
+                    <h5>{{ $search !== '' ? 'Tagihan Tidak Ditemukan' : 'Belum Ada Tagihan Bimbel' }}</h5>
+                    <p class="text-muted mb-0">{{ $search !== '' ? 'Tidak ada tagihan yang cocok dengan pencarian Anda. Coba kata kunci lain.' : 'Setelah pembayaran registrasi disetujui, formulir perpanjangan paket akan tersedia selama tidak ada tagihan bimbel yang belum lunas.' }}</p>
                 </div>
             @endforelse
             @if ($transactions->hasPages())<div class="mt-3">{{ $transactions->links() }}</div>@endif
