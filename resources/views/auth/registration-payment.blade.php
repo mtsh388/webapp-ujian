@@ -31,7 +31,7 @@
                     @endif
                     <div class="border rounded p-4 mb-4">
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Nama Siswa</span><strong>{{ $payment->student?->full_name ?? $payment->user?->name }}</strong></div>
-                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kelas</span><strong>{{ $payment->student?->classRoom?->name ?? '-' }}</strong></div>
+                        <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kelas</span><strong>{{ $payment->class_name_snapshot ?: 'Kelas belum tercatat' }}</strong></div>
                         <div class="d-flex justify-content-between gap-3 mb-2"><span class="text-muted">Kode Promo Pendaftaran</span><strong>Tidak digunakan</strong></div>
                         <hr>
                         <div class="d-flex justify-content-between gap-3"><span class="fw-semibold">Total Biaya Pendaftaran</span><strong class="fs-4 text-primary">Rp {{ number_format((int) $payment->amount, 0, ',', '.') }}</strong></div>
