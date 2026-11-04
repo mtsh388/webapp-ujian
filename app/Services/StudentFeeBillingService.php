@@ -21,9 +21,8 @@ class StudentFeeBillingService
         }
 
         $package = match ($packageType) {
-            'semester' => ['months' => 6, 'years' => 1, 'grades' => 1, 'factor' => 0.60, 'label' => '1 Semester'],
-            'yearly' => ['months' => 12, 'years' => 1, 'grades' => 1, 'factor' => 1.00, 'label' => '1 Tahun'],
-            'two_years' => ['months' => 24, 'years' => 2, 'grades' => 2, 'factor' => 1.00, 'label' => '2 Tahun'],
+            'semester' => ['months' => 6, 'years' => 1, 'billing_period' => 'semester', 'label' => '1 Semester'],
+            'yearly' => ['months' => 12, 'years' => 1, 'billing_period' => 'yearly', 'label' => '1 Tahun'],
             default => throw ValidationException::withMessages(['package_type' => 'Paket belajar tidak valid.']),
         };
 
@@ -46,7 +45,20 @@ class StudentFeeBillingService
             ]);
         }
 
-        $gradeCount = min($package['grades'], $maximumGrade - $startGrade + 1);
+        $start = $activeUntil ? $activeUntil->copy()->addDay() : $today->copy();
+        if ($class->education_level === 'SMA') {
+            $isGradeTwelve = $startGrade === 12;
+            $isOddSemester = $start->month >= 7;
+            if (($isGradeTwelve && $packageType !== 'yearly') || (! $isGradeTwelve && ! $isOddSemester && $packageType === 'yearly')) {
+                throw ValidationException::withMessages([
+                    'package_type' => $isGradeTwelve
+                        ? 'Siswa kelas 12 hanya dapat memilih paket tahunan.'
+                        : 'Pada semester genap, siswa kelas 10 dan 11 hanya dapat memilih paket semesteran.',
+                ]);
+            }
+        }
+
+        $gradeCount = 1;
         $installmentCount = max(1, $installmentCount);
         $fees = collect();
         $details = [];
@@ -62,6 +74,7 @@ class StudentFeeBillingService
                 })
                 ->where('education_level', $class->education_level)
                 ->where('grade_level', $grade)
+                ->where('billing_period', $package['billing_period'])
                 ->first();
 
             if (! $fee) {
@@ -84,29 +97,8 @@ class StudentFeeBillingService
             $normalTotal += $amount;
         }
 
-        if ($activeUntil) {
-            $start = $activeUntil->copy()->addDay();
-            $durationMonths = $package['months'];
-            $end = $start->copy()->addMonthsNoOverflow($durationMonths)->subDay();
-        } else {
-            $start = $today->copy();
-
-            if ($packageType === 'semester') {
-                $end = $start->month <= 6
-                    ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
-                    : $start->copy()->setDate($start->year, 12, 1)->endOfMonth();
-            } else {
-                $academicYearEnd = $start->month <= 6
-                    ? $start->copy()->setDate($start->year, 6, 1)->endOfMonth()
-                    : $start->copy()->addYear()->setDate($start->year + 1, 6, 1)->endOfMonth();
-
-                $end = $packageType === 'two_years'
-                    ? $academicYearEnd->copy()->addYear()->setDate($academicYearEnd->year + 1, 6, 1)->endOfMonth()
-                    : $academicYearEnd;
-            }
-
-            $durationMonths = (($end->year - $start->year) * 12) + $end->month - $start->month + 1;
-        }
+        $durationMonths = $package['months'];
+        $end = $start->copy()->addMonthsNoOverflow($durationMonths)->subDay();
 
         if ($durationMonths < 1 || $end->lessThan($start)) {
             throw ValidationException::withMessages(['package_type' => 'Periode paket tidak valid.']);
@@ -119,11 +111,7 @@ class StudentFeeBillingService
             ]);
         }
 
-        $packageTotal = (int) round($normalTotal * $package['factor']);
-        if ($package['factor'] < 1) {
-            $details[0]['discount_amount'] = $normalTotal - $packageTotal;
-            $details[0]['amount_due'] = $packageTotal;
-        }
+        $packageTotal = $normalTotal;
 
         $promo = null;
         if (filled($promoCode)) {
