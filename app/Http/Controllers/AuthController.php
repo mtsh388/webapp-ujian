@@ -218,6 +218,9 @@ class AuthController extends Controller
                     $payment = RegistrationPayment::create([
                         'user_id' => $studentUser->id,
                         'student_id' => $student->id,
+                        'class_name_snapshot' => $classRoom->name,
+                        'education_level_snapshot' => $classRoom->education_level,
+                        'grade_level_snapshot' => $classRoom->grade_level,
                         'amount' => $amount,
                         'status' => 'awaiting_payment',
                         'proof_path' => null,
