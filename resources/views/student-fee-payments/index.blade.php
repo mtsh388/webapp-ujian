@@ -49,24 +49,72 @@
                                 <input class="form-control" type="text" name="promo_code" id="promo_code" value="{{ old('promo_code') }}" maxlength="100">
                             </div>
                         </div>
-                        <button type="submit" id="create-plan-button" class="btn btn-primary mt-3"><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
+                        <div id="billing-preview" class="card border mt-3 d-none">
+                            <div class="card-header pb-2">
+                                <h6 class="mb-0">Preview Pembayaran</h6>
+                                <small class="text-muted">Perhitungan sementara. Tagihan belum dibuat.</small>
+                            </div>
+                            <div class="card-body pt-2">
+                                <div id="billing-preview-loading" class="text-muted small d-none">Menghitung preview pembayaran...</div>
+                                <div id="billing-preview-error" class="alert alert-danger d-none mb-0"></div>
+                                <div id="billing-preview-content" class="d-none">
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-md-6"><small class="text-muted">Siswa</small><div class="fw-semibold" id="preview-student"></div></div>
+                                        <div class="col-md-6"><small class="text-muted">Kelas yang ditagihkan</small><div class="fw-semibold" id="preview-class"></div></div>
+                                        <div class="col-md-6"><small class="text-muted">Paket belajar</small><div id="preview-package"></div></div>
+                                        <div class="col-md-6"><small class="text-muted">Periode</small><div id="preview-period"></div></div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered align-middle mb-2">
+                                            <thead><tr><th>Cicilan</th><th>Jatuh Tempo</th><th class="text-end">Nominal</th></tr></thead>
+                                            <tbody id="preview-installments"></tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">Total Pembayaran</span>
+                                        <span class="fs-5 fw-bold" id="preview-total"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" id="create-plan-button" class="btn btn-primary mt-3" disabled><i class="bx bx-refresh me-1"></i> Buat Tagihan Perpanjangan</button>
                     </form>
                     <script>
                         document.addEventListener('DOMContentLoaded', function () {
+                            const form = document.querySelector('form[action="{{ route('student-fee-payments.plan.store') }}"]');
                             const student = document.getElementById('student_id');
                             const packageSelect = document.getElementById('package_type');
+                            const installmentSelect = document.getElementById('installment_count');
+                            const promoInput = document.getElementById('promo_code');
+                            const previewCard = document.getElementById('billing-preview');
+                            const previewLoading = document.getElementById('billing-preview-loading');
+                            const previewError = document.getElementById('billing-preview-error');
+                            const previewContent = document.getElementById('billing-preview-content');
+                            const submitButton = document.getElementById('create-plan-button');
+                            let requestController = null;
+                            let debounceTimer = null;
 
-                            if (!student || !packageSelect) return;
+                            if (!form || !student || !packageSelect || !installmentSelect) return;
+
+                            const rupiah = value => new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                maximumFractionDigits: 0
+                            }).format(value);
+
+                            const date = value => new Date(value + 'T00:00:00').toLocaleDateString('id-ID', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                            });
 
                             function updatePackages() {
                                 const selected = student.options[student.selectedIndex];
-                                const level = selected.dataset.level || '';
-                                const grade = Number(selected.dataset.grade || 0);
-                                const startDate = selected.dataset.startDate ? new Date(selected.dataset.startDate + 'T00:00:00') : new Date();
-                                const month = startDate.getMonth() + 1;
+                                const level = selected?.dataset.level || '';
+                                const grade = Number(selected?.dataset.grade || 0);
+                                const startDate = selected?.dataset.startDate ? new Date(selected.dataset.startDate + 'T00:00:00') : new Date();
+                                const yearlyAvailable = startDate.getMonth() + 1 >= 7;
                                 const semesterAvailable = !(level === 'SMA' && grade === 12);
-                                const yearlyAvailable = month >= 7;
-                                const hasAvailablePackage = semesterAvailable || yearlyAvailable;
 
                                 Array.from(packageSelect.options).forEach(function (option) {
                                     if (!option.value) return;
@@ -78,13 +126,81 @@
                                     packageSelect.value = semesterAvailable ? 'semester' : (yearlyAvailable ? 'yearly' : '');
                                 }
 
-                                packageSelect.disabled = !hasAvailablePackage;
-                                document.getElementById('no-package-message')?.classList.toggle('d-none', hasAvailablePackage);
-                                document.getElementById('create-plan-button')?.toggleAttribute('disabled', !hasAvailablePackage);
+                                const available = semesterAvailable || yearlyAvailable;
+                                packageSelect.disabled = !available;
+                                document.getElementById('no-package-message')?.classList.toggle('d-none', available);
+                                if (!available) {
+                                    submitButton.disabled = true;
+                                    previewCard.classList.add('d-none');
+                                }
+                                return available;
                             }
 
-                            student.addEventListener('change', updatePackages);
+                            async function loadPreview() {
+                                if (!updatePackages() || !packageSelect.value) return;
+
+                                if (requestController) requestController.abort();
+                                requestController = new AbortController();
+                                submitButton.disabled = true;
+                                previewCard.classList.remove('d-none');
+                                previewLoading.classList.remove('d-none');
+                                previewError.classList.add('d-none');
+                                previewContent.classList.add('d-none');
+
+                                const payload = new FormData(form);
+                                try {
+                                    const response = await fetch("{{ route('student-fee-payments.plan.preview') }}", {
+                                        method: 'POST',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value
+                                        },
+                                        body: payload,
+                                        signal: requestController.signal
+                                    });
+                                    const data = await response.json();
+                                    if (!response.ok) {
+                                        const messages = data.errors ? Object.values(data.errors).flat() : [data.message || 'Preview pembayaran tidak dapat dihitung.'];
+                                        throw new Error(messages.join(' '));
+                                    }
+
+                                    const quote = data.preview;
+                                    document.getElementById('preview-student').textContent = quote.student_name;
+                                    document.getElementById('preview-class').textContent = quote.class_name + ' (' + quote.education_level + ' kelas ' + quote.grade_level + ')';
+                                    document.getElementById('preview-package').textContent = quote.package_label + ' · ' + quote.installment_count + ' kali pembayaran';
+                                    document.getElementById('preview-period').textContent = date(quote.period_starts_at) + ' – ' + date(quote.period_ends_at);
+                                    document.getElementById('preview-installments').innerHTML = quote.installments.map(item =>
+                                        '<tr><td>' + item.number + ' dari ' + quote.installment_count + '</td><td>' + date(item.due_date) + '</td><td class="text-end">' + rupiah(item.amount) + '</td></tr>'
+                                    ).join('');
+                                    document.getElementById('preview-total').textContent = rupiah(quote.amount);
+                                    previewContent.classList.remove('d-none');
+                                    submitButton.disabled = false;
+                                } catch (error) {
+                                    if (error.name === 'AbortError') return;
+                                    previewError.textContent = error.message;
+                                    previewError.classList.remove('d-none');
+                                } finally {
+                                    previewLoading.classList.add('d-none');
+                                }
+                            }
+
+                            function schedulePreview() {
+                                clearTimeout(debounceTimer);
+                                debounceTimer = setTimeout(loadPreview, 250);
+                            }
+
+                            student.addEventListener('change', schedulePreview);
+                            packageSelect.addEventListener('change', schedulePreview);
+                            installmentSelect.addEventListener('change', schedulePreview);
+                            promoInput?.addEventListener('input', schedulePreview);
+                            form.addEventListener('submit', function (event) {
+                                if (submitButton.disabled) {
+                                    event.preventDefault();
+                                }
+                            });
+
                             updatePackages();
+                            loadPreview();
                         });
                     </script>
                 </div>
