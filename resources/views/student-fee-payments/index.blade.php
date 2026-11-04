@@ -106,7 +106,7 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                         <div>
                             <h5 class="mb-1">{{ $transaction->student?->full_name ?? 'Siswa' }} — {{ $transaction->package_type === 'semester' ? '1 semester' : '1 tahun' }}</h5>
-                            <div class="text-muted small">{{ $transaction->student?->classRoom?->name ?? '-' }} · Periode {{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div>
+                            <div class="text-muted small">{{ $transaction->class_name_snapshot ?: 'Kelas belum tercatat' }} · Periode {{ $transaction->period_starts_at->format('d M Y') }}–{{ $transaction->period_ends_at->format('d M Y') }}</div>
                         </div>
                         <div class="text-md-end">
                             <div class="text-muted small">Total tagihan</div>
