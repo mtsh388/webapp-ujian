@@ -16,7 +16,7 @@
             @if ($eligibleStudents->isNotEmpty())
                 <div class="border rounded p-3 mb-4">
                     <h5 class="mb-2">Perpanjang Paket Bimbel</h5>
-                    <p class="text-muted">Periode perpanjangan dimulai satu hari setelah masa akses aktif berakhir. Paket semester berlaku sampai 30 Juni atau 31 Desember sesuai semester mulai. Paket tahunan berlaku sampai 30 Juni tahun berikutnya. Nominal mengikuti Master Data Biaya; cicilan maksimal 5 kali.</p>
+                    <p class="text-muted">Tagihan perpanjangan hanya dapat dibuat setelah masa aktif langganan berakhir. Periode baru dimulai satu hari setelah masa aktif berakhir. Paket semester berlaku sampai 30 Juni atau 31 Desember sesuai semester mulai. Paket tahunan berlaku sampai 30 Juni tahun berikutnya. Nominal mengikuti Master Data Biaya; cicilan maksimal 5 kali.</p>
                     <form method="POST" action="{{ route('student-fee-payments.plan.store') }}">
                         @csrf
                         <div class="row g-3">
