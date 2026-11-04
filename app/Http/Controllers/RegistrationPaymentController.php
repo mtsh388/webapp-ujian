@@ -87,7 +87,7 @@ class RegistrationPaymentController extends Controller
             return redirect()->route('login')->with('status', 'Bukti pembayaran sudah dikirim dan sedang diproses.');
         }
 
-        $registrationPayment->load(['user', 'student.classRoom']);
+        $registrationPayment->load(['user', 'student']);
 
         return view('auth.registration-payment', ['payment' => $registrationPayment]);
     }
