@@ -144,6 +144,10 @@ class RegistrationFeeController extends Controller
 
         $feeType = $knownTypes[$feeTypeSlug] ?? $feeTypeSlug;
 
+        if ($feeTypeSlug === 'belajar' || str_starts_with($feeTypeSlug, 'biaya-belajar-')) {
+            $feeType = 'belajar';
+        }
+
         if (str_starts_with($feeTypeSlug, 'pendaftaran-') || str_starts_with($feeTypeSlug, 'biaya-pendaftaran-')) {
             $feeType = 'registration';
         }
@@ -194,6 +198,28 @@ class RegistrationFeeController extends Controller
             $validated['discount_value'] = null;
             $validated['max_installments'] = 1;
         } else {
+            if ($feeType === 'belajar') {
+                $request->validate([
+                    'education_level' => ['required', Rule::in(['SD', 'SMP', 'SMA'])],
+                    'grade_level' => ['required', 'integer', Rule::in([4, 5, 6, 7, 8, 9, 10, 11, 12])],
+                    'billing_period' => ['required', Rule::in(['semester', 'yearly'])],
+                ]);
+
+                $duplicate = RegistrationFee::query()
+                    ->where('fee_type', 'belajar')
+                    ->where('education_level', $validated['education_level'])
+                    ->where('grade_level', $validated['grade_level'])
+                    ->where('billing_period', $validated['billing_period'])
+                    ->when($registrationFee, fn ($query) => $query->where('id', '!=', $registrationFee->id))
+                    ->exists();
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages([
+                        'billing_period' => 'Tarif belajar untuk jenjang, kelas, dan periode tersebut sudah tersedia.',
+                    ]);
+                }
+            }
+
             if (filled($validated['education_level']) && filled($validated['grade_level'])) {
                 $allowedGrades = match ($validated['education_level']) {
                     'SD' => [4, 5, 6],
