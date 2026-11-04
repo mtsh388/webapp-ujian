@@ -33,11 +33,11 @@ class RegistrationPaymentController extends Controller
                 $builder->where('status', 'like', "%{$search}%")
                     ->orWhere('amount', 'like', "%{$search}%")
                     ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                    ->orWhere('class_name_snapshot', 'like', "%{$search}%")
+                    ->orWhere('education_level_snapshot', 'like', "%{$search}%")
+                    ->orWhere('grade_level_snapshot', 'like', "%{$search}%")
                     ->orWhereHas('student', function ($studentQuery) use ($search) {
                         $studentQuery->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('class_name_snapshot', 'like', "%{$search}%")
-                            ->orWhere('education_level_snapshot', 'like', "%{$search}%")
-                            ->orWhere('grade_level_snapshot', 'like', "%{$search}%")
                             ->orWhereHas('parents', function ($parentQuery) use ($search) {
                                 $parentQuery->where('full_name', 'like', "%{$search}%")
                                     ->orWhereHas('user', fn ($userQuery) => $userQuery->where('email', 'like', "%{$search}%"));
