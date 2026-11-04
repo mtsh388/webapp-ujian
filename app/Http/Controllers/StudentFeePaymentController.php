@@ -24,12 +24,13 @@ class StudentFeePaymentController extends Controller
         $user = auth()->user();
         $search = trim((string) $request->query('search', ''));
         $query = StudentFeeTransaction::query()
-            ->with(['student.classRoom', 'installments.verifier'])
+            ->with(['student', 'installments.verifier'])
             ->when($search !== '', function ($builder) use ($search) {
                 $builder->where(function ($searchQuery) use ($search) {
                     $searchQuery->whereHas('student', function ($studentQuery) use ($search) {
-                        $studentQuery->where('full_name', 'like', "%{$search}%")
-                            ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', "%{$search}%"));
+                        $studentQuery->where('full_name', 'like', "%{$search}%");
+                    })
+                        ->orWhere('class_name_snapshot', 'like', "%{$search}%")
                     })
                         ->orWhere('package_type', 'like', "%{$search}%")
                         ->orWhereRaw('CAST(amount AS CHAR) LIKE ?', ["%{$search}%"])
@@ -168,21 +169,22 @@ class StudentFeePaymentController extends Controller
         $baseQuery = StudentFeePayment::query()
             ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
             ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
-            ->leftJoin('classes as class_rooms', 'class_rooms.id', '=', 'students.class_id');
+            ;
 
         $recordsTotal = (clone $baseQuery)->count('student_fee_payments.id');
         $query = StudentFeePayment::query()
             ->select('student_fee_payments.*')
             ->join('student_fee_transactions', 'student_fee_transactions.id', '=', 'student_fee_payments.student_fee_transaction_id')
             ->join('students', 'students.id', '=', 'student_fee_transactions.student_id')
-            ->leftJoin('classes as class_rooms', 'class_rooms.id', '=', 'students.class_id')
-            ->with(['transaction.student.classRoom', 'verifier']);
+            ->with(['transaction.student', 'verifier']);
 
         $search = trim((string) $request->input('search.value', ''));
         if ($search !== '') {
             $query->where(function ($builder) use ($search) {
                 $builder->where('students.full_name', 'like', "%{$search}%")
-                    ->orWhere('class_rooms.name', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.class_name_snapshot', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.education_level_snapshot', 'like', "%{$search}%")
+                    ->orWhere('student_fee_transactions.grade_level_snapshot', 'like', "%{$search}%")
                     ->orWhere('student_fee_transactions.package_type', 'like', "%{$search}%")
                     ->orWhere('student_fee_transactions.period_starts_at', 'like', "%{$search}%")
                     ->orWhere('student_fee_transactions.period_ends_at', 'like', "%{$search}%")
@@ -206,7 +208,7 @@ class StudentFeePaymentController extends Controller
         $data = $payments->map(function (StudentFeePayment $payment) {
             $transaction = $payment->transaction;
             $student = $transaction?->student;
-            $studentHtml = '<div class="fw-semibold">' . e($student?->full_name ?? '-') . '</div><div class="small text-muted">' . e($student?->classRoom?->name ?? '-') . '</div>';
+            $studentHtml = '<div class="fw-semibold">' . e($student?->full_name ?? '-') . '</div><div class="small text-muted">' . e($transaction?->class_name_snapshot ?: 'Kelas belum tercatat') . '</div>';
             $packageName = $transaction?->package_type === 'semester' ? '1 Semester' : '1 Tahun';
             $period = ($transaction?->period_starts_at?->format('d M Y') ?? '-') . '–' . ($transaction?->period_ends_at?->format('d M Y') ?? '-');
             $packageHtml = '<div class="fw-semibold">' . e($packageName) . '</div><div class="small text-muted">' . e($period) . '</div>';
