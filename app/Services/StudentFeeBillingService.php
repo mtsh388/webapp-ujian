@@ -62,7 +62,6 @@ class StudentFeeBillingService
         $installmentCount = max(1, $installmentCount);
         $fees = collect();
         $details = [];
-        $normalTotal = 0;
 
         for ($grade = $startGrade; $grade < $startGrade + $gradeCount; $grade++) {
             $fee = RegistrationFee::query()
@@ -94,7 +93,6 @@ class StudentFeeBillingService
                 'discount_amount' => 0,
                 'amount_due' => $amount,
             ];
-            $normalTotal += $amount;
         }
 
         $durationMonths = $package['months'];
@@ -111,7 +109,6 @@ class StudentFeeBillingService
             ]);
         }
 
-        $packageTotal = $normalTotal;
 
         $promo = null;
         if (filled($promoCode)) {
