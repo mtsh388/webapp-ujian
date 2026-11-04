@@ -73,6 +73,53 @@ class StudentFeePaymentController extends Controller
         ]);
     }
 
+    public function previewPlan(Request $request, StudentFeeBillingService $billingService): JsonResponse
+    {
+        $validated = $request->validate([
+            'student_id' => ['required', 'integer', 'exists:students,id'],
+            'package_type' => ['required', 'string', 'in:semester,yearly'],
+            'installment_count' => ['required', 'integer', 'min:1', 'max:5'],
+            'promo_code' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = auth()->user();
+        abort_unless($user->hasRole('Orang Tua'), 403);
+
+        $student = Student::query()->with('classRoom')->findOrFail($validated['student_id']);
+        $isLinked = $user->parentProfile?->students()->where('students.id', $student->id)->exists() ?? false;
+        abort_unless($isLinked, 403);
+
+        abort_unless(
+            RegistrationPayment::query()->where('student_id', $student->id)->where('status', 'verified')->exists(),
+            422,
+            'Pembayaran registrasi harus disetujui sebelum membuat tagihan bimbel.'
+        );
+
+        abort_unless(
+            ! StudentFeeTransaction::query()->where('student_id', $student->id)->whereIn('status', ['awaiting_payment', 'pending_verification', 'partial'])->exists(),
+            422,
+            'Siswa masih memiliki tagihan bimbel yang belum lunas.'
+        );
+
+        $isSma12 = $student->classRoom?->education_level === 'SMA'
+            && (int) $student->classRoom?->grade_level === 12;
+
+        abort_unless(
+            ! $isSma12 || ! StudentFeeTransaction::query()->where('student_id', $student->id)->exists(),
+            422,
+            'Siswa SMA kelas 12 hanya dapat berlangganan satu kali dan tidak dapat melakukan perpanjangan.'
+        );
+
+        return response()->json([
+            'preview' => $billingService->previewForStudent(
+                $student,
+                $validated['package_type'],
+                (int) $validated['installment_count'],
+                $validated['promo_code'] ?? null
+            ),
+        ]);
+    }
+
     public function createPlan(Request $request, StudentFeeBillingService $billingService): RedirectResponse
     {
         $validated = $request->validate([
