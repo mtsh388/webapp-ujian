@@ -19,11 +19,24 @@ use Throwable;
 
 class StudentFeePaymentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
+        $search = trim((string) $request->query('search', ''));
         $query = StudentFeeTransaction::query()
             ->with(['student.classRoom', 'installments.verifier'])
+            ->when($search !== '', function ($builder) use ($search) {
+                $builder->where(function ($searchQuery) use ($search) {
+                    $searchQuery->whereHas('student', function ($studentQuery) use ($search) {
+                        $studentQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhereHas('classRoom', fn ($classQuery) => $classQuery->where('name', 'like', "%{$search}%"));
+                    })
+                        ->orWhere('package_type', 'like', "%{$search}%")
+                        ->orWhereRaw('CAST(amount AS CHAR) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw("DATE_FORMAT(period_starts_at, '%d %b %Y') LIKE ?", ["%{$search}%"])
+                        ->orWhereRaw("DATE_FORMAT(period_ends_at, '%d %b %Y') LIKE ?", ["%{$search}%"]);
+                });
+            })
             ->latest();
 
         if ($user->hasRole('Siswa')) {
@@ -53,7 +66,8 @@ class StudentFeePaymentController extends Controller
             ->get();
 
         return view('student-fee-payments.index', [
-            'transactions' => $query->paginate(15),
+            'transactions' => $query->paginate(15)->withQueryString(),
+            'search' => $search,
             'eligibleStudents' => $eligibleStudents,
             'isParent' => $user->hasRole('Orang Tua'),
         ]);
