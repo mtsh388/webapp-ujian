@@ -49,7 +49,7 @@
                         <div>
                             <small class="text-muted d-block">Kelas</small>
                             <span>
-                                {{ $attempt->student->classRoom->name ?? '-' }}
+                                {{ $attempt->classNameAtAttempt() ?? '-' }}
                             </span>
                         </div>
                     </div>
