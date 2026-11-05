@@ -118,9 +118,14 @@ class ExamAttemptService
                 );
             }
 
+            $classRoom = $lockedStudent->classRoom()->first();
+
             $attempt = $this->repository->create([
                 'exam_id' => $lockedExam->id,
                 'student_id' => $lockedStudent->id,
+                'class_name_snapshot' => $classRoom?->name,
+                'education_level_snapshot' => $classRoom?->education_level,
+                'grade_level_snapshot' => $classRoom?->grade_level,
                 'attempt_number' => $attemptCount + 1,
                 'started_at' => $now,
                 'total_questions' => $totalQuestions,
