@@ -12,6 +12,9 @@ class ExamAttempt extends Model
     protected $fillable = [
         'exam_id',
         'student_id',
+        'class_name_snapshot',
+        'education_level_snapshot',
+        'grade_level_snapshot',
         'attempt_number',
         'started_at',
         'submitted_at',
@@ -61,6 +64,32 @@ class ExamAttempt extends Model
     public function violations()
     {
         return $this->hasMany(ExamViolation::class, 'exam_attempt_id');
+    }
+
+    public function classNameAtAttempt(): ?string
+    {
+        if ($this->class_name_snapshot) {
+            return $this->class_name_snapshot;
+        }
+
+        if (!$this->started_at || !$this->student_id) {
+            return $this->student?->classRoom?->name;
+        }
+
+        $attemptDate = $this->started_at->toDateString();
+        $history = StudentClassHistory::query()
+            ->with('classRoom')
+            ->where('student_id', $this->student_id)
+            ->whereDate('started_at', '<=', $attemptDate)
+            ->where(function ($query) use ($attemptDate) {
+                $query->whereNull('ended_at')
+                    ->orWhereDate('ended_at', '>=', $attemptDate);
+            })
+            ->orderByDesc('started_at')
+            ->first();
+
+        return $history?->classRoom?->name
+            ?? $this->student?->classRoom?->name;
     }
 
     public function isFinished(): bool
