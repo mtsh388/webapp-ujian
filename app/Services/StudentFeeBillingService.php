@@ -221,11 +221,21 @@ class StudentFeeBillingService
             return $currentClass;
         }
 
-        [$nextLevel, $nextGrade] = match ([$currentClass->education_level, (int) $currentClass->grade_level]) {
+        $previousTransaction = $student->feeTransactions()
+            ->whereDate('period_ends_at', $periodStart->copy()->subDay()->toDateString())
+            ->latest('id')
+            ->first();
+
+        $sourceLevel = $previousTransaction?->education_level_snapshot ?: $currentClass->education_level;
+        $sourceGrade = $previousTransaction?->grade_level_snapshot !== null
+            ? (int) $previousTransaction->grade_level_snapshot
+            : (int) $currentClass->grade_level;
+
+        [$nextLevel, $nextGrade] = match ([$sourceLevel, $sourceGrade]) {
             ['SD', 6] => ['SMP', 7],
             ['SMP', 9] => ['SMA', 10],
             ['SMA', 12] => [null, null],
-            default => [$currentClass->education_level, (int) $currentClass->grade_level + 1],
+            default => [$sourceLevel, $sourceGrade + 1],
         };
 
         if ($nextLevel === null) {
