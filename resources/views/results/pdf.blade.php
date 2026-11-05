@@ -390,6 +390,14 @@
 
     <tr>
         <td class="info-label">
+            Kelas Saat Ujian
+        </td>
+
+        <td>
+            {{ $attempt->classNameAtAttempt() ?? '-' }}
+        </td>
+
+        <td class="info-label">
             Percobaan
         </td>
 
