@@ -233,6 +233,10 @@
                                 {{ $exam?->code ?? '-' }}
                             </span>
 
+                            <span class="badge bg-label-info">
+                                Kelas: {{ $attempt->classNameAtAttempt() ?? '-' }}
+                            </span>
+
                             @if ($attempt->status === 'submitted')
                                 <span class="badge bg-label-success">
                                     <i class="bx bx-check-circle me-1"></i>
