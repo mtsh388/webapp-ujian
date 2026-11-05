@@ -285,7 +285,7 @@ class ResultController extends Controller
                 'ea.submitted_at',
                 DB::raw("CASE WHEN NULLIF(TRIM(s.full_name), '') IS NULL OR s.full_name = s.student_number THEN COALESCE(NULLIF(TRIM(su.name), ''), s.full_name, s.student_number) ELSE s.full_name END as student_name"),
                 's.student_number',
-                'cr.name as class_name',
+                DB::raw("COALESCE(ea.class_name_snapshot, (SELECT historical_class.name FROM student_class_histories AS sch INNER JOIN classes AS historical_class ON historical_class.id = sch.class_id WHERE sch.student_id = ea.student_id AND DATE(sch.started_at) <= DATE(ea.started_at) AND (sch.ended_at IS NULL OR DATE(sch.ended_at) >= DATE(ea.started_at)) ORDER BY sch.started_at DESC LIMIT 1), cr.name) as class_name"),
             ])
             ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ea.student_id ORDER BY ea.score DESC, CASE WHEN ea.duration_seconds IS NULL THEN 1 ELSE 0 END ASC, ea.duration_seconds ASC, ea.submitted_at ASC, ea.id ASC) as attempt_choice');
 
