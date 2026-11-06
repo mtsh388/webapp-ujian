@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ClassRoom;
 use App\Models\Student;
-use App\Models\StudentClassHistory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -143,6 +142,7 @@ class StudentClassHistoryService
         if ($activeHistory) {
             $activeHistory->forceFill([
                 'ended_at' => $effectiveDate->copy()->subDay()->toDateString(),
+                'change_reason' => $reason,
             ])->save();
         }
 
@@ -200,7 +200,7 @@ class StudentClassHistoryService
             ->latest('started_at')
             ->first();
 
-        if ($latestHistory && (int) $latestHistory->class_id === (int) $class->id) {
+        if ($latestHistory && (int) $latestHistory->class_id === (int) $class->id && ! $latestHistory->ended_at) {
             return $latestHistory->started_at->toDateString();
         }
 
