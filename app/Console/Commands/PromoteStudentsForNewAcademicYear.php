@@ -6,6 +6,7 @@ use App\Models\ClassRoom;
 use App\Models\Student;
 use App\Models\User;
 use App\Notifications\StudentClassPromotedNotification;
+use App\Services\StudentClassHistoryService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +16,7 @@ class PromoteStudentsForNewAcademicYear extends Command
 
     protected $description = 'Promosikan siswa aktif ke kelas tahun ajaran berikutnya setiap 1 Juli';
 
-    public function handle(): int
+    public function handle(StudentClassHistoryService $classHistoryService): int
     {
         $date = $this->option('date')
             ? now()->parse($this->option('date'))->startOfDay()
@@ -36,7 +37,7 @@ class PromoteStudentsForNewAcademicYear extends Command
             ->whereNotNull('access_expires_at')
             ->whereDate('access_expires_at', '>=', $date->toDateString())
             ->whereNull('graduated_at')
-            ->chunkById(100, function ($students) use ($date, &$promoted, &$graduated): void {
+            ->chunkById(100, function ($students) use ($date, $classHistoryService, &$promoted, &$graduated): void {
                 foreach ($students as $student) {
                     if ($student->classHistories()
                         ->where('change_reason', 'promotion')
@@ -58,16 +59,9 @@ class PromoteStudentsForNewAcademicYear extends Command
                         default => [$current->education_level, (int) $current->grade_level + 1],
                     };
 
-                    DB::transaction(function () use ($student, $current, $nextLevel, $nextGrade, $date, &$promoted, &$graduated): void {
+                    DB::transaction(function () use ($student, $current, $nextLevel, $nextGrade, $date, $classHistoryService, &$promoted, &$graduated): void {
                         if ($nextLevel === null) {
-                            $student->classHistories()->create([
-                                'class_id' => $current->id,
-                                'education_level' => $current->education_level,
-                                'grade_level' => $current->grade_level,
-                                'started_at' => $student->created_at?->toDateString() ?? $date->toDateString(),
-                                'ended_at' => $date->copy()->subDay()->toDateString(),
-                                'change_reason' => 'graduation',
-                            ]);
+                            $classHistoryService->closeCurrentClass($student, 'graduation', $date);
                             $student->forceFill(['graduated_at' => $date->toDateString()])->save();
                             $graduated++;
 
@@ -96,19 +90,7 @@ class PromoteStudentsForNewAcademicYear extends Command
                             return;
                         }
 
-                        $student->classHistories()->create([
-                            'class_id' => $current->id,
-                            'education_level' => $current->education_level,
-                            'grade_level' => $current->grade_level,
-                            'started_at' => $student->classHistories()->latest('started_at')->value('started_at') ?? $student->created_at?->toDateString() ?? $date->toDateString(),
-                            'ended_at' => $date->copy()->subDay()->toDateString(),
-                            'change_reason' => 'promotion',
-                        ]);
-
-                        $student->forceFill([
-                            'class_id' => $nextClass->id,
-                            'education_level' => $nextLevel,
-                        ])->save();
+                        $classHistoryService->changeClass($student, (int) $nextClass->id, 'promotion', $date);
 
                         $promoted++;
 
