@@ -207,9 +207,19 @@ class StudentClassHistoryService
         }
 
         if ($latestHistory?->ended_at) {
-            return Carbon::parse($latestHistory->ended_at)->addDay()->toDateString();
+            $nextStart = Carbon::parse($latestHistory->ended_at)->addDay();
+
+            if ($nextStart->lt($fallback)) {
+                return $nextStart->toDateString();
+            }
         }
 
-        return $student->created_at?->toDateString() ?? $fallback->toDateString();
+        $createdAt = $student->created_at?->copy()->startOfDay();
+
+        if ($createdAt && $createdAt->lt($fallback)) {
+            return $createdAt->toDateString();
+        }
+
+        return $fallback->copy()->subDay()->toDateString();
     }
 }
