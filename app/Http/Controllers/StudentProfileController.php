@@ -53,6 +53,8 @@ class StudentProfileController extends Controller
                 $student->is_active = true;
             }
 
+            $isInitialClassSelection = ! $student->class_id;
+
             $student->fill([
                 'full_name' => $data['full_name'],
                 'school_name' => $data['school_name'],
@@ -64,7 +66,7 @@ class StudentProfileController extends Controller
             return $this->classHistoryService->changeClass(
                 $student,
                 (int) $data['class_id'],
-                'profile',
+                $isInitialClassSelection ? 'initial' : 'profile',
                 now(),
                 true
             );
