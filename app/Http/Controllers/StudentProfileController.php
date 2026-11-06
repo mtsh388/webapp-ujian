@@ -6,13 +6,16 @@ use App\Http\Requests\CompleteStudentProfileRequest;
 use App\Models\ClassRoom;
 use App\Models\Student;
 use App\Services\ExamService;
+use App\Services\StudentClassHistoryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class StudentProfileController extends Controller
 {
     public function __construct(
-        protected ExamService $examService
+        protected ExamService $examService,
+        protected StudentClassHistoryService $classHistoryService
     ) {
     }
 
@@ -41,24 +44,31 @@ class StudentProfileController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
-        $student = Student::firstOrNew(['user_id' => $user->id]);
+        $student = DB::transaction(function () use ($user, $data): Student {
+            $student = Student::firstOrNew(['user_id' => $user->id]);
 
-        if (!$student->exists) {
-            $student->student_number = 'REG-' . str_pad((string) $user->id, 8, '0', STR_PAD_LEFT);
-            $student->registration_type = 'trial';
-            $student->is_active = true;
-        }
+            if (! $student->exists) {
+                $student->student_number = 'REG-' . str_pad((string) $user->id, 8, '0', STR_PAD_LEFT);
+                $student->registration_type = 'trial';
+                $student->is_active = true;
+            }
 
-        $student->fill([
-            'full_name' => $data['full_name'],
-            'school_name' => $data['school_name'],
-            'phone' => $data['phone'],
-            'parent_phone' => $data['parent_phone'] ?? null,
-            'education_level' => $data['education_level'],
-            'class_id' => $data['class_id'],
-        ]);
+            $student->fill([
+                'full_name' => $data['full_name'],
+                'school_name' => $data['school_name'],
+                'phone' => $data['phone'],
+                'parent_phone' => $data['parent_phone'] ?? null,
+            ]);
+            $student->save();
 
-        $student->save();
+            return $this->classHistoryService->changeClass(
+                $student,
+                (int) $data['class_id'],
+                'profile',
+                now(),
+                true
+            );
+        });
 
         $this->examService->assignStudentToAutoExams($student->fresh('classRoom'));
 
