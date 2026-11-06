@@ -170,6 +170,7 @@ class StudentClassHistoryService
         if ($activeHistory && (int) $activeHistory->class_id === (int) $class->id) {
             $activeHistory->forceFill([
                 'ended_at' => $effectiveDate->copy()->subDay()->toDateString(),
+                'change_reason' => $reason,
             ])->save();
 
             return;
@@ -178,6 +179,7 @@ class StudentClassHistoryService
         if ($activeHistory) {
             $activeHistory->forceFill([
                 'ended_at' => $effectiveDate->copy()->subDay()->toDateString(),
+                'change_reason' => $reason,
             ])->save();
         }
 
