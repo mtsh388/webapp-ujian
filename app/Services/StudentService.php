@@ -209,8 +209,11 @@ class StudentService
         ) {
             unset($data['user_id']);
 
-            if (array_key_exists('class_id', $data) && $data['class_id'] !== null) {
-                $this->classHistoryService->changeClass($student, (int) $data['class_id'], 'admin');
+            if (array_key_exists('class_id', $data)) {
+                if ($data['class_id'] !== null) {
+                    $this->classHistoryService->changeClass($student, (int) $data['class_id'], 'admin');
+                }
+
                 unset($data['class_id']);
             }
 
