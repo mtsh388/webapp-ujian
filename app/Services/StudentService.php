@@ -13,7 +13,8 @@ class StudentService
 {
     public function __construct(
         protected StudentRepository $repository,
-        protected AccountService    $accountService
+        protected AccountService    $accountService,
+        protected StudentClassHistoryService $classHistoryService
     )
     {
     }
@@ -164,7 +165,13 @@ class StudentService
 
             $studentData['user_id'] = $user->id;
 
-            return $this->repository->create($studentData);
+            $student = $this->repository->create($studentData);
+
+            if (! empty($studentData['class_id'])) {
+                $this->classHistoryService->changeClass($student, (int) $studentData['class_id'], 'initial');
+            }
+
+            return $student->refresh()->load('classRoom', 'user');
         });
     }
 
@@ -201,6 +208,11 @@ class StudentService
             $data
         ) {
             unset($data['user_id']);
+
+            if (array_key_exists('class_id', $data) && $data['class_id'] !== null) {
+                $this->classHistoryService->changeClass($student, (int) $data['class_id'], 'admin');
+                unset($data['class_id']);
+            }
 
             $this->repository->update(
                 $student,
